@@ -1,0 +1,26 @@
+# Node modules
+backend/node_modules
+frontend/node_modules
+
+# Environment
+backend/.env
+frontend/.env
+
+# Prisma generated
+backend/prisma/generated
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# VSCode
+.vscode
+
+# Build
+frontend/dist
+
+# Coverage
+coverage

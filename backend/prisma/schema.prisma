@@ -1,13 +1,342 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model appointments {
+  id                 Int                  @id @default(autoincrement())
+  schedule_id        Int
+  patient_profile_id Int
+  reason             String?              @db.Text
+  status             appointments_status? @default(PENDING)
+  booking_code       String?              @unique(map: "booking_code") @db.VarChar(50)
+  created_at         DateTime?            @default(now()) @db.Timestamp(0)
+  updated_at         DateTime?            @default(now()) @db.Timestamp(0)
+  schedules          schedules            @relation(fields: [schedule_id], references: [id], onUpdate: NoAction, map: "appointments_ibfk_1")
+  patient_profiles   patient_profiles     @relation(fields: [patient_profile_id], references: [id], onUpdate: NoAction, map: "appointments_ibfk_2")
+  invoices           invoices[]
+  medical_records    medical_records?
+  reviews            reviews?
+
+  @@index([patient_profile_id], map: "patient_profile_id")
+  @@index([schedule_id], map: "schedule_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model articles {
+  id               Int                   @id @default(autoincrement())
+  title            String                @db.VarChar(255)
+  slug             String?               @unique(map: "slug") @db.VarChar(255)
+  content_markdown String?               @db.LongText
+  content_html     String?               @db.LongText
+  description      String?               @db.Text
+  image            String?               @db.Text
+  author_id        Int?
+  article_type     articles_article_type
+  reference_id     Int?
+  created_at       DateTime?             @default(now()) @db.Timestamp(0)
+  updated_at       DateTime?             @default(now()) @db.Timestamp(0)
+  users            users?                @relation(fields: [author_id], references: [id], onUpdate: NoAction, map: "articles_ibfk_1")
+
+  @@index([author_id], map: "author_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model clinics {
+  id                Int                 @id @default(autoincrement())
+  name              String              @db.VarChar(255)
+  address           String              @db.VarChar(255)
+  phone             String?             @db.VarChar(20)
+  email             String?             @db.VarChar(100)
+  description       String?             @db.Text
+  image             String?             @db.Text
+  created_at        DateTime?           @default(now()) @db.Timestamp(0)
+  updated_at        DateTime?           @default(now()) @db.Timestamp(0)
+  doctor_workplaces doctor_workplaces[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model doctor_profiles {
+  id                Int                 @id @default(autoincrement())
+  user_id           Int                 @unique(map: "user_id")
+  position          String?             @db.VarChar(100)
+  degree            String?             @db.VarChar(100)
+  experience_years  Int?                @default(0)
+  consultation_fee  Decimal?            @default(0.00) @db.Decimal(10, 2)
+  biography         String?             @db.Text
+  created_at        DateTime?           @default(now()) @db.Timestamp(0)
+  updated_at        DateTime?           @default(now()) @db.Timestamp(0)
+  users             users               @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "doctor_profiles_ibfk_1")
+  doctor_workplaces doctor_workplaces[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model doctor_workplaces {
+  id               Int             @id @default(autoincrement())
+  doctor_id        Int
+  clinic_id        Int
+  specialty_id     Int
+  consultation_fee Decimal?        @default(0.00) @db.Decimal(10, 2)
+  room             String?         @db.VarChar(50)
+  position         String?         @db.VarChar(100)
+  is_active        Boolean?        @default(true)
+  created_at       DateTime?       @default(now()) @db.Timestamp(0)
+  doctor_profiles  doctor_profiles @relation(fields: [doctor_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "doctor_workplaces_ibfk_1")
+  clinics          clinics         @relation(fields: [clinic_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "doctor_workplaces_ibfk_2")
+  specialties      specialties     @relation(fields: [specialty_id], references: [id], onUpdate: NoAction, map: "doctor_workplaces_ibfk_3")
+  schedules        schedules[]
+
+  @@unique([doctor_id, clinic_id, specialty_id], map: "uk_doctor_workplace")
+  @@index([clinic_id], map: "clinic_id")
+  @@index([doctor_id, clinic_id], map: "idx_doctor_clinic")
+  @@index([specialty_id], map: "specialty_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model invoices {
+  id             Int                      @id @default(autoincrement())
+  appointment_id Int
+  invoice_type   invoices_invoice_type
+  amount         Decimal                  @db.Decimal(10, 2)
+  payment_method invoices_payment_method? @default(CASH)
+  payment_status invoices_payment_status? @default(UNPAID)
+  transaction_id String?                  @db.VarChar(100)
+  payment_date   DateTime?                @db.DateTime(0)
+  created_at     DateTime?                @default(now()) @db.Timestamp(0)
+  updated_at     DateTime?                @default(now()) @db.Timestamp(0)
+  appointments   appointments             @relation(fields: [appointment_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "invoices_ibfk_1")
+
+  @@index([appointment_id], map: "appointment_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model medical_records {
+  id             Int            @id @default(autoincrement())
+  appointment_id Int            @unique(map: "appointment_id")
+  symptoms       String?        @db.Text
+  diagnosis      String?        @db.Text
+  conclusion     String?        @db.Text
+  note           String?        @db.Text
+  created_at     DateTime?      @default(now()) @db.Timestamp(0)
+  appointments   appointments   @relation(fields: [appointment_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "medical_records_ibfk_1")
+  prescriptions  prescriptions?
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model medicines {
+  id                   Int                    @id @default(autoincrement())
+  name                 String                 @db.VarChar(255)
+  unit                 String?                @db.VarChar(50)
+  price                Decimal?               @db.Decimal(10, 2)
+  description          String?                @db.Text
+  created_at           DateTime?              @default(now()) @db.Timestamp(0)
+  prescription_details prescription_details[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model notifications {
+  id         Int       @id @default(autoincrement())
+  user_id    Int
+  title      String?   @db.VarChar(255)
+  content    String?   @db.Text
+  is_read    Boolean?  @default(false)
+  created_at DateTime? @default(now()) @db.Timestamp(0)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "notifications_ibfk_1")
+
+  @@index([user_id], map: "user_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model patient_profiles {
+  id                Int                     @id @default(autoincrement())
+  account_id        Int
+  full_name         String                  @db.VarChar(150)
+  phone             String?                 @db.VarChar(20)
+  gender            patient_profiles_gender
+  date_of_birth     DateTime                @db.Date
+  relationship      String?                 @default("Self") @db.VarChar(50)
+  blood_type        String?                 @db.VarChar(5)
+  height            Decimal?                @db.Decimal(5, 2)
+  weight            Decimal?                @db.Decimal(5, 2)
+  insurance_number  String?                 @db.VarChar(100)
+  emergency_contact String?                 @db.VarChar(100)
+  created_at        DateTime?               @default(now()) @db.Timestamp(0)
+  updated_at        DateTime?               @default(now()) @db.Timestamp(0)
+  appointments      appointments[]
+  users             users                   @relation(fields: [account_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "patient_profiles_ibfk_1")
+  reviews           reviews[]
+
+  @@index([account_id], map: "account_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model prescription_details {
+  id              Int           @id @default(autoincrement())
+  prescription_id Int
+  medicine_id     Int
+  quantity        Int
+  price_at_sale   Decimal       @db.Decimal(10, 2)
+  dosage          String?       @db.VarChar(255)
+  instruction     String?       @db.Text
+  prescriptions   prescriptions @relation(fields: [prescription_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "prescription_details_ibfk_1")
+  medicines       medicines     @relation(fields: [medicine_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "prescription_details_ibfk_2")
+
+  @@index([medicine_id], map: "medicine_id")
+  @@index([prescription_id], map: "prescription_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model prescriptions {
+  id                   Int                    @id @default(autoincrement())
+  medical_record_id    Int                    @unique(map: "medical_record_id")
+  note                 String?                @db.Text
+  created_at           DateTime?              @default(now()) @db.Timestamp(0)
+  prescription_details prescription_details[]
+  medical_records      medical_records        @relation(fields: [medical_record_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "prescriptions_ibfk_1")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model refresh_tokens {
+  id         Int       @id @default(autoincrement())
+  user_id    Int
+  token      String    @db.Text
+  expires_at DateTime  @db.DateTime(0)
+  created_at DateTime? @default(now()) @db.Timestamp(0)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "refresh_tokens_ibfk_1")
+
+  @@index([user_id], map: "user_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model reviews {
+  id                 Int              @id @default(autoincrement())
+  doctor_id          Int
+  patient_profile_id Int
+  appointment_id     Int              @unique(map: "appointment_id")
+  rating             Int?             @db.TinyInt
+  comment            String?          @db.Text
+  created_at         DateTime?        @default(now()) @db.Timestamp(0)
+  users              users            @relation(fields: [doctor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "reviews_ibfk_1")
+  patient_profiles   patient_profiles @relation(fields: [patient_profile_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "reviews_ibfk_2")
+  appointments       appointments     @relation(fields: [appointment_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "reviews_ibfk_3")
+
+  @@index([doctor_id], map: "doctor_id")
+  @@index([patient_profile_id], map: "patient_profile_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model roles {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique(map: "name") @db.VarChar(50)
+  description String?   @db.VarChar(255)
+  created_at  DateTime? @default(now()) @db.Timestamp(0)
+  users       users[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model schedules {
+  id                  Int               @id @default(autoincrement())
+  doctor_workplace_id Int
+  work_date           DateTime          @db.Date
+  start_time          DateTime          @db.Time(0)
+  end_time            DateTime          @db.Time(0)
+  max_patients        Int?              @default(10)
+  booked_patients     Int?              @default(0)
+  created_at          DateTime?         @default(now()) @db.Timestamp(0)
+  updated_at          DateTime?         @default(now()) @db.Timestamp(0)
+  appointments        appointments[]
+  doctor_workplaces   doctor_workplaces @relation(fields: [doctor_workplace_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "schedules_ibfk_1")
+
+  @@unique([doctor_workplace_id, work_date, start_time], map: "uk_schedule")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model specialties {
+  id                Int                 @id @default(autoincrement())
+  name              String              @db.VarChar(255)
+  description       String?             @db.Text
+  image             String?             @db.Text
+  created_at        DateTime?           @default(now()) @db.Timestamp(0)
+  updated_at        DateTime?           @default(now()) @db.Timestamp(0)
+  doctor_workplaces doctor_workplaces[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model users {
+  id               Int                @id @default(autoincrement())
+  email            String             @unique(map: "email") @db.VarChar(100)
+  password         String             @db.VarChar(255)
+  first_name       String             @db.VarChar(100)
+  last_name        String             @db.VarChar(100)
+  phone            String?            @db.VarChar(20)
+  gender           users_gender?
+  date_of_birth    DateTime?          @db.Date
+  address          String?            @db.VarChar(255)
+  avatar           String?            @db.Text
+  role_id          Int
+  is_active        Boolean?           @default(true)
+  created_at       DateTime?          @default(now()) @db.Timestamp(0)
+  updated_at       DateTime?          @default(now()) @db.Timestamp(0)
+  articles         articles[]
+  doctor_profiles  doctor_profiles?
+  notifications    notifications[]
+  patient_profiles patient_profiles[]
+  refresh_tokens   refresh_tokens[]
+  reviews          reviews[]
+  roles            roles              @relation(fields: [role_id], references: [id], onUpdate: NoAction, map: "users_ibfk_1")
+
+  @@index([email], map: "idx_user_email")
+  @@index([phone], map: "idx_user_phone")
+  @@index([role_id], map: "role_id")
+}
+
+enum invoices_invoice_type {
+  CLINIC_FEE
+  MEDICINE_FEE
+}
+
+enum appointments_status {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum invoices_payment_method {
+  CASH
+  VNPAY
+  MOMO
+  BANK_TRANSFER
+}
+
+enum patient_profiles_gender {
+  Male
+  Female
+  Other
+}
+
+enum invoices_payment_status {
+  UNPAID
+  PAID
+  REFUNDED
+}
+
+enum users_gender {
+  Male
+  Female
+  Other
+}
+
+enum articles_article_type {
+  DOCTOR
+  CLINIC
+  SPECIALTY
+  NEWS
 }

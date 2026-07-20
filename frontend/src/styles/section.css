@@ -1,0 +1,31 @@
+.section {
+  padding: 70px 0;
+}
+
+.section.gray {
+  background: var(--bg-color);
+}
+
+.section-header {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  margin-bottom: 40px;
+}
+
+.section-header h2 {
+  font-size: 34px;
+
+  color: var(--text-color);
+}
+
+.card-grid {
+  display: grid;
+
+  grid-template-columns: repeat(4, 1fr);
+
+  gap: 25px;
+}

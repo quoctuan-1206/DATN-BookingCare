@@ -1,0 +1,41 @@
+.section-header {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  margin-bottom: 35px;
+}
+
+.section-header h2 {
+  font-size: 34px;
+
+  color: #222;
+}
+
+.section-header button,
+.section-header__link {
+  background: #49bce2;
+
+  color: #fff;
+
+  border: none;
+
+  padding: 12px 24px;
+
+  border-radius: 8px;
+
+  cursor: pointer;
+
+  transition: 0.3s;
+
+  text-decoration: none;
+
+  display: inline-block;
+}
+
+.section-header button:hover,
+.section-header__link:hover {
+  background: #2eaad7;
+}

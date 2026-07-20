@@ -1,0 +1,41 @@
+.card {
+  background: white;
+
+  border-radius: var(--radius-lg);
+
+  overflow: hidden;
+
+  box-shadow: var(--shadow-sm);
+
+  transition: var(--transition);
+
+  cursor: pointer;
+}
+
+.card:hover {
+  transform: translateY(-8px);
+
+  box-shadow: var(--shadow-md);
+}
+
+.card img {
+  height: 220px;
+
+  object-fit: cover;
+}
+
+.card-content {
+  padding: 20px;
+}
+
+.card h3 {
+  font-size: 20px;
+
+  margin-bottom: 10px;
+}
+
+.card p {
+  color: var(--gray-color);
+
+  font-size: 15px;
+}

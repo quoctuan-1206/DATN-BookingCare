@@ -1,0 +1,13 @@
+.container {
+  width: var(--container-width);
+
+  margin: auto;
+}
+
+.flex {
+  display: flex;
+}
+
+.grid {
+  display: grid;
+}

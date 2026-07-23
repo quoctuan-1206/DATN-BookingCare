@@ -292,14 +292,11 @@
 
 }
 
-.schedule-item.active{
-
-    background:#ffc419;
-
-    color:#333;
-
-    box-shadow:0 4px 12px rgba(255,196,25,.4);
-
+.schedule-item:disabled,
+.schedule-item.disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
 }
 
 .schedule-info{

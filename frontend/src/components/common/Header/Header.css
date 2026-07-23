@@ -63,6 +63,8 @@
   font-size: 16px;
 }
 .login-btn {
+  display: inline-flex;
+  align-items: center;
   padding: 10px 22px;
 
   border: none;
@@ -78,6 +80,7 @@
   transition: 0.3s;
 
   font-size: 16px;
+  text-decoration: none;
 }
 .login-btn:hover {
   background: #36abd4;

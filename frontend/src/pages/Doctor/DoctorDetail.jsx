@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 
 import Header from "../../components/common/Header/Header";
@@ -9,43 +9,52 @@ import DoctorBiography from "../../components/doctor/DoctorBiography";
 import DoctorSchedule from "../../components/doctor/DoctorSchedule";
 import DoctorReview from "../../components/doctor/DoctorReview";
 import BookingPanel from "../../components/doctor/BookingPanel";
-
-const doctors = [
-    {
-        id: 1,
-        name: "TS.BS Nguyễn Văn A",
-        specialty: "Tim mạch",
-        clinic: "Bệnh viện Chợ Rẫy",
-        image: "https://picsum.photos/300?1",
-        price: "500.000đ",
-    },
-    {
-        id: 2,
-        name: "BS Trần Văn B",
-        specialty: "Da liễu",
-        clinic: "Vinmec",
-        image: "https://picsum.photos/300?2",
-        price: "500.000đ",
-    },
-];
-
-function getEndTime(start) {
-    const [hour] = start.split(":");
-    return `${String(Number(hour) + 1).padStart(2, "0")}:00`;
-}
+import {
+    getClinicById,
+    getDoctorById,
+    getScheduleDateOptions,
+    getSlotsByDoctorAndDate,
+} from "../../data";
 
 function DoctorDetail() {
     const { id } = useParams();
-    const doctor = doctors.find((item) => item.id === Number(id));
+    const doctor = useMemo(() => getDoctorById(id), [id]);
 
-    const [selectedDate, setSelectedDate] = useState("20/07/2026");
+    const dateOptions = useMemo(
+        () => (doctor ? getScheduleDateOptions(doctor.id) : []),
+        [doctor]
+    );
+
+    const [selectedDate, setSelectedDate] = useState("");
     const [selectedSchedule, setSelectedSchedule] = useState(null);
 
-    const handleSelectTime = (start) => {
+    useEffect(() => {
+        if (!doctor) {
+            setSelectedDate("");
+            setSelectedSchedule(null);
+            return;
+        }
+        const options = getScheduleDateOptions(doctor.id);
+        setSelectedDate(options[0]?.value || "");
+        setSelectedSchedule(null);
+    }, [doctor]);
+
+    const slots = useMemo(() => {
+        if (!doctor || !selectedDate) return [];
+        return getSlotsByDoctorAndDate(doctor.id, selectedDate);
+    }, [doctor, selectedDate]);
+
+    const clinic = doctor?.clinic_id
+        ? getClinicById(doctor.clinic_id)
+        : null;
+
+    const handleSelectSlot = (slot) => {
         setSelectedSchedule({
-            date: selectedDate,
-            start,
-            end: getEndTime(start),
+            id: slot.id,
+            date: slot.date_display,
+            work_date: slot.work_date,
+            start: slot.start_time,
+            end: slot.end_time,
         });
     };
 
@@ -85,10 +94,13 @@ function DoctorDetail() {
                     <div className="doctor-booking-flow">
                         <DoctorSchedule
                             doctor={doctor}
+                            clinic={clinic}
+                            dateOptions={dateOptions}
+                            slots={slots}
                             selectedDate={selectedDate}
                             selectedSchedule={selectedSchedule}
                             onDateChange={handleDateChange}
-                            onSelectTime={handleSelectTime}
+                            onSelectSlot={handleSelectSlot}
                         />
 
                         <BookingPanel
@@ -97,7 +109,7 @@ function DoctorDetail() {
                         />
                     </div>
 
-                    <DoctorReview />
+                    <DoctorReview doctorId={doctor.id} />
                 </div>
             </section>
 

@@ -1,62 +1,57 @@
-const schedules = [
-    "08:00",
-    "09:00",
-    "10:00",
-    "11:00",
-    "13:00",
-    "14:00",
-    "15:00",
-    "16:00",
-];
-
-const dateOptions = [
-    { label: "Hôm nay", value: "20/07/2026" },
-    { label: "Ngày mai", value: "21/07/2026" },
-    { label: "20/07/2026", value: "20/07/2026" },
-];
-
 function DoctorSchedule({
     doctor,
+    clinic,
+    dateOptions = [],
+    slots = [],
     selectedDate,
     selectedSchedule,
     onDateChange,
-    onSelectTime,
+    onSelectSlot,
 }) {
     return (
         <section className="doctor-schedule">
             <h2>Lịch khám</h2>
 
-            <select
-                className="schedule-date"
-                value={selectedDate}
-                onChange={(e) => onDateChange(e.target.value)}
-            >
-                {dateOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                        {option.label}
-                    </option>
-                ))}
-            </select>
+            {dateOptions.length > 0 ? (
+                <select
+                    className="schedule-date"
+                    value={selectedDate}
+                    onChange={(e) => onDateChange(e.target.value)}
+                >
+                    {dateOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                            {option.label}
+                        </option>
+                    ))}
+                </select>
+            ) : (
+                <p className="schedule-empty">Chưa có lịch khám.</p>
+            )}
 
             <div className="schedule-list">
-                {schedules.map((time) => (
-                    <button
-                        key={time}
-                        type="button"
-                        className={`schedule-item${
-                            selectedSchedule?.start === time ? " active" : ""
-                        }`}
-                        onClick={() => onSelectTime(time)}
-                    >
-                        {time}
-                    </button>
-                ))}
+                {slots.length === 0 ? (
+                    <p className="schedule-empty">Không có khung giờ trong ngày này.</p>
+                ) : (
+                    slots.map((slot) => (
+                        <button
+                            key={slot.id}
+                            type="button"
+                            className={`schedule-item${
+                                selectedSchedule?.id === slot.id ? " active" : ""
+                            }${!slot.available ? " disabled" : ""}`}
+                            disabled={!slot.available}
+                            onClick={() => onSelectSlot(slot)}
+                        >
+                            {slot.start_time}
+                        </button>
+                    ))
+                )}
             </div>
 
             <div className="schedule-info">
                 <h3>Địa chỉ khám</h3>
                 <p>{doctor.clinic}</p>
-                <p>268 Nguyễn Chí Thanh, Quận 5</p>
+                <p>{clinic?.address || "—"}</p>
 
                 <hr />
 

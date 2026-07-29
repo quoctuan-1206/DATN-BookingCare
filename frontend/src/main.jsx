@@ -16,6 +16,8 @@ import "./styles/listing.css";
 import "./styles/booking.css";
 import "./styles/patient.css";
 import "./styles/auth.css";
+import "./styles/admin.css";
+import "./styles/doctor-dashboard.css";
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>

@@ -25,6 +25,32 @@ import VerifyOTP from "./pages/Auth/VerifyOTP";
 import ResetPassword from "./pages/Auth/ResetPassword";
 import Unauthorized from "./pages/Auth/Unauthorized";
 
+import AdminDashboard from "./pages/Admin/Dashboard";
+import AdminDoctors from "./pages/Admin/Doctors";
+import AdminDoctorCreate from "./pages/Admin/DoctorCreate";
+import AdminClinics from "./pages/Admin/Clinics";
+import AdminClinicCreate from "./pages/Admin/ClinicCreate";
+import AdminSpecialties from "./pages/Admin/Specialties";
+import AdminSpecialtyCreate from "./pages/Admin/SpecialtyCreate";
+import AdminAppointments from "./pages/Admin/Appointments";
+import AdminUsers from "./pages/Admin/Users";
+import AdminArticles from "./pages/Admin/Articles";
+import AdminArticleCreate from "./pages/Admin/ArticleCreate";
+import AdminReviews from "./pages/Admin/Reviews";
+import AdminPayments from "./pages/Admin/Payments";
+import AdminSettings from "./pages/Admin/Settings";
+import AdminProfile from "./pages/Admin/Profile";
+
+import DoctorDashboard from "./pages/Doctor/Dashboard";
+import DoctorSchedule from "./pages/Doctor/Schedule";
+import DoctorAppointments from "./pages/Doctor/Appointments";
+import DoctorAppointmentDetail from "./pages/Doctor/AppointmentDetail";
+import DoctorMedicalRecord from "./pages/Doctor/MedicalRecord";
+import DoctorWorkingSchedule from "./pages/Doctor/WorkingSchedule";
+import DoctorPrescriptions from "./pages/Doctor/Prescriptions";
+import DoctorReviews from "./pages/Doctor/Reviews";
+import DoctorProfile from "./pages/Doctor/Profile";
+
 function App() {
     return (
         <Routes>
@@ -55,6 +81,50 @@ function App() {
             />
             <Route path="/patient/notifications" element={<Notifications />} />
             <Route path="/patient/profile" element={<Profile />} />
+
+            <Route path="/doctor" element={<DoctorDashboard />} />
+            <Route path="/doctor/schedule" element={<DoctorSchedule />} />
+            <Route path="/doctor/appointments" element={<DoctorAppointments />} />
+            <Route
+                path="/doctor/appointments/:id"
+                element={<DoctorAppointmentDetail />}
+            />
+            <Route
+                path="/doctor/medical-records"
+                element={<DoctorMedicalRecord />}
+            />
+            <Route
+                path="/doctor/working-schedule"
+                element={<DoctorWorkingSchedule />}
+            />
+            <Route
+                path="/doctor/prescriptions"
+                element={<DoctorPrescriptions />}
+            />
+            <Route path="/doctor/reviews" element={<DoctorReviews />} />
+            <Route path="/doctor/profile" element={<DoctorProfile />} />
+
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/doctors" element={<AdminDoctors />} />
+            <Route path="/admin/doctors/create" element={<AdminDoctorCreate />} />
+            <Route path="/admin/clinics" element={<AdminClinics />} />
+            <Route path="/admin/clinics/create" element={<AdminClinicCreate />} />
+            <Route path="/admin/specialties" element={<AdminSpecialties />} />
+            <Route
+                path="/admin/specialties/create"
+                element={<AdminSpecialtyCreate />}
+            />
+            <Route path="/admin/appointments" element={<AdminAppointments />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/articles" element={<AdminArticles />} />
+            <Route
+                path="/admin/articles/create"
+                element={<AdminArticleCreate />}
+            />
+            <Route path="/admin/reviews" element={<AdminReviews />} />
+            <Route path="/admin/payments" element={<AdminPayments />} />
+            <Route path="/admin/settings" element={<AdminSettings />} />
+            <Route path="/admin/profile" element={<AdminProfile />} />
 
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />

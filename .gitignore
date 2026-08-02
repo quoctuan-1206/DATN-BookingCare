@@ -24,3 +24,7 @@ frontend/dist
 
 # Coverage
 coverage
+
+# Markdown docs
+*.md
+**/*.md

@@ -23,7 +23,7 @@ const config: runtime.GetPrismaClientConfig = {
       "value": "prisma-client"
     },
     "output": {
-      "value": "D:\\DATN\\backend\\generated\\prisma",
+      "value": "D:\\qteo\\DATN-BookingCare\\backend\\generated\\prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -37,7 +37,7 @@ const config: runtime.GetPrismaClientConfig = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "D:\\DATN\\backend\\prisma\\schema.prisma",
+    "sourceFilePath": "D:\\qteo\\DATN-BookingCare\\backend\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativePath": "../../prisma",

@@ -1,0 +1,60 @@
+services:
+  mysql_db:
+    image: mysql:8.0
+    container_name: booking_care_mysql
+    restart: always
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: booking_care_db
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db.txt:/docker-entrypoint-initdb.d/01_init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: booking_care_backend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      DATABASE_URL: "mysql://root:root@mysql_db:3306/booking_care_db"
+      JWT_SECRET: "super_secret_jwt_key_booking_care"
+      JWT_EXPIRES_IN: "1d"
+      JWT_REFRESH_SECRET: "super_secret_refresh_key_booking_care"
+      JWT_REFRESH_EXPIRES_IN: "7d"
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: booking_care_frontend
+    restart: always
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: "http://localhost:3000/api"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  mysql_data:

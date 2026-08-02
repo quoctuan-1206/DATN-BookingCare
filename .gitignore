@@ -8,6 +8,7 @@ frontend/.env
 
 # Prisma generated
 backend/prisma/generated
+backend/generated
 
 # Logs
 *.log

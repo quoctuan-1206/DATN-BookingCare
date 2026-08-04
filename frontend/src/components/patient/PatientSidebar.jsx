@@ -1,4 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import {
     Bell,
     CalendarDays,
@@ -9,6 +10,7 @@ import {
     Users,
 } from "lucide-react";
 import { db } from "../../data/patientMock";
+import { useAuth } from "../../context/AuthContext";
 
 const menus = [
     { title: "Tổng quan", icon: LayoutDashboard, path: "/patient", end: true },
@@ -25,6 +27,7 @@ const menus = [
 
 function PatientSidebar() {
     const navigate = useNavigate();
+    const { logout } = useAuth();
     const account = db.account;
     const fullName = `${account.last_name} ${account.first_name}`;
 
@@ -58,9 +61,10 @@ function PatientSidebar() {
             <button
                 type="button"
                 className="logout-btn"
-                onClick={() => {
-                    alert("Đăng xuất (fake) — sẽ nối auth sau.");
-                    navigate("/");
+                onClick={async () => {
+                    await logout();
+                    toast.success("Đã đăng xuất");
+                    navigate("/login");
                 }}
             >
                 <LogOut size={18} />

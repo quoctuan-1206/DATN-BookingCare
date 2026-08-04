@@ -1,4 +1,5 @@
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import {
     Menu,
     LayoutDashboard,
@@ -11,8 +12,12 @@ import {
     UserRound,
     LogOut,
 } from "lucide-react";
+import { useAuth } from "../../../context/AuthContext";
 
 function DoctorSidebar({ collapsed, setCollapsed }) {
+    const navigate = useNavigate();
+    const { logout } = useAuth();
+
     const menus = [
         {
             title: "Dashboard",
@@ -95,7 +100,15 @@ function DoctorSidebar({ collapsed, setCollapsed }) {
             </nav>
 
             <div className="doctor-sidebar-bottom">
-                <button type="button" className="doctor-logout-btn">
+                <button
+                    type="button"
+                    className="doctor-logout-btn"
+                    onClick={async () => {
+                        await logout();
+                        toast.success("Đã đăng xuất");
+                        navigate("/login");
+                    }}
+                >
                     <LogOut size={18} />
                     {!collapsed && <span>Đăng xuất</span>}
                 </button>

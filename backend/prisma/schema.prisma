@@ -289,7 +289,7 @@ model users {
   patient_profiles patient_profiles[]
   refresh_tokens   refresh_tokens[]
   reviews          reviews[]
-  roles            roles              @relation(fields: [role_id], references: [id], onUpdate: NoAction, map: "users_ibfk_1")
+  role             roles              @relation(fields: [role_id], references: [id], onUpdate: NoAction, map: "users_ibfk_1")
 
   @@index([email], map: "idx_user_email")
   @@index([phone], map: "idx_user_phone")
@@ -338,4 +338,21 @@ enum articles_article_type {
   CLINIC
   SPECIALTY
   NEWS
+}
+model otp_verifications {
+
+  id         Int      @id @default(autoincrement())
+
+  email      String
+
+  otp        String
+
+  expires_at DateTime
+
+  verified   Boolean  @default(false)
+
+  created_at DateTime @default(now())
+
+  @@index([email])
+
 }

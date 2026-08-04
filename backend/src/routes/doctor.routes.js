@@ -1,21 +1,34 @@
 import { Router } from "express";
 import doctorController from "../controllers/doctor.controller.js";
+import { verifyAccessTokenMiddleware } from "../middlewares/auth.middleware.js";
+import { authorize } from "../middlewares/role.middleware.js";
 
 const router = Router();
 
-// GET /api/doctors - Lấy danh sách bác sĩ
+// Public: danh sách & chi tiết bác sĩ
 router.get("/", doctorController.getAllDoctors);
-
-// GET /api/doctors/:id - Lấy chi tiết 1 bác sĩ
 router.get("/:id", doctorController.getDoctorById);
 
-// POST /api/doctors - Tạo tài khoản & hồ sơ bác sĩ mới
-router.post("/", doctorController.createDoctor);
+// Chỉ Admin: tạo / cập nhật / xóa mềm bác sĩ
+router.post(
+  "/",
+  verifyAccessTokenMiddleware,
+  authorize("Admin"),
+  doctorController.createDoctor,
+);
 
-// PUT /api/doctors/:id - Cập nhật thông tin bác sĩ
-router.put("/:id", doctorController.updateDoctor);
+router.put(
+  "/:id",
+  verifyAccessTokenMiddleware,
+  authorize("Admin"),
+  doctorController.updateDoctor,
+);
 
-// DELETE /api/doctors/:id - Xóa mềm bác sĩ (is_active = false)
-router.delete("/:id", doctorController.deleteDoctor);
+router.delete(
+  "/:id",
+  verifyAccessTokenMiddleware,
+  authorize("Admin"),
+  doctorController.deleteDoctor,
+);
 
 export default router;

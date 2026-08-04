@@ -1,4 +1,5 @@
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import {
     Menu,
     PieChart,
@@ -13,8 +14,11 @@ import {
     Settings,
     LogOut,
 } from "lucide-react";
+import { useAuth } from "../../../context/AuthContext";
 
 function AdminSidebar({ collapsed, setCollapsed }) {
+    const navigate = useNavigate();
+    const { logout } = useAuth();
 
     const menus = [
 
@@ -166,7 +170,15 @@ function AdminSidebar({ collapsed, setCollapsed }) {
 
             <div className="sidebar-bottom">
 
-                <button className="logout-btn">
+                <button
+                    type="button"
+                    className="logout-btn"
+                    onClick={async () => {
+                        await logout();
+                        toast.success("Đã đăng xuất");
+                        navigate("/login");
+                    }}
+                >
 
                     <LogOut size={18} />
 

@@ -2,6 +2,8 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import { BrowserRouter } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
+import { AuthProvider } from "./context/AuthContext";
 import "./styles/variables.css";
 import "./styles/global.css";
 import "./styles/layout.css";
@@ -18,10 +20,14 @@ import "./styles/patient.css";
 import "./styles/auth.css";
 import "./styles/admin.css";
 import "./styles/doctor-dashboard.css";
+
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
-      <App />
+      <AuthProvider>
+        <App />
+        <Toaster position="top-right" />
+      </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>,
 );

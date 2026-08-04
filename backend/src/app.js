@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { ZodError } from "zod";
 import doctorRoutes from "./routes/doctor.routes.js";
+import authRoutes from "./routes/auth.routes.js";
 
 const app = express();
 
@@ -18,6 +19,9 @@ app.get("/", (req, res) => {
   });
 });
 
+// Auth
+app.use("/api/auth", authRoutes);
+
 // Đăng ký router quản lý Bác sĩ
 app.use("/api/doctors", doctorRoutes);
 
@@ -29,7 +33,7 @@ app.use((err, req, res, next) => {
     return res.status(400).json({
       success: false,
       message: "Dữ liệu không hợp lệ",
-      errors: err.errors.map((e) => ({
+      errors: err.issues.map((e) => ({
         field: e.path.join("."),
         message: e.message,
       })),

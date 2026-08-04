@@ -112,9 +112,56 @@ async function seed() {
       },
     });
 
-    // 4. Nạp danh sách bác sĩ (users, doctor_profiles, doctor_workplaces)
-    console.log("Nạp danh sách bác sĩ...");
+    // 4. Nạp 2 tài khoản Admin (cấp seed — Admin sẽ cấp tài khoản Doctor)
+    console.log("Nạp tài khoản Admin...");
     const passwordHash = await bcrypt.hash("123456", 10);
+
+    const adminsData = [
+      {
+        email: "admin@bookingcare.vn",
+        first_name: "System",
+        last_name: "Admin",
+        phone: "0900000001",
+        gender: "Male",
+        address: "TP. Hồ Chí Minh",
+      },
+      {
+        email: "admin2@bookingcare.vn",
+        first_name: "Quản Trị",
+        last_name: "Viên",
+        phone: "0900000002",
+        gender: "Female",
+        address: "Hà Nội",
+      },
+    ];
+
+    for (const admin of adminsData) {
+      const existing = await prisma.users.findUnique({
+        where: { email: admin.email },
+      });
+
+      if (!existing) {
+        await prisma.users.create({
+          data: {
+            email: admin.email,
+            password: passwordHash,
+            first_name: admin.first_name,
+            last_name: admin.last_name,
+            phone: admin.phone,
+            gender: admin.gender,
+            address: admin.address,
+            role_id: 1, // Admin
+            is_active: true,
+          },
+        });
+        console.log(`✅ Đã tạo Admin: ${admin.email}`);
+      } else {
+        console.log(`⏭️  Admin đã tồn tại: ${admin.email}`);
+      }
+    }
+
+    // 5. Nạp danh sách bác sĩ mẫu (users, doctor_profiles, doctor_workplaces)
+    console.log("Nạp danh sách bác sĩ...");
 
     const doctorsData = [
       {

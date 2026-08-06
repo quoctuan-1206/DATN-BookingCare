@@ -81,6 +81,7 @@ async function seed() {
         email: "info@choray.vn",
         description: "Bệnh viện đa khoa trung ương hàng đầu phía Nam.",
         image: "https://picsum.photos/600/400?clinic1",
+        is_active: true,
       },
     });
 
@@ -95,6 +96,7 @@ async function seed() {
         email: "info@bachmai.vn",
         description: "Bệnh viện đa khoa hạng đặc biệt tại Hà Nội.",
         image: "https://picsum.photos/600/400?clinic2",
+        is_active: true,
       },
     });
 
@@ -109,6 +111,7 @@ async function seed() {
         email: "info@umc.edu.vn",
         description: "Bệnh viện trường đại học y khoa uy tín.",
         image: "https://picsum.photos/600/400?clinic3",
+        is_active: true,
       },
     });
 

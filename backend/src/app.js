@@ -4,6 +4,8 @@ import cookieParser from "cookie-parser";
 import { ZodError } from "zod";
 import doctorRoutes from "./routes/doctor.routes.js";
 import authRoutes from "./routes/auth.routes.js";
+import clinicRoutes from "./routes/clinic.routes.js";
+import specialtyRoutes from "./routes/specialty.routes.js";
 
 const app = express();
 
@@ -24,6 +26,12 @@ app.use("/api/auth", authRoutes);
 
 // Đăng ký router quản lý Bác sĩ
 app.use("/api/doctors", doctorRoutes);
+
+// Đăng ký router quản lý Phòng khám
+app.use("/api/clinics", clinicRoutes);
+
+// Đăng ký router quản lý Chuyên khoa
+app.use("/api/specialties", specialtyRoutes);
 
 // Middleware bắt lỗi chung toàn hệ thống
 app.use((err, req, res, next) => {

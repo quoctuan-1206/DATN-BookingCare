@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import toast from "react-hot-toast";
 
 import Header from "../../components/common/Header/Header";
 import Footer from "../../components/common/Footer/Footer";
@@ -7,42 +8,69 @@ import Footer from "../../components/common/Footer/Footer";
 import SpecialtyProfile from "../../components/specialty/SpecialtyProfile";
 import SpecialtyDoctors from "../../components/specialty/SpecialtyDoctors";
 import SpecialtyClinics from "../../components/specialty/SpecialtyClinics";
-import { getSpecialtyDetail } from "../../data";
+import specialtyService from "../../services/specialty.service";
 import doctorService from "../../services/doctor.service";
+import { getApiErrorMessage } from "../../api/axios";
 
 function SpecialtyDetail() {
   const { id } = useParams();
-  const specialty = getSpecialtyDetail(id);
+  const [specialty, setSpecialty] = useState(null);
   const [doctors, setDoctors] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
-    async function loadDoctors() {
+    async function load() {
+      setLoading(true);
       try {
-        const result = await doctorService.getDoctors({
-          specialty_id: Number(id),
-          limit: 50,
-        });
+        const [specialtyData, doctorsResult] = await Promise.all([
+          specialtyService.getSpecialtyById(id),
+          doctorService.getDoctors({ specialty_id: Number(id), limit: 50 }),
+        ]);
+
         if (!cancelled) {
+          setSpecialty(specialtyData);
           setDoctors(
-            result.data.map((d) => ({
+            doctorsResult.data.map((d) => ({
               id: d.id,
               name: d.name,
               hospital: d.clinic,
             })),
           );
         }
-      } catch {
-        if (!cancelled) setDoctors(specialty?.doctors || []);
+      } catch (error) {
+        if (!cancelled) {
+          setSpecialty(null);
+          setDoctors([]);
+          toast.error(
+            getApiErrorMessage(error, "Không tải được chuyên khoa"),
+          );
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     }
 
-    if (id) loadDoctors();
+    load();
     return () => {
       cancelled = true;
     };
-  }, [id, specialty?.doctors]);
+  }, [id]);
+
+  if (loading) {
+    return (
+      <>
+        <Header />
+        <section className="section">
+          <div className="container">
+            <p>Đang tải thông tin chuyên khoa...</p>
+          </div>
+        </section>
+        <Footer />
+      </>
+    );
+  }
 
   if (!specialty) {
     return (
@@ -68,7 +96,7 @@ function SpecialtyDetail() {
         <div className="container">
           <SpecialtyProfile specialty={specialty} />
           <SpecialtyDoctors doctors={doctors} />
-          <SpecialtyClinics clinics={specialty.clinics} />
+          <SpecialtyClinics clinics={specialty.clinics || []} />
         </div>
       </section>
       <Footer />

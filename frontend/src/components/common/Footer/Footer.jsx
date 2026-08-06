@@ -1,13 +1,12 @@
 import "./Footer.css";
 
+import { Link } from "react-router-dom";
 import { Globe, PlayCircle, Mail, Phone, MapPin } from "lucide-react";
 
 function Footer() {
   return (
     <footer className="footer">
       <div className="container footer-container">
-        {/* Logo */}
-
         <div className="footer-column">
           <h2>BookingCare</h2>
 
@@ -17,39 +16,35 @@ function Footer() {
           </p>
         </div>
 
-        {/* Liên kết */}
-
         <div className="footer-column">
           <h3>Liên kết</h3>
 
           <ul>
-            <li>Chuyên khoa</li>
-
-            <li>Bác sĩ</li>
-
-            <li>Phòng khám</li>
-
-            <li>Cẩm nang</li>
+            <li>
+              <Link to="/specialties">Chuyên khoa</Link>
+            </li>
+            <li>
+              <Link to="/doctors">Bác sĩ</Link>
+            </li>
+            <li>
+              <Link to="/clinics">Phòng khám</Link>
+            </li>
+            <li>
+              <Link to="/articles">Bài viết</Link>
+            </li>
           </ul>
         </div>
-
-        {/* Hỗ trợ */}
 
         <div className="footer-column">
           <h3>Hỗ trợ</h3>
 
           <ul>
             <li>Điều khoản sử dụng</li>
-
             <li>Chính sách bảo mật</li>
-
             <li>Hướng dẫn đặt lịch</li>
-
             <li>Liên hệ</li>
           </ul>
         </div>
-
-        {/* Liên hệ */}
 
         <div className="footer-column">
           <h3>Thông tin</h3>
@@ -71,7 +66,6 @@ function Footer() {
 
           <div className="footer-social">
             <Globe />
-
             <PlayCircle />
           </div>
         </div>

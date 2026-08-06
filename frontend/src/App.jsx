@@ -7,6 +7,8 @@ import Clinics from "./pages/Clinic/Clinics";
 import ClinicDetail from "./pages/Clinic/ClinicDetail";
 import Specialties from "./pages/Specialty/Specialties";
 import SpecialtyDetail from "./pages/Specialty/SpecialtyDetail";
+import Articles from "./pages/Article/Articles";
+import ArticleDetail from "./pages/Article/ArticleDetail";
 import Booking from "./pages/Booking/Booking";
 import BookingSuccess from "./pages/Booking/BookingSuccess";
 
@@ -34,8 +36,10 @@ import AdminSpecialties from "./pages/Admin/Specialties";
 import AdminSpecialtyCreate from "./pages/Admin/SpecialtyCreate";
 import AdminAppointments from "./pages/Admin/Appointments";
 import AdminUsers from "./pages/Admin/Users";
+import AdminUserDetail from "./pages/Admin/UserDetail";
 import AdminArticles from "./pages/Admin/Articles";
 import AdminArticleCreate from "./pages/Admin/ArticleCreate";
+import AdminArticleEdit from "./pages/Admin/ArticleEdit";
 import AdminReviews from "./pages/Admin/Reviews";
 import AdminPayments from "./pages/Admin/Payments";
 import AdminSettings from "./pages/Admin/Settings";
@@ -64,6 +68,9 @@ function App() {
 
             <Route path="/specialties" element={<Specialties />} />
             <Route path="/specialties/:id" element={<SpecialtyDetail />} />
+
+            <Route path="/articles" element={<Articles />} />
+            <Route path="/articles/:id" element={<ArticleDetail />} />
 
             <Route path="/booking" element={<Booking />} />
             <Route path="/booking/success" element={<BookingSuccess />} />
@@ -116,10 +123,15 @@ function App() {
             />
             <Route path="/admin/appointments" element={<AdminAppointments />} />
             <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/users/:id" element={<AdminUserDetail />} />
             <Route path="/admin/articles" element={<AdminArticles />} />
             <Route
                 path="/admin/articles/create"
                 element={<AdminArticleCreate />}
+            />
+            <Route
+                path="/admin/articles/:id/edit"
+                element={<AdminArticleEdit />}
             />
             <Route path="/admin/reviews" element={<AdminReviews />} />
             <Route path="/admin/payments" element={<AdminPayments />} />

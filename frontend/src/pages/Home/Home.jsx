@@ -4,8 +4,9 @@ import QuickServices from "../../components/home/QuickServices/QuickServices";
 import SpecialtySection from "../../components/home/SpecialtySection/SpecialtySection";
 import DoctorSection from "../../components/home/DoctorSection/DoctorSection";
 import ClinicSection from "../../components/home/ClinicSection/ClinicSection";
-import HandbookSection from "../../components/home/HandbookSection/HandbookSection";
+import ArticleSection from "../../components/home/ArticleSection/ArticleSection";
 import Footer from "../../components/common/Footer/Footer";
+
 function Home() {
   return (
     <>
@@ -15,7 +16,7 @@ function Home() {
       <SpecialtySection />
       <DoctorSection />
       <ClinicSection />
-      <HandbookSection />
+      <ArticleSection />
       <Footer />
     </>
   );

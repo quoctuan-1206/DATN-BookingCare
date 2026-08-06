@@ -6,6 +6,8 @@ import doctorRoutes from "./routes/doctor.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import clinicRoutes from "./routes/clinic.routes.js";
 import specialtyRoutes from "./routes/specialty.routes.js";
+import userRoutes from "./routes/user.routes.js";
+import articleRoutes from "./routes/article.routes.js";
 
 const app = express();
 
@@ -32,6 +34,12 @@ app.use("/api/clinics", clinicRoutes);
 
 // Đăng ký router quản lý Chuyên khoa
 app.use("/api/specialties", specialtyRoutes);
+
+// Đăng ký router quản lý Người dùng (Admin)
+app.use("/api/users", userRoutes);
+
+// Đăng ký router quản lý Bài viết
+app.use("/api/articles", articleRoutes);
 
 // Middleware bắt lỗi chung toàn hệ thống
 app.use((err, req, res, next) => {

@@ -8,6 +8,11 @@ import clinicRoutes from "./routes/clinic.routes.js";
 import specialtyRoutes from "./routes/specialty.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import articleRoutes from "./routes/article.routes.js";
+import scheduleRoutes from "./routes/schedule.routes.js";
+import patientProfileRoutes from "./routes/patient-profile.routes.js";
+import appointmentRoutes from "./routes/appointment.routes.js";
+import medicalRecordRoutes from "./routes/medical-record.routes.js";
+import notificationRoutes from "./routes/notification.routes.js";
 
 const app = express();
 
@@ -40,6 +45,21 @@ app.use("/api/users", userRoutes);
 
 // Đăng ký router quản lý Bài viết
 app.use("/api/articles", articleRoutes);
+
+// Đăng ký router quản lý Lịch khám
+app.use("/api/schedules", scheduleRoutes);
+
+// Hồ sơ bệnh nhân (Patient)
+app.use("/api/patient-profiles", patientProfileRoutes);
+
+// Lịch hẹn (Appointment)
+app.use("/api/appointments", appointmentRoutes);
+
+// Bệnh án (Medical records)
+app.use("/api/medical-records", medicalRecordRoutes);
+
+// Thông báo
+app.use("/api/notifications", notificationRoutes);
 
 // Middleware bắt lỗi chung toàn hệ thống
 app.use((err, req, res, next) => {

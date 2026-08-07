@@ -77,7 +77,7 @@ class ClinicController {
     }
   }
 
-  // Soft delete phòng khám (DELETE /api/clinics/:id)
+  // Xóa mềm phòng khám (DELETE /api/clinics/:id)
   async deleteClinic(req, res, next) {
     try {
       const { id } = req.params;

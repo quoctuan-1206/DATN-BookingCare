@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
     Bell,
@@ -7,9 +7,26 @@ import {
     UserCircle,
     LogOut,
 } from "lucide-react";
+import notificationService from "../../../services/notification.service";
 
 function DoctorHeader({ title }) {
     const [showMenu, setShowMenu] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    useEffect(() => {
+        let alive = true;
+        notificationService
+            .getUnreadCount()
+            .then((count) => {
+                if (alive) setUnreadCount(count);
+            })
+            .catch(() => {
+                if (alive) setUnreadCount(0);
+            });
+        return () => {
+            alive = false;
+        };
+    }, []);
 
     return (
         <header className="doctor-header">
@@ -24,10 +41,10 @@ function DoctorHeader({ title }) {
                     <input type="text" placeholder="Tìm bệnh nhân, lịch hẹn..." />
                 </div>
 
-                <button type="button" className="doctor-notification">
+                <Link to="/doctor/notifications" className="doctor-notification">
                     <Bell size={16} />
-                    <span>5</span>
-                </button>
+                    {unreadCount > 0 && <span>{unreadCount}</span>}
+                </Link>
 
                 <div className="doctor-user">
                     <button

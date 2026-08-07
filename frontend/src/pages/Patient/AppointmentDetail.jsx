@@ -1,178 +1,124 @@
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import {
-    Calendar,
-    Clock,
-    Hospital,
-    NotebookPen,
-    Pill,
-    Stethoscope,
-    User,
-    Wallet,
-} from "lucide-react";
+import toast from "react-hot-toast";
 import PatientLayout from "../../components/patient/PatientLayout";
-import {
-    STATUS_CLASS,
-    STATUS_LABEL,
-    enrichAppointment,
-    formatMoney,
-    getAppointmentById,
-    getMedicalRecordByAppointmentId,
-} from "../../data/patientMock";
+import appointmentService, {
+  STATUS_LABEL,
+} from "../../services/appointment.service";
+import { getApiErrorMessage } from "../../api/axios";
 
 function AppointmentDetail() {
-    const { id } = useParams();
-    const raw = getAppointmentById(id);
+  const { id } = useParams();
+  const [appointment, setAppointment] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
 
-    if (!raw) {
-        return (
-            <PatientLayout>
-                <div className="empty-state">
-                    <h3>Không tìm thấy lịch hẹn.</h3>
-                    <Link to="/patient/appointments" className="btn btn-outline">
-                        Quay lại danh sách
-                    </Link>
-                </div>
-            </PatientLayout>
-        );
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      try {
+        const data = await appointmentService.getAppointmentById(id);
+        if (!cancelled) setAppointment(data);
+      } catch (error) {
+        if (!cancelled) {
+          setAppointment(null);
+          toast.error(getApiErrorMessage(error, "Không tải được lịch hẹn"));
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
 
-    const appointment = enrichAppointment(raw);
-    const medical = getMedicalRecordByAppointmentId(appointment.id);
-    const statusClass = STATUS_CLASS[appointment.status] || "pending";
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
+  const handleCancel = async () => {
+    const ok = window.confirm("Bạn có chắc muốn hủy lịch hẹn này?");
+    if (!ok) return;
+
+    setCancelling(true);
+    try {
+      const res = await appointmentService.updateStatus(id, "CANCELLED");
+      setAppointment(res.data?.data || null);
+      toast.success("Đã hủy lịch hẹn");
+      const refreshed = await appointmentService.getAppointmentById(id);
+      setAppointment(refreshed);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Không hủy được lịch hẹn"));
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  if (loading) {
     return (
-        <PatientLayout>
-            <div className="page-header">
-                <div>
-                    <h1>Chi tiết lịch hẹn</h1>
-                    <p>
-                        Mã lịch hẹn: <strong>{appointment.booking_code}</strong>
-                    </p>
-                </div>
-
-                <span className={`appointment-status ${statusClass}`}>
-                    {STATUS_LABEL[appointment.status]}
-                </span>
-            </div>
-
-            <div className="detail-card">
-                <h2>Thông tin bác sĩ</h2>
-                <div className="detail-grid">
-                    <p>
-                        <Stethoscope size={16} />
-                        <strong>Bác sĩ</strong>
-                        {appointment.doctor_name}
-                    </p>
-                    <p>
-                        <Hospital size={16} />
-                        <strong>Phòng khám</strong>
-                        {appointment.clinic}
-                    </p>
-                    <p>
-                        <NotebookPen size={16} />
-                        <strong>Chuyên khoa</strong>
-                        {appointment.specialty}
-                    </p>
-                </div>
-            </div>
-
-            <div className="detail-card">
-                <h2>Thông tin lịch khám</h2>
-                <div className="detail-grid">
-                    <p>
-                        <Calendar size={16} />
-                        <strong>Ngày khám</strong>
-                        {appointment.date_display}
-                    </p>
-                    <p>
-                        <Clock size={16} />
-                        <strong>Giờ khám</strong>
-                        {appointment.time}
-                    </p>
-                    <p>
-                        <User size={16} />
-                        <strong>Bệnh nhân</strong>
-                        {appointment.patient_name}
-                    </p>
-                    <p>
-                        <User size={16} />
-                        <strong>Số điện thoại</strong>
-                        {appointment.patient_phone}
-                    </p>
-                </div>
-            </div>
-
-            <div className="detail-card">
-                <h2>Lý do khám</h2>
-                <p className="detail-text">{appointment.reason || "—"}</p>
-            </div>
-
-            <div className="detail-card">
-                <h2>Kết quả khám</h2>
-                {medical ? (
-                    <div className="detail-grid">
-                        <p>
-                            <NotebookPen size={16} />
-                            <strong>Chẩn đoán</strong>
-                            {medical.diagnosis}
-                        </p>
-                        <p>
-                            <Pill size={16} />
-                            <strong>Đơn thuốc</strong>
-                            {medical.has_prescription
-                                ? "Có đơn thuốc"
-                                : "Chưa có"}
-                        </p>
-                        <p>
-                            <NotebookPen size={16} />
-                            <strong>Kết luận</strong>
-                            {medical.conclusion || "—"}
-                        </p>
-                    </div>
-                ) : (
-                    <p className="detail-text">Chưa có kết quả khám.</p>
-                )}
-            </div>
-
-            <div className="detail-card">
-                <h2>Thanh toán</h2>
-                <div className="detail-grid">
-                    <p>
-                        <Wallet size={16} />
-                        <strong>Phí khám</strong>
-                        {formatMoney(appointment.consultation_fee)}
-                    </p>
-                    <p>
-                        <Wallet size={16} />
-                        <strong>Phương thức</strong>
-                        {appointment.payment_method}
-                    </p>
-                    <p>
-                        <Wallet size={16} />
-                        <strong>Trạng thái</strong>
-                        {appointment.payment_status}
-                    </p>
-                </div>
-            </div>
-
-            <div className="detail-actions">
-                <Link to="/patient/appointments" className="btn btn-outline">
-                    Quay lại
-                </Link>
-
-                {(appointment.status === "PENDING" ||
-                    appointment.status === "CONFIRMED") && (
-                    <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={() => alert("Hủy lịch (fake).")}
-                    >
-                        Hủy lịch
-                    </button>
-                )}
-            </div>
-        </PatientLayout>
+      <PatientLayout>
+        <p>Đang tải...</p>
+      </PatientLayout>
     );
+  }
+
+  if (!appointment) {
+    return (
+      <PatientLayout>
+        <h3>Không tìm thấy lịch hẹn.</h3>
+        <Link to="/patient/appointments" className="btn btn-primary">
+          Quay lại
+        </Link>
+      </PatientLayout>
+    );
+  }
+
+  const canCancel =
+    appointment.status === "PENDING" || appointment.status === "CONFIRMED";
+
+  return (
+    <PatientLayout>
+      <div className="page-header">
+        <div>
+          <h1>Chi tiết lịch hẹn</h1>
+          <p>
+            Mã lịch hẹn: <strong>{appointment.booking_code}</strong>
+          </p>
+        </div>
+        <Link to="/patient/appointments" className="btn btn-outline">
+          Quay lại
+        </Link>
+      </div>
+
+      <div className="booking-card" style={{ marginBottom: 16 }}>
+        <h2>Thông tin lịch khám</h2>
+        <p>Trạng thái: {STATUS_LABEL[appointment.status]}</p>
+        <p>Bác sĩ: {appointment.doctor_name}</p>
+        <p>Chuyên khoa: {appointment.specialty}</p>
+        <p>Phòng khám: {appointment.clinic}</p>
+        <p>Ngày: {appointment.date_display}</p>
+        <p>Giờ: {appointment.time}</p>
+        <p>Bệnh nhân: {appointment.patient_name}</p>
+        <p>Lý do: {appointment.reason || "—"}</p>
+        <p>
+          Phí khám:{" "}
+          {Number(appointment.consultation_fee || 0).toLocaleString("vi-VN")} đ
+        </p>
+      </div>
+
+      {canCancel && (
+        <button
+          type="button"
+          className="btn btn-outline"
+          disabled={cancelling}
+          onClick={handleCancel}
+        >
+          {cancelling ? "Đang hủy..." : "Hủy lịch"}
+        </button>
+      )}
+    </PatientLayout>
+  );
 }
 
 export default AppointmentDetail;

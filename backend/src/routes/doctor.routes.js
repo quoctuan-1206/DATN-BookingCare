@@ -9,7 +9,7 @@ const router = Router();
 router.get("/", doctorController.getAllDoctors);
 router.get("/:id", doctorController.getDoctorById);
 
-// Chỉ Admin: tạo / cập nhật / xóa mềm bác sĩ
+// Chỉ Admin: tạo / xóa mềm bác sĩ
 router.post(
   "/",
   verifyAccessTokenMiddleware,
@@ -17,11 +17,34 @@ router.post(
   doctorController.createDoctor,
 );
 
+// Admin cập nhật bất kỳ; Doctor chỉ cập nhật hồ sơ của chính mình
 router.put(
   "/:id",
   verifyAccessTokenMiddleware,
-  authorize("Admin"),
+  authorize("Admin", "Doctor"),
   doctorController.updateDoctor,
+);
+
+// Quản lý nhiều phòng khám (Admin hoặc chính bác sĩ đó)
+router.post(
+  "/:id/workplaces",
+  verifyAccessTokenMiddleware,
+  authorize("Admin", "Doctor"),
+  doctorController.addWorkplace,
+);
+
+router.put(
+  "/:id/workplaces/:workplaceId",
+  verifyAccessTokenMiddleware,
+  authorize("Admin", "Doctor"),
+  doctorController.updateWorkplace,
+);
+
+router.delete(
+  "/:id/workplaces/:workplaceId",
+  verifyAccessTokenMiddleware,
+  authorize("Admin", "Doctor"),
+  doctorController.removeWorkplace,
 );
 
 router.delete(

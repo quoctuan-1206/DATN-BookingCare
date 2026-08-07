@@ -47,10 +47,12 @@ class DoctorService {
       clinic: clinic?.name || null,
       clinic_id: clinic?.id || null,
       room: activeWorkplace?.room || null,
+      clinic_address: clinic?.address || null,
       workplaces: workplaces.map((w) => ({
         id: w.id,
         clinic_id: w.clinic_id,
         clinic_name: w.clinics?.name,
+        clinic_address: w.clinics?.address,
         specialty_id: w.specialty_id,
         specialty_name: w.specialties?.name,
         room: w.room,
@@ -104,11 +106,29 @@ class DoctorService {
       throw error;
     }
 
-    // 2. Mã hóa mật khẩu bằng bcrypt
+    // 2. Kiểm tra phòng khám / chuyên khoa tồn tại
+    const [clinic, specialty] = await Promise.all([
+      doctorRepository.findClinicById(data.clinic_id),
+      doctorRepository.findSpecialtyById(data.specialty_id),
+    ]);
+
+    if (!clinic || clinic.is_active === false) {
+      const error = new Error("Phòng khám không tồn tại hoặc đã bị khóa");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (!specialty || specialty.is_active === false) {
+      const error = new Error("Chuyên khoa không tồn tại hoặc đã bị khóa");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    // 3. Mã hóa mật khẩu bằng bcrypt
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(data.password, saltRounds);
 
-    // 3. Phân tách dữ liệu tài khoản, hồ sơ và nơi làm việc
+    // 4. Phân tách dữ liệu tài khoản, hồ sơ và nơi làm việc
     const userData = {
       email: data.email,
       password: hashedPassword,
@@ -140,9 +160,23 @@ class DoctorService {
     Object.keys(profileData).forEach((key) => profileData[key] === undefined && delete profileData[key]);
     Object.keys(workplaceData).forEach((key) => workplaceData[key] === undefined && delete workplaceData[key]);
 
-    const createdUser = await doctorRepository.create(userData, profileData, workplaceData);
-
-    return this.formatDoctorResponse(createdUser);
+    try {
+      const createdUser = await doctorRepository.create(
+        userData,
+        profileData,
+        workplaceData,
+      );
+      return this.formatDoctorResponse(createdUser);
+    } catch (error) {
+      if (error.code === "P2003") {
+        const err = new Error(
+          "Phòng khám hoặc chuyên khoa không hợp lệ",
+        );
+        err.statusCode = 400;
+        throw err;
+      }
+      throw error;
+    }
   }
 
   // Cập nhật thông tin bác sĩ
@@ -181,6 +215,78 @@ class DoctorService {
     const updatedUser = await doctorRepository.update(id, userData, profileData, workplaceData);
 
     return this.formatDoctorResponse(updatedUser);
+  }
+
+  // Kiểm tra quyền quản lý bác sĩ (Admin hoặc chính bác sĩ đó)
+  assertCanManageDoctor(doctorId, currentUser) {
+    const role = currentUser?.role?.name;
+    if (role === "Admin") return;
+    if (role === "Doctor" && Number(doctorId) === Number(currentUser.id)) return;
+
+    const error = new Error("Bạn không có quyền quản lý bác sĩ này");
+    error.statusCode = 403;
+    throw error;
+  }
+
+  // Thêm nơi làm việc cho bác sĩ
+  async addWorkplace(doctorId, data, currentUser) {
+    this.assertCanManageDoctor(doctorId, currentUser);
+
+    const doctor = await doctorRepository.findById(doctorId);
+    if (!doctor || doctor.is_active === false) {
+      const error = new Error("Không tìm thấy bác sĩ");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const [clinic, specialty] = await Promise.all([
+      doctorRepository.findClinicById(data.clinic_id),
+      doctorRepository.findSpecialtyById(data.specialty_id),
+    ]);
+
+    if (!clinic || clinic.is_active === false) {
+      const error = new Error("Phòng khám không tồn tại hoặc đã bị khóa");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (!specialty || specialty.is_active === false) {
+      const error = new Error("Chuyên khoa không tồn tại hoặc đã bị khóa");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    try {
+      const user = await doctorRepository.addWorkplace(doctorId, data);
+      return this.formatDoctorResponse(user);
+    } catch (error) {
+      if (error.code === "P2002") {
+        const err = new Error(
+          "Bác sĩ đã đăng ký phòng khám + chuyên khoa này",
+        );
+        err.statusCode = 409;
+        throw err;
+      }
+      throw error;
+    }
+  }
+
+  // Cập nhật nơi làm việc của bác sĩ
+  async updateWorkplace(doctorId, workplaceId, data, currentUser) {
+    this.assertCanManageDoctor(doctorId, currentUser);
+    const user = await doctorRepository.updateWorkplace(
+      doctorId,
+      workplaceId,
+      data,
+    );
+    return this.formatDoctorResponse(user);
+  }
+
+  // Xóa (ngưng) nơi làm việc của bác sĩ
+  async removeWorkplace(doctorId, workplaceId, currentUser) {
+    this.assertCanManageDoctor(doctorId, currentUser);
+    const user = await doctorRepository.removeWorkplace(doctorId, workplaceId);
+    return this.formatDoctorResponse(user);
   }
 
   // Xóa mềm bác sĩ

@@ -99,6 +99,7 @@ function Doctors() {
                     <th>Bác sĩ</th>
                     <th>Chuyên khoa</th>
                     <th>Phòng khám</th>
+                    <th>Giá khám</th>
                     <th>Trạng thái</th>
                     <th>Thao tác</th>
                   </tr>
@@ -121,6 +122,12 @@ function Doctors() {
                       </td>
                       <td>{doctor.specialty}</td>
                       <td>{doctor.clinic}</td>
+                      <td>
+                        {Number(doctor.consultation_fee || 0).toLocaleString(
+                          "vi-VN",
+                        )}{" "}
+                        đ
+                      </td>
                       <td>
                         <span
                           className={`status ${

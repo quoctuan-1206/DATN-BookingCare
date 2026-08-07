@@ -49,6 +49,15 @@ export const doctorService = {
   updateDoctor: (id, payload) => axiosClient.put(`/doctors/${id}`, payload),
 
   deleteDoctor: (id) => axiosClient.delete(`/doctors/${id}`),
+
+  addWorkplace: (doctorId, payload) =>
+    axiosClient.post(`/doctors/${doctorId}/workplaces`, payload),
+
+  updateWorkplace: (doctorId, workplaceId, payload) =>
+    axiosClient.put(`/doctors/${doctorId}/workplaces/${workplaceId}`, payload),
+
+  removeWorkplace: (doctorId, workplaceId) =>
+    axiosClient.delete(`/doctors/${doctorId}/workplaces/${workplaceId}`),
 };
 
 export default doctorService;

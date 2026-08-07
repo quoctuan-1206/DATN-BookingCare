@@ -9,6 +9,7 @@ const authorSelect = {
 };
 
 class ArticleRepository {
+  // Lấy danh sách bài viết kèm lọc và phân trang
   async findAll({
     search,
     article_type,
@@ -59,6 +60,7 @@ class ArticleRepository {
     return { total, articles, page, limit };
   }
 
+  // Lấy chi tiết 1 bài viết theo ID
   async findById(id) {
     return prisma.articles.findFirst({
       where: { id: Number(id) },
@@ -68,6 +70,7 @@ class ArticleRepository {
     });
   }
 
+  // Tìm bài viết theo slug
   async findBySlug(slug) {
     return prisma.articles.findFirst({
       where: { slug },
@@ -77,6 +80,7 @@ class ArticleRepository {
     });
   }
 
+  // Tạo bài viết mới
   async create(data) {
     return prisma.articles.create({
       data,
@@ -86,6 +90,7 @@ class ArticleRepository {
     });
   }
 
+  // Cập nhật bài viết
   async update(id, data) {
     return prisma.articles.update({
       where: { id: Number(id) },
@@ -99,6 +104,7 @@ class ArticleRepository {
     });
   }
 
+  // Soft delete bài viết (is_active = false)
   async softDelete(id) {
     return prisma.articles.update({
       where: { id: Number(id) },

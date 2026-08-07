@@ -11,6 +11,7 @@ import {
     Newspaper,
     Star,
     Banknote,
+    Bell,
     Settings,
     LogOut,
 } from "lucide-react";
@@ -74,6 +75,12 @@ function AdminSidebar({ collapsed, setCollapsed }) {
             title: "Thanh toán",
             path: "/admin/payments",
             icon: <Banknote size={18} />,
+        },
+
+        {
+            title: "Thông báo",
+            path: "/admin/notifications",
+            icon: <Bell size={18} />,
         },
 
         {

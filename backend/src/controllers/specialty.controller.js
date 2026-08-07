@@ -81,7 +81,7 @@ class SpecialtyController {
     }
   }
 
-  // Soft delete chuyên khoa (DELETE /api/specialties/:id)
+  // Xóa mềm chuyên khoa (DELETE /api/specialties/:id)
   async deleteSpecialty(req, res, next) {
     try {
       const { id } = req.params;

@@ -10,6 +10,7 @@ import {
     Pill,
     Star,
     UserRound,
+    Bell,
     LogOut,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
@@ -53,6 +54,11 @@ function DoctorSidebar({ collapsed, setCollapsed }) {
             title: "Đánh giá",
             path: "/doctor/reviews",
             icon: <Star size={18} />,
+        },
+        {
+            title: "Thông báo",
+            path: "/doctor/notifications",
+            icon: <Bell size={18} />,
         },
         {
             title: "Hồ sơ",

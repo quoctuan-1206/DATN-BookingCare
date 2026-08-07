@@ -12,7 +12,7 @@ const router = Router();
 router.get("/", optionalAuth, articleController.getAllArticles);
 router.get("/:id", optionalAuth, articleController.getArticleById);
 
-// Chỉ Admin
+// Chỉ Admin: tạo / cập nhật / xóa bài viết
 router.post(
   "/",
   verifyAccessTokenMiddleware,

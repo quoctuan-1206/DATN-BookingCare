@@ -133,6 +133,18 @@ class DoctorRepository {
     });
   }
 
+  async findClinicById(id) {
+    return prisma.clinics.findFirst({
+      where: { id: Number(id) },
+    });
+  }
+
+  async findSpecialtyById(id) {
+    return prisma.specialties.findFirst({
+      where: { id: Number(id) },
+    });
+  }
+
   // Tạo mới tài khoản và hồ sơ bác sĩ
   async create(userData, profileData, workplaceData) {
     return prisma.$transaction(async (tx) => {
@@ -216,6 +228,9 @@ class DoctorRepository {
           update: {
             room: workplaceData.room,
             is_active: true,
+            ...(profileData.consultation_fee !== undefined
+              ? { consultation_fee: profileData.consultation_fee }
+              : {}),
           },
           create: {
             doctor_id: doctorId,
@@ -230,6 +245,125 @@ class DoctorRepository {
 
       return this.findById(doctorId);
     });
+  }
+
+  async findWorkplaceById(workplaceId) {
+    return prisma.doctor_workplaces.findFirst({
+      where: { id: Number(workplaceId) },
+      include: {
+        clinics: true,
+        specialties: true,
+      },
+    });
+  }
+
+  async findWorkplaceByUnique(doctorId, clinicId, specialtyId) {
+    return prisma.doctor_workplaces.findFirst({
+      where: {
+        doctor_id: Number(doctorId),
+        clinic_id: Number(clinicId),
+        specialty_id: Number(specialtyId),
+      },
+    });
+  }
+
+  // Thêm / kích hoạt lại nơi làm việc
+  async addWorkplace(doctorId, data) {
+    const existing = await this.findWorkplaceByUnique(
+      doctorId,
+      data.clinic_id,
+      data.specialty_id,
+    );
+
+    if (existing) {
+      if (existing.is_active !== false) {
+        const error = new Error(
+          "Bác sĩ đã đăng ký phòng khám + chuyên khoa này",
+        );
+        error.statusCode = 409;
+        throw error;
+      }
+
+      await prisma.doctor_workplaces.update({
+        where: { id: existing.id },
+        data: {
+          is_active: true,
+          room: data.room ?? existing.room,
+          consultation_fee:
+            data.consultation_fee ?? existing.consultation_fee ?? 0,
+        },
+      });
+    } else {
+      await prisma.doctor_workplaces.create({
+        data: {
+          doctor_id: Number(doctorId),
+          clinic_id: Number(data.clinic_id),
+          specialty_id: Number(data.specialty_id),
+          room: data.room || null,
+          consultation_fee: data.consultation_fee ?? 0,
+          is_active: true,
+        },
+      });
+    }
+
+    return this.findById(doctorId);
+  }
+
+  // Cập nhật 1 nơi làm việc
+  async updateWorkplace(doctorId, workplaceId, data) {
+    const workplace = await this.findWorkplaceById(workplaceId);
+
+    if (!workplace || workplace.doctor_id !== Number(doctorId)) {
+      const error = new Error("Không tìm thấy nơi làm việc");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    await prisma.doctor_workplaces.update({
+      where: { id: Number(workplaceId) },
+      data: {
+        ...(data.room !== undefined ? { room: data.room } : {}),
+        ...(data.consultation_fee !== undefined
+          ? { consultation_fee: data.consultation_fee }
+          : {}),
+        ...(data.position !== undefined ? { position: data.position } : {}),
+      },
+    });
+
+    return this.findById(doctorId);
+  }
+
+  // Ngưng nơi làm việc (soft)
+  async removeWorkplace(doctorId, workplaceId) {
+    const workplace = await this.findWorkplaceById(workplaceId);
+
+    if (!workplace || workplace.doctor_id !== Number(doctorId)) {
+      const error = new Error("Không tìm thấy nơi làm việc");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const activeCount = await prisma.doctor_workplaces.count({
+      where: {
+        doctor_id: Number(doctorId),
+        is_active: true,
+      },
+    });
+
+    if (activeCount <= 1) {
+      const error = new Error(
+        "Phải giữ ít nhất 1 phòng khám đang hoạt động",
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
+    await prisma.doctor_workplaces.update({
+      where: { id: Number(workplaceId) },
+      data: { is_active: false },
+    });
+
+    return this.findById(doctorId);
   }
 
   // Xóa mềm bác sĩ (chuyển is_active = false)

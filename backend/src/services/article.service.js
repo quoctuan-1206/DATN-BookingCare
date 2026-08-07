@@ -7,6 +7,7 @@ const TYPE_LABELS = {
   NEWS: "Tin tức",
 };
 
+// Chuyển tiêu đề thành slug URL (không dấu)
 function slugify(text) {
   return String(text || "")
     .normalize("NFD")
@@ -21,6 +22,7 @@ function slugify(text) {
 }
 
 class ArticleService {
+  // Chuẩn hóa định dạng dữ liệu bài viết trả về cho API
   formatArticleResponse(article) {
     if (!article) return null;
 
@@ -56,6 +58,7 @@ class ArticleService {
     };
   }
 
+  // Validate id là số nguyên dương
   parseId(id) {
     const articleId = Number(id);
     if (!Number.isInteger(articleId) || articleId <= 0) {
@@ -66,6 +69,7 @@ class ArticleService {
     return articleId;
   }
 
+  // Đảm bảo slug là duy nhất (thêm hậu tố nếu trùng)
   async ensureUniqueSlug(baseSlug, excludeId = null) {
     let slug = baseSlug || `bai-viet-${Date.now()}`;
     let suffix = 0;
@@ -80,6 +84,7 @@ class ArticleService {
     }
   }
 
+  // Lấy danh sách bài viết
   async getAllArticles(queryParams, { isAdmin = false } = {}) {
     const params = { ...queryParams };
 
@@ -99,6 +104,7 @@ class ArticleService {
     };
   }
 
+  // Lấy chi tiết bài viết theo ID
   async getArticleById(id, { isAdmin = false } = {}) {
     const articleId = this.parseId(id);
     const article = await articleRepository.findById(articleId);
@@ -118,6 +124,7 @@ class ArticleService {
     return this.formatArticleResponse(article);
   }
 
+  // Tạo bài viết mới
   async createArticle(data, authorId) {
     const content =
       data.content_html ||
@@ -146,6 +153,7 @@ class ArticleService {
     return this.formatArticleResponse(article);
   }
 
+  // Cập nhật bài viết
   async updateArticle(id, data) {
     const articleId = this.parseId(id);
     const existing = await articleRepository.findById(articleId);
@@ -190,6 +198,7 @@ class ArticleService {
     return this.formatArticleResponse(article);
   }
 
+  // Soft delete bài viết
   async deleteArticle(id) {
     const articleId = this.parseId(id);
     const existing = await articleRepository.findById(articleId);

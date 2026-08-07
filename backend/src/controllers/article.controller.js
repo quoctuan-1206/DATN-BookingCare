@@ -6,7 +6,7 @@ import {
 } from "../validators/article.validator.js";
 
 class ArticleController {
-  // GET /api/articles — public: chỉ bài đã đăng
+  // Lấy danh sách bài viết — public chỉ bài đã đăng; Admin xem cả nháp (GET /api/articles)
   async getAllArticles(req, res, next) {
     try {
       const validatedQuery = queryArticleSchema.parse(req.query);
@@ -31,7 +31,7 @@ class ArticleController {
     }
   }
 
-  // GET /api/articles/:id
+  // Lấy chi tiết bài viết (GET /api/articles/:id)
   async getArticleById(req, res, next) {
     try {
       const { id } = req.params;
@@ -48,7 +48,7 @@ class ArticleController {
     }
   }
 
-  // POST /api/articles
+  // Tạo bài viết / lưu nháp (POST /api/articles)
   async createArticle(req, res, next) {
     try {
       const validatedData = createArticleSchema.parse(req.body);
@@ -69,7 +69,7 @@ class ArticleController {
     }
   }
 
-  // PUT /api/articles/:id
+  // Cập nhật bài viết (PUT /api/articles/:id)
   async updateArticle(req, res, next) {
     try {
       const { id } = req.params;
@@ -86,7 +86,7 @@ class ArticleController {
     }
   }
 
-  // DELETE /api/articles/:id
+  // Xóa bài viết (DELETE /api/articles/:id)
   async deleteArticle(req, res, next) {
     try {
       const { id } = req.params;

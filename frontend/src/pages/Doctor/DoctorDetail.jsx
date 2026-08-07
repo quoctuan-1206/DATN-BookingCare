@@ -11,31 +11,43 @@ import DoctorSchedule from "../../components/doctor/DoctorSchedule";
 import DoctorReview from "../../components/doctor/DoctorReview";
 import BookingPanel from "../../components/doctor/BookingPanel";
 import doctorService from "../../services/doctor.service";
+import scheduleService from "../../services/schedule.service";
 import { getApiErrorMessage } from "../../api/axios";
-import {
-  getClinicById,
-  getScheduleDateOptions,
-  getSlotsByDoctorAndDate,
-} from "../../data";
 
 function DoctorDetail() {
   const { id } = useParams();
   const [doctor, setDoctor] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [dateOptions, setDateOptions] = useState([]);
+  const [schedulesByDate, setSchedulesByDate] = useState({});
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedSchedule, setSelectedSchedule] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
 
-    async function loadDoctor() {
+    async function load() {
       setLoading(true);
       try {
-        const data = await doctorService.getDoctorById(id);
-        if (!cancelled) setDoctor(data);
+        const [doctorData, scheduleMap] = await Promise.all([
+          doctorService.getDoctorById(id),
+          scheduleService.getDoctorScheduleMap(id, {
+            from_date: new Date().toISOString().slice(0, 10),
+          }),
+        ]);
+
+        if (cancelled) return;
+
+        setDoctor(doctorData);
+        setDateOptions(scheduleMap.dateOptions);
+        setSchedulesByDate(scheduleMap.byDate);
+        setSelectedDate(scheduleMap.dateOptions[0]?.value || "");
+        setSelectedSchedule(null);
       } catch (error) {
         if (!cancelled) {
           setDoctor(null);
+          setDateOptions([]);
+          setSchedulesByDate({});
           toast.error(getApiErrorMessage(error, "Không tải được bác sĩ"));
         }
       } finally {
@@ -43,34 +55,24 @@ function DoctorDetail() {
       }
     }
 
-    loadDoctor();
+    load();
     return () => {
       cancelled = true;
     };
   }, [id]);
 
-  const dateOptions = useMemo(
-    () => (doctor ? getScheduleDateOptions(doctor.id) : []),
-    [doctor],
-  );
-
-  useEffect(() => {
-    if (!doctor) {
-      setSelectedDate("");
-      setSelectedSchedule(null);
-      return;
-    }
-    const options = getScheduleDateOptions(doctor.id);
-    setSelectedDate(options[0]?.value || "");
-    setSelectedSchedule(null);
-  }, [doctor]);
-
   const slots = useMemo(() => {
-    if (!doctor || !selectedDate) return [];
-    return getSlotsByDoctorAndDate(doctor.id, selectedDate);
-  }, [doctor, selectedDate]);
+    if (!selectedDate) return [];
+    return schedulesByDate[selectedDate] || [];
+  }, [schedulesByDate, selectedDate]);
 
-  const clinic = doctor?.clinic_id ? getClinicById(doctor.clinic_id) : null;
+  const clinic = doctor
+    ? {
+        id: doctor.clinic_id,
+        name: doctor.clinic,
+        address: doctor.clinic_address || "—",
+      }
+    : null;
 
   const handleSelectSlot = (slot) => {
     setSelectedSchedule({
@@ -118,18 +120,25 @@ function DoctorDetail() {
     );
   }
 
+  const doctorView = {
+    ...doctor,
+    price:
+      doctor.price ||
+      `${Number(doctor.consultation_fee || 0).toLocaleString("vi-VN")} đ`,
+  };
+
   return (
     <>
       <Header />
 
       <section className="section">
         <div className="container doctor-detail">
-          <DoctorProfile doctor={doctor} />
-          <DoctorBiography doctor={doctor} />
+          <DoctorProfile doctor={doctorView} />
+          <DoctorBiography doctor={doctorView} />
 
           <div className="doctor-booking-flow">
             <DoctorSchedule
-              doctor={doctor}
+              doctor={doctorView}
               clinic={clinic}
               dateOptions={dateOptions}
               slots={slots}
@@ -140,7 +149,7 @@ function DoctorDetail() {
             />
 
             <BookingPanel
-              doctor={doctor}
+              doctor={doctorView}
               selectedSchedule={selectedSchedule}
             />
           </div>

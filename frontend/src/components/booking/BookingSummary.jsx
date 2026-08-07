@@ -17,7 +17,7 @@ function BookingSummary({ doctor, schedule, patient, embedded = false }) {
             <div className="booking-summary">
                 <div className="summary-row">
                     <span>Bệnh nhân</span>
-                    <strong>{patient.fullName}</strong>
+                    <strong>{patient?.fullName || patient?.full_name || "—"}</strong>
                 </div>
 
                 <div className="summary-row">

@@ -34,6 +34,7 @@ class UserService {
     };
   }
 
+  // Validate id là số nguyên dương
   parseId(id) {
     const userId = Number(id);
     if (!Number.isInteger(userId) || userId <= 0) {

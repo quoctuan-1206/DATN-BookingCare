@@ -1,5 +1,5 @@
+// Middleware phân quyền theo tên role (Admin, Doctor, Patient, ...)
 export function authorize(...allowedRoles) {
-  // Middleware phân quyền theo tên role (Admin, Doctor, Patient, ...)
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({

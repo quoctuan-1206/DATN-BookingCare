@@ -17,6 +17,7 @@ import PatientProfiles from "./pages/Patient/PatientProfiles";
 import Appointments from "./pages/Patient/Appointments";
 import AppointmentDetail from "./pages/Patient/AppointmentDetail";
 import MedicalRecords from "./pages/Patient/MedicalRecords";
+import MedicalRecordDetail from "./pages/Patient/MedicalRecordDetail";
 import Notifications from "./pages/Patient/Notifications";
 import Profile from "./pages/Patient/Profile";
 
@@ -44,6 +45,7 @@ import AdminReviews from "./pages/Admin/Reviews";
 import AdminPayments from "./pages/Admin/Payments";
 import AdminSettings from "./pages/Admin/Settings";
 import AdminProfile from "./pages/Admin/Profile";
+import AdminNotifications from "./pages/Admin/Notifications";
 
 import DoctorDashboard from "./pages/Doctor/Dashboard";
 import DoctorSchedule from "./pages/Doctor/Schedule";
@@ -54,6 +56,7 @@ import DoctorWorkingSchedule from "./pages/Doctor/WorkingSchedule";
 import DoctorPrescriptions from "./pages/Doctor/Prescriptions";
 import DoctorReviews from "./pages/Doctor/Reviews";
 import DoctorProfile from "./pages/Doctor/Profile";
+import DoctorNotifications from "./pages/Doctor/Notifications";
 
 function App() {
     return (
@@ -86,6 +89,10 @@ function App() {
                 path="/patient/medical-records"
                 element={<MedicalRecords />}
             />
+            <Route
+                path="/patient/medical-records/:id"
+                element={<MedicalRecordDetail />}
+            />
             <Route path="/patient/notifications" element={<Notifications />} />
             <Route path="/patient/profile" element={<Profile />} />
 
@@ -109,6 +116,7 @@ function App() {
                 element={<DoctorPrescriptions />}
             />
             <Route path="/doctor/reviews" element={<DoctorReviews />} />
+            <Route path="/doctor/notifications" element={<DoctorNotifications />} />
             <Route path="/doctor/profile" element={<DoctorProfile />} />
 
             <Route path="/admin" element={<AdminDashboard />} />
@@ -135,6 +143,7 @@ function App() {
             />
             <Route path="/admin/reviews" element={<AdminReviews />} />
             <Route path="/admin/payments" element={<AdminPayments />} />
+            <Route path="/admin/notifications" element={<AdminNotifications />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="/admin/profile" element={<AdminProfile />} />
 

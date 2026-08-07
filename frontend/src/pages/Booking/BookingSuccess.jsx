@@ -25,9 +25,9 @@ function BookingSuccess() {
                         <h1>Đặt lịch thành công</h1>
 
                         <p className="success-message">
-                            Lịch khám đã được tạo (dữ liệu giả — chưa lưu
-                            server). Vui lòng đến đúng giờ hoặc theo dõi trạng
-                            thái lịch hẹn trong tài khoản.
+                            Lịch khám đã được tạo thành công. Vui lòng đến đúng
+                            giờ hoặc theo dõi trạng thái lịch hẹn trong tài
+                            khoản.
                         </p>
 
                         <div className="success-info">

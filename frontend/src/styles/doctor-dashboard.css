@@ -538,11 +538,19 @@
 }
 
 .doctor-week-day {
-    text-align: center;
-    padding: 12px 6px;
-    border-radius: 14px;
-    background: #f8fbfa;
     border: 1px solid transparent;
+    background: #f8fbfa;
+    border-radius: 14px;
+    padding: 12px 6px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.2s;
+    font: inherit;
+    color: inherit;
+}
+
+.doctor-week-day:hover {
+    border-color: #99f6e4;
 }
 
 .doctor-week-day.active {

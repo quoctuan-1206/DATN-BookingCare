@@ -143,6 +143,18 @@ class UserRepository {
       return user;
     });
   }
+
+  // Lấy danh sách ID người dùng theo tên vai trò
+  async findIdsByRole(roleName) {
+    const users = await prisma.users.findMany({
+      where: {
+        is_active: true,
+        role: { name: roleName },
+      },
+      select: { id: true },
+    });
+    return users.map((u) => u.id);
+  }
 }
 
 export default new UserRepository();

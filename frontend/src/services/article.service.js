@@ -1,4 +1,5 @@
 import axiosClient from "../api/axios";
+import { resolveMediaUrl } from "../utils/media";
 
 const DEFAULT_IMAGE = "https://picsum.photos/600/400?article";
 
@@ -7,7 +8,7 @@ export function mapArticleFromApi(article) {
 
   return {
     ...article,
-    image: article.image || DEFAULT_IMAGE,
+    image: resolveMediaUrl(article.image) || DEFAULT_IMAGE,
     content: article.content || article.content_html || "",
     author: article.author || "Không rõ",
     category: article.article_type_label || article.article_type,

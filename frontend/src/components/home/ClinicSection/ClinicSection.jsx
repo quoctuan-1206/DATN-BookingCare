@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import Card from "../../common/Card/Card";
 import SectionHeader from "../../common/SectionHeader/SectionHeader";
+import HomeCardSlider from "../HomeCardSlider/HomeCardSlider";
 import clinicService from "../../../services/clinic.service";
 
 function ClinicSection() {
@@ -12,8 +12,8 @@ function ClinicSection() {
 
     async function load() {
       try {
-        const result = await clinicService.getClinics({ page: 1, limit: 4 });
-        if (!cancelled) setClinics(result.data.slice(0, 4));
+        const result = await clinicService.getClinics({ page: 1, limit: 12 });
+        if (!cancelled) setClinics(result.data || []);
       } catch {
         if (!cancelled) setClinics([]);
       }
@@ -27,24 +27,22 @@ function ClinicSection() {
 
   return (
     <section className="section gray">
-      <div className="container">
+      <div className="home-section">
         <SectionHeader title="Phòng khám nổi bật" viewMoreLink="/clinics" />
 
-        <div className="card-grid">
+        <HomeCardSlider>
           {clinics.map((clinic) => (
             <Link
               key={clinic.id}
               to={`/clinics/${clinic.id}`}
-              style={{ textDecoration: "none", color: "inherit" }}
+              className="card home-card"
             >
-              <Card
-                image={clinic.image}
-                title={clinic.name}
-                subtitle={clinic.address}
-              />
+              <img src={clinic.image} alt={clinic.name} />
+              <h3>{clinic.name}</h3>
+              {clinic.address && <p>{clinic.address}</p>}
             </Link>
           ))}
-        </div>
+        </HomeCardSlider>
       </div>
     </section>
   );

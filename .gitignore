@@ -23,6 +23,10 @@ Thumbs.db
 # Build
 frontend/dist
 
+# Uploaded images
+backend/uploads/*
+!backend/uploads/.gitkeep
+
 # Coverage
 coverage
 

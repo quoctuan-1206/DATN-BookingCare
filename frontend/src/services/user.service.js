@@ -1,4 +1,5 @@
 import axiosClient from "../api/axios";
+import { resolveMediaUrl } from "../utils/media";
 
 const DEFAULT_AVATAR = "https://i.pravatar.cc/150";
 
@@ -10,7 +11,7 @@ export function mapUserFromApi(user) {
   return {
     ...user,
     name: user.full_name || `${user.last_name || ""} ${user.first_name || ""}`.trim(),
-    avatar: user.avatar || `${DEFAULT_AVATAR}?u=${user.id}`,
+    avatar: resolveMediaUrl(user.avatar) || `${DEFAULT_AVATAR}?u=${user.id}`,
     role,
     status: user.is_active !== false ? "active" : "inactive",
   };

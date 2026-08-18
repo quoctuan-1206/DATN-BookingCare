@@ -1,32 +1,40 @@
 import { Link } from "react-router-dom";
+import { Stethoscope, Hospital, ChevronRight } from "lucide-react";
 
 function SpecialtyCard({ specialty }) {
-    return (
-        <article className="listing-card">
-            <div className="listing-card__media">
-                <img
-                    src={specialty.image}
-                    alt={specialty.name}
-                />
-                <span className="listing-card__badge">Chuyên khoa</span>
-            </div>
+  const desc = specialty.description || "";
+  const shortDesc = desc.length > 80 ? `${desc.slice(0, 80).trim()}...` : desc;
 
-            <div className="listing-card__body">
-                <h3 className="listing-card__title">{specialty.name}</h3>
+  return (
+    <Link to={`/specialties/${specialty.id}`} className="specialty-card">
+      <div className="specialty-card-image">
+        <img src={specialty.image} alt={specialty.name} />
+      </div>
 
-                <p className="listing-card__desc">{specialty.description}</p>
+      <div className="specialty-card-body">
+        <h3 className="specialty-card-title">{specialty.name}</h3>
 
-                <div className="listing-card__footer">
-                    <Link
-                        to={`/specialties/${specialty.id}`}
-                        className="btn btn-primary"
-                    >
-                        Xem chi tiết
-                    </Link>
-                </div>
-            </div>
-        </article>
-    );
+        {shortDesc && (
+          <p className="specialty-card-desc">{shortDesc}</p>
+        )}
+
+        <div className="specialty-card-stats">
+          <span className="specialty-card-stat">
+            <Stethoscope size={14} />
+            {specialty.doctor_count || 0} bác sĩ
+          </span>
+          <span className="specialty-card-stat">
+            <Hospital size={14} />
+            {specialty.clinic_count || 0} cơ sở y tế
+          </span>
+        </div>
+
+        <span className="specialty-card-link">
+          Xem chuyên khoa <ChevronRight size={14} />
+        </span>
+      </div>
+    </Link>
+  );
 }
 
 export default SpecialtyCard;

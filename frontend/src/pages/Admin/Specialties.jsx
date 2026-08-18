@@ -129,6 +129,12 @@ function Specialties() {
                         >
                           Xem
                         </Link>
+                        <Link
+                          to={`/admin/specialties/${item.id}/edit`}
+                          className="admin-btn admin-btn-primary"
+                        >
+                          Sửa
+                        </Link>
                         <button
                           type="button"
                           className="admin-btn admin-btn-danger"

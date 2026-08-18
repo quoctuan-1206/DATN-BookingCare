@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import AdminLayout from "../../components/admin/layout/AdminLayout";
 import articleService from "../../services/article.service";
+import ImageUploadField from "../../components/admin/ImageUploadField";
 import { getApiErrorMessage } from "../../api/axios";
 
 const emptyForm = {
@@ -146,18 +147,14 @@ function ArticleCreate() {
               />
             </div>
 
-            <div className="admin-form-group">
-              <label htmlFor="image">Ảnh (URL)</label>
-              <input
-                id="image"
-                name="image"
-                className="admin-input"
-                type="text"
-                placeholder="https://..."
-                value={formData.image}
-                onChange={handleChange}
-              />
-            </div>
+            <ImageUploadField
+              label="Ảnh"
+              inputId="image"
+              value={formData.image}
+              onChange={(url) =>
+                setFormData((prev) => ({ ...prev, image: url }))
+              }
+            />
 
             <div className="admin-form-group">
               <label htmlFor="content">Nội dung</label>

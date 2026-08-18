@@ -1,52 +1,37 @@
-import { HeartPulse, Hospital, CalendarCheck, Stethoscope } from "lucide-react";
+import { Link } from "react-router-dom";
+import { HeartPulse, Hospital, Stethoscope } from "lucide-react";
 
 const services = [
   {
     id: 1,
     icon: <HeartPulse size={40} />,
     title: "Chuyên khoa",
+    to: "/specialties",
   },
   {
     id: 2,
     icon: <Stethoscope size={40} />,
     title: "Bác sĩ",
+    to: "/doctors",
   },
   {
     id: 3,
     icon: <Hospital size={40} />,
     title: "Phòng khám",
-  },
-  {
-    id: 4,
-    icon: <CalendarCheck size={40} />,
-    title: "Đặt lịch",
+    to: "/clinics",
   },
 ];
 
 function QuickServices() {
   return (
     <section className="section">
-      <div className="container">
-        <div className="card-grid">
+      <div className="quick-services-section">
+        <div className="quick-services-grid">
           {services.map((item) => (
-            <div
-              key={item.id}
-              className="card"
-              style={{
-                textAlign: "center",
-                padding: "30px",
-              }}
-            >
+            <Link key={item.id} to={item.to} className="card quick-service-card">
               {item.icon}
-
-              <h3
-                style={{
-                  marginTop: "20px",
-                }}
-              >
-                {item.title}
-              </h3>
-            </div>
+              <h3>{item.title}</h3>
+            </Link>
           ))}
         </div>
       </div>

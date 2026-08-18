@@ -1,13 +1,33 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Star } from "lucide-react";
+import reviewService from "../../../services/review.service";
 
 function ReviewSummary() {
+  const [stats, setStats] = useState({ average_rating: 0, total_reviews: 0 });
+  const [recent, setRecent] = useState([]);
+
+  useEffect(() => {
+    const userId = JSON.parse(localStorage.getItem("user") || "{}")?.id;
+    if (!userId) return;
+
+    Promise.all([
+      reviewService.getDoctorStats(userId),
+      reviewService.getReviews({ doctor_id: userId, page: 1, limit: 3 }),
+    ]).then(([s, r]) => {
+      setStats(s);
+      setRecent(r.data || []);
+    }).catch(() => {});
+  }, []);
+
+  const avg = stats.average_rating;
+
   return (
     <div className="doctor-card doctor-review-summary">
       <div className="doctor-card-header">
         <div>
           <h3>Đánh giá gần đây</h3>
-          <p>Chưa có API đánh giá</p>
+          <p>{stats.total_reviews} đánh giá</p>
         </div>
         <Link to="/doctor/reviews" className="doctor-view-all">
           Xem tất cả
@@ -16,18 +36,37 @@ function ReviewSummary() {
 
       <div className="doctor-rating-overview">
         <div className="doctor-rating-score">
-          <strong>—</strong>
+          <strong>{avg > 0 ? avg.toFixed(1) : "—"}</strong>
           <div className="doctor-rating-stars">
             {[1, 2, 3, 4, 5].map((star) => (
-              <Star key={star} size={16} color="#cbd5e1" />
+              <Star
+                key={star}
+                size={16}
+                fill={star <= Math.round(avg) ? "#f5a623" : "none"}
+                color={star <= Math.round(avg) ? "#f5a623" : "#cbd5e1"}
+              />
             ))}
           </div>
-          <span>0 đánh giá</span>
+          <span>{stats.total_reviews} đánh giá</span>
         </div>
       </div>
 
       <div className="doctor-review-list">
-        <p>Chưa có đánh giá từ bệnh nhân.</p>
+        {recent.length === 0 ? (
+          <p>Chưa có đánh giá từ bệnh nhân.</p>
+        ) : (
+          recent.map((r) => (
+            <div key={r.id} className="doctor-review-item">
+              <div className="doctor-review-item-header">
+                <strong>{r.patient_name || "Bệnh nhân"}</strong>
+                <span>
+                  {"⭐".repeat(r.rating)}
+                </span>
+              </div>
+              {r.comment && <p>{r.comment}</p>}
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

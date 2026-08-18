@@ -900,3 +900,120 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ==========================================
+   DOCTOR REVIEWS PAGE
+========================================== */
+
+.doctor-reviews-page {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.doctor-reviews-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.doctor-reviews-header h3 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.doctor-reviews-stats {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.doctor-reviews-avg {
+    font-size: 22px;
+    font-weight: 700;
+    color: #f5a623;
+}
+
+.doctor-reviews-count {
+    font-size: 14px;
+    color: #888;
+}
+
+.doctor-reviews-empty {
+    color: #999;
+    text-align: center;
+    padding: 40px 0;
+}
+
+.doctor-reviews-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.doctor-review-card {
+    border: 1px solid #f0f0f0;
+    border-radius: 10px;
+    padding: 16px 20px;
+    transition: box-shadow 0.2s;
+}
+
+.doctor-review-card:hover {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+.doctor-review-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.doctor-review-card-header strong {
+    font-size: 15px;
+    color: #222;
+}
+
+.doctor-review-date {
+    font-size: 13px;
+    color: #aaa;
+}
+
+.doctor-review-stars {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-bottom: 8px;
+}
+
+.doctor-review-rating-num {
+    margin-left: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #f5a623;
+}
+
+.doctor-review-comment {
+    font-size: 14px;
+    color: #444;
+    margin: 0 0 6px;
+    line-height: 1.5;
+}
+
+.doctor-review-booking {
+    font-size: 12px;
+    color: #bbb;
+}
+
+.doctor-reviews-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-top: 20px;
+}

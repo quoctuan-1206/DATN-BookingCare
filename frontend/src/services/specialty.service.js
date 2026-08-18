@@ -1,4 +1,5 @@
 import axiosClient from "../api/axios";
+import { resolveMediaUrl } from "../utils/media";
 
 const DEFAULT_IMAGE = "https://picsum.photos/600/400?specialty";
 
@@ -7,7 +8,7 @@ export function mapSpecialtyFromApi(specialty) {
 
   return {
     ...specialty,
-    image: specialty.image || DEFAULT_IMAGE,
+    image: resolveMediaUrl(specialty.image) || DEFAULT_IMAGE,
     doctor_count: specialty.doctor_count ?? 0,
     clinic_count: specialty.clinic_count ?? 0,
     clinics: specialty.clinics || [],

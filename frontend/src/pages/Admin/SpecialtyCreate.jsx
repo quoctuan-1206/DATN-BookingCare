@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import AdminLayout from "../../components/admin/layout/AdminLayout";
 import specialtyService from "../../services/specialty.service";
+import ImageUploadField from "../../components/admin/ImageUploadField";
 import { getApiErrorMessage } from "../../api/axios";
 
 function SpecialtyCreate() {
@@ -72,18 +73,14 @@ function SpecialtyCreate() {
               />
             </div>
 
-            <div className="admin-form-group">
-              <label htmlFor="image">Ảnh (URL)</label>
-              <input
-                id="image"
-                name="image"
-                className="admin-input"
-                type="text"
-                placeholder="https://..."
-                value={formData.image}
-                onChange={handleChange}
-              />
-            </div>
+            <ImageUploadField
+              label="Ảnh"
+              inputId="image"
+              value={formData.image}
+              onChange={(url) =>
+                setFormData((prev) => ({ ...prev, image: url }))
+              }
+            />
 
             <div className="admin-form-group">
               <label htmlFor="description">Mô tả</label>

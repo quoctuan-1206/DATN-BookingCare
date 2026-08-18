@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { ChevronRight } from "lucide-react";
 import "./SectionHeader.css";
 
 function SectionHeader({ title, viewMoreLink }) {
@@ -9,6 +10,7 @@ function SectionHeader({ title, viewMoreLink }) {
       {viewMoreLink && (
         <Link to={viewMoreLink} className="section-header__link">
           Xem thêm
+          <ChevronRight size={18} />
         </Link>
       )}
     </div>

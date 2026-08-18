@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import Card from "../../common/Card/Card";
 import SectionHeader from "../../common/SectionHeader/SectionHeader";
+import HomeCardSlider from "../HomeCardSlider/HomeCardSlider";
 import articleService from "../../../services/article.service";
 
 function ArticleSection() {
@@ -14,9 +14,9 @@ function ArticleSection() {
       try {
         const result = await articleService.getArticles({
           page: 1,
-          limit: 4,
+          limit: 12,
         });
-        if (!cancelled) setArticles(result.data.slice(0, 4));
+        if (!cancelled) setArticles(result.data || []);
       } catch {
         if (!cancelled) setArticles([]);
       }
@@ -30,20 +30,21 @@ function ArticleSection() {
 
   return (
     <section className="section">
-      <div className="container">
+      <div className="home-section">
         <SectionHeader title="Bài viết nổi bật" viewMoreLink="/articles" />
 
-        <div className="card-grid">
+        <HomeCardSlider>
           {articles.map((item) => (
             <Link
               key={item.id}
               to={`/articles/${item.id}`}
-              style={{ textDecoration: "none", color: "inherit" }}
+              className="card home-card"
             >
-              <Card image={item.image} title={item.title} />
+              <img src={item.image} alt={item.title} />
+              <h3>{item.title}</h3>
             </Link>
           ))}
-        </div>
+        </HomeCardSlider>
       </div>
     </section>
   );

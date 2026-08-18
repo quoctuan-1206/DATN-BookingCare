@@ -31,10 +31,13 @@ import Unauthorized from "./pages/Auth/Unauthorized";
 import AdminDashboard from "./pages/Admin/Dashboard";
 import AdminDoctors from "./pages/Admin/Doctors";
 import AdminDoctorCreate from "./pages/Admin/DoctorCreate";
+import AdminDoctorEdit from "./pages/Admin/DoctorEdit";
 import AdminClinics from "./pages/Admin/Clinics";
 import AdminClinicCreate from "./pages/Admin/ClinicCreate";
+import AdminClinicEdit from "./pages/Admin/ClinicEdit";
 import AdminSpecialties from "./pages/Admin/Specialties";
 import AdminSpecialtyCreate from "./pages/Admin/SpecialtyCreate";
+import AdminSpecialtyEdit from "./pages/Admin/SpecialtyEdit";
 import AdminAppointments from "./pages/Admin/Appointments";
 import AdminUsers from "./pages/Admin/Users";
 import AdminUserDetail from "./pages/Admin/UserDetail";
@@ -122,12 +125,18 @@ function App() {
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/doctors" element={<AdminDoctors />} />
             <Route path="/admin/doctors/create" element={<AdminDoctorCreate />} />
+            <Route path="/admin/doctors/:id/edit" element={<AdminDoctorEdit />} />
             <Route path="/admin/clinics" element={<AdminClinics />} />
             <Route path="/admin/clinics/create" element={<AdminClinicCreate />} />
+            <Route path="/admin/clinics/:id/edit" element={<AdminClinicEdit />} />
             <Route path="/admin/specialties" element={<AdminSpecialties />} />
             <Route
                 path="/admin/specialties/create"
                 element={<AdminSpecialtyCreate />}
+            />
+            <Route
+                path="/admin/specialties/:id/edit"
+                element={<AdminSpecialtyEdit />}
             />
             <Route path="/admin/appointments" element={<AdminAppointments />} />
             <Route path="/admin/users" element={<AdminUsers />} />

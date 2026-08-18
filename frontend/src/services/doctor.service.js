@@ -1,4 +1,5 @@
 import axiosClient from "../api/axios";
+import { resolveMediaUrl } from "../utils/media";
 
 const DEFAULT_AVATAR = "https://picsum.photos/300/300?doctor";
 
@@ -10,8 +11,8 @@ export function mapDoctorFromApi(doctor) {
 
   return {
     ...doctor,
-    image: doctor.avatar || doctor.image || DEFAULT_AVATAR,
-    avatar: doctor.avatar || doctor.image || DEFAULT_AVATAR,
+    image: resolveMediaUrl(doctor.avatar || doctor.image) || DEFAULT_AVATAR,
+    avatar: resolveMediaUrl(doctor.avatar || doctor.image) || DEFAULT_AVATAR,
     specialty: doctor.specialty || "—",
     clinic: doctor.clinic || "—",
     hospital: doctor.clinic || "—",

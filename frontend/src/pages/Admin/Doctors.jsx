@@ -144,6 +144,12 @@ function Doctors() {
                         >
                           Xem
                         </Link>
+                        <Link
+                          to={`/admin/doctors/${doctor.id}/edit`}
+                          className="admin-btn admin-btn-primary"
+                        >
+                          Sửa
+                        </Link>
                         <button
                           type="button"
                           className="admin-btn admin-btn-danger"

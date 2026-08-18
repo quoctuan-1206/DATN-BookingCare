@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import Card from "../../common/Card/Card";
 import SectionHeader from "../../common/SectionHeader/SectionHeader";
+import HomeCardSlider from "../HomeCardSlider/HomeCardSlider";
 import specialtyService from "../../../services/specialty.service";
 
 function SpecialtySection() {
@@ -14,9 +14,9 @@ function SpecialtySection() {
       try {
         const result = await specialtyService.getSpecialties({
           page: 1,
-          limit: 4,
+          limit: 12,
         });
-        if (!cancelled) setSpecialties(result.data.slice(0, 4));
+        if (!cancelled) setSpecialties(result.data || []);
       } catch {
         if (!cancelled) setSpecialties([]);
       }
@@ -30,23 +30,24 @@ function SpecialtySection() {
 
   return (
     <section className="section gray">
-      <div className="container">
+      <div className="home-section">
         <SectionHeader
           title="Chuyên khoa nổi bật"
           viewMoreLink="/specialties"
         />
 
-        <div className="card-grid">
+        <HomeCardSlider>
           {specialties.map((item) => (
             <Link
               key={item.id}
               to={`/specialties/${item.id}`}
-              style={{ textDecoration: "none", color: "inherit" }}
+              className="card home-card"
             >
-              <Card image={item.image} title={item.name} />
+              <img src={item.image} alt={item.name} />
+              <h3>{item.name}</h3>
             </Link>
           ))}
-        </div>
+        </HomeCardSlider>
       </div>
     </section>
   );

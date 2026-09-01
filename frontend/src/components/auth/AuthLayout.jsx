@@ -12,7 +12,7 @@ function AuthLayout({ title, subtitle, children }) {
             <div className="auth-container">
                 <div className="auth-banner">
                     <Link to="/" className="auth-logo">
-                        Booking Care
+                        MediUTE
                     </Link>
 
                     <h1>

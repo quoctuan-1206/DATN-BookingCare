@@ -76,6 +76,7 @@ function SpecialtyCreate() {
             <ImageUploadField
               label="Ảnh"
               inputId="image"
+              aspect={3 / 2}
               value={formData.image}
               onChange={(url) =>
                 setFormData((prev) => ({ ...prev, image: url }))

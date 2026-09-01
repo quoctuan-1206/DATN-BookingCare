@@ -5,7 +5,7 @@ function Login() {
     return (
         <AuthLayout
             title="Đăng nhập"
-            subtitle="Chào mừng bạn quay lại Booking Care."
+            subtitle="Chào mừng bạn quay lại MediUTE."
         >
             <LoginForm />
         </AuthLayout>

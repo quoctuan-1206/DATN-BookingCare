@@ -1,45 +1,37 @@
 import { Link } from "react-router-dom";
-import { Star, Building2 } from "lucide-react";
+import { Building2, ChevronRight, Star } from "lucide-react";
 
 function DoctorCard({ doctor }) {
-    return (
-        <article className="listing-card listing-card--doctor">
-            <div className="listing-card__media">
-                <img
-                    src={doctor.image}
-                    alt={doctor.name}
-                />
-                <span className="listing-card__badge">{doctor.specialty}</span>
-            </div>
+  return (
+    <Link to={`/doctors/${doctor.id}`} className="specialty-card doctor-list-card">
+      <div className="specialty-card-image">
+        <img src={doctor.image} alt={doctor.name} />
+      </div>
 
-            <div className="listing-card__body">
-                <h3 className="listing-card__title">{doctor.name}</h3>
+      <div className="specialty-card-body">
+        <h3 className="specialty-card-title">{doctor.name}</h3>
 
-                <p className="listing-card__specialty">{doctor.specialty}</p>
+        {doctor.specialty ? (
+          <p className="specialty-card-desc">{doctor.specialty}</p>
+        ) : null}
 
-                <div className="listing-card__meta">
-                    <span className="listing-card__meta-item">
-                        <Building2 size={16} />
-                        {doctor.clinic}
-                    </span>
-                </div>
+        <div className="specialty-card-stats">
+          <span className="specialty-card-stat">
+            <Building2 size={14} />
+            {doctor.clinic || "—"}
+          </span>
+          <span className="specialty-card-stat">
+            <Star size={14} />
+            {doctor.rating ?? "—"}
+          </span>
+        </div>
 
-                <div className="listing-card__rating">
-                    <Star size={16} fill="#f5a623" stroke="#f5a623" />
-                    {doctor.rating ?? "4.8"}
-                </div>
-
-                <div className="listing-card__footer">
-                    <Link
-                        to={`/doctors/${doctor.id}`}
-                        className="btn btn-primary"
-                    >
-                        Xem chi tiết
-                    </Link>
-                </div>
-            </div>
-        </article>
-    );
+        <span className="specialty-card-link">
+          Xem hồ sơ <ChevronRight size={14} />
+        </span>
+      </div>
+    </Link>
+  );
 }
 
 export default DoctorCard;

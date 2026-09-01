@@ -22,7 +22,7 @@ export const reviewService = {
 
   getDoctorStats: async (doctorId) => {
     const res = await axiosClient.get(`/reviews/doctor/${doctorId}/stats`);
-    return res.data?.data || { average_rating: 0, total_reviews: 0 };
+    return res.data?.data || { average_rating: 0, total_reviews: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } };
   },
 
   createReview: async (data) => {

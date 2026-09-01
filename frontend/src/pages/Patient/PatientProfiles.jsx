@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { Plus, Users } from "lucide-react";
 import toast from "react-hot-toast";
 import PatientLayout from "../../components/patient/PatientLayout";
+import PatientProfileCard from "../../components/patient/PatientProfileCard";
 import patientProfileService, {
   GENDER_LABEL,
   RELATIONSHIP_LABEL,
@@ -12,7 +13,9 @@ const emptyForm = {
   full_name: "",
   phone: "",
   gender: "Male",
-  date_of_birth: "",
+  birthDay: "",
+  birthMonth: "",
+  birthYear: "",
   relationship: "Self",
   blood_type: "",
   height: "",
@@ -21,26 +24,36 @@ const emptyForm = {
   emergency_contact: "",
 };
 
-function formatDateDisplay(value) {
-  if (!value) return "—";
-  const [y, m, d] = String(value).split("-");
-  if (!y || !m || !d) return value;
-  return `${d}/${m}/${y}`;
+function parseBirthday(dateStr) {
+  if (!dateStr) return { day: "", month: "", year: "" };
+  const [year, month, day] = String(dateStr).split("-");
+  return {
+    day: day || "",
+    month: month || "",
+    year: year || "",
+  };
+}
+
+function buildDateOfBirth(formData) {
+  const { birthDay, birthMonth, birthYear } = formData;
+  if (!birthDay || !birthMonth || !birthYear) return "";
+  return `${birthYear}-${String(birthMonth).padStart(2, "0")}-${String(birthDay).padStart(2, "0")}`;
 }
 
 function PatientProfiles() {
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState(emptyForm);
 
-  const loadProfiles = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const list = await patientProfileService.getMyProfiles();
-      setProfiles(list);
+      const profileList = await patientProfileService.getMyProfiles();
+      setProfiles(profileList);
     } catch (error) {
       toast.error(
         getApiErrorMessage(error, "Không tải được hồ sơ bệnh nhân"),
@@ -49,11 +62,11 @@ function PatientProfiles() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    loadProfiles();
-  }, []);
+    loadData();
+  }, [loadData]);
 
   const openCreate = () => {
     setEditingId(null);
@@ -62,12 +75,15 @@ function PatientProfiles() {
   };
 
   const openEdit = (profile) => {
+    const birthday = parseBirthday(profile.date_of_birth);
     setEditingId(profile.id);
     setFormData({
       full_name: profile.full_name || "",
       phone: profile.phone || "",
       gender: profile.gender || "Male",
-      date_of_birth: profile.date_of_birth || "",
+      birthDay: birthday.day,
+      birthMonth: birthday.month,
+      birthYear: birthday.year,
       relationship: profile.relationship || "Self",
       blood_type: profile.blood_type || "",
       height: profile.height != null ? String(profile.height) : "",
@@ -94,7 +110,7 @@ function PatientProfiles() {
       full_name: formData.full_name.trim(),
       phone: formData.phone.trim() || null,
       gender: formData.gender,
-      date_of_birth: formData.date_of_birth,
+      date_of_birth: buildDateOfBirth(formData),
       relationship: formData.relationship || "Self",
       blood_type: formData.blood_type.trim() || null,
       insurance_number: formData.insurance_number.trim() || null,
@@ -117,8 +133,8 @@ function PatientProfiles() {
       toast.error("Vui lòng nhập họ tên");
       return;
     }
-    if (!formData.date_of_birth) {
-      toast.error("Vui lòng chọn ngày sinh");
+    if (!buildDateOfBirth(formData)) {
+      toast.error("Vui lòng nhập đầy đủ ngày sinh");
       return;
     }
 
@@ -135,7 +151,7 @@ function PatientProfiles() {
       }
 
       closeForm();
-      await loadProfiles();
+      await loadData();
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Không lưu được hồ sơ"));
     } finally {
@@ -143,51 +159,63 @@ function PatientProfiles() {
     }
   };
 
+  const handleDelete = async (profile) => {
+    const name = profile.full_name || "hồ sơ này";
+    const confirmed = window.confirm(
+      `Bạn có chắc muốn xóa hồ sơ "${name}"?`,
+    );
+    if (!confirmed) return;
+
+    setDeletingId(profile.id);
+    try {
+      await patientProfileService.deleteProfile(profile.id);
+      toast.success("Đã xóa hồ sơ");
+      if (editingId === profile.id) {
+        closeForm();
+      }
+      await loadData();
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Không xóa được hồ sơ"));
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <PatientLayout>
-      <div className="page-header">
-        <div>
-          <h1>Hồ sơ bệnh nhân</h1>
-          <p>Quản lý thông tin người khám trong tài khoản của bạn.</p>
-        </div>
-
-        <button type="button" className="btn btn-primary" onClick={openCreate}>
-          + Thêm hồ sơ
-        </button>
-      </div>
-
-      {showForm && (
-        <div className="detail-card" style={{ marginBottom: 24 }}>
-          <h2 style={{ marginBottom: 16 }}>
+      {showForm ? (
+        <div className="patient-profiles-card">
+          <h1 className="patient-profiles-title">
             {editingId ? "Chỉnh sửa hồ sơ" : "Thêm hồ sơ bệnh nhân"}
-          </h2>
+          </h1>
 
-          <form className="admin-form" onSubmit={handleSubmit}>
-            <div
-              style={{
-                display: "grid",
-                gap: 12,
-                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              }}
-            >
-              <div className="admin-form-group">
-                <label htmlFor="full_name">Họ và tên</label>
+          <form
+            className="patient-profiles-form"
+            autoComplete="off"
+            onSubmit={handleSubmit}
+          >
+            <div className="patient-profiles-fields">
+              <div className="profile-field-row">
+                <label htmlFor="full_name">
+                  Họ và tên<span className="profile-required">*</span>
+                </label>
                 <input
                   id="full_name"
                   name="full_name"
-                  className="admin-input"
+                  className="profile-field-input"
                   value={formData.full_name}
                   onChange={handleChange}
+                  placeholder="Họ và tên"
                   required
                 />
               </div>
 
-              <div className="admin-form-group">
+              <div className="profile-field-row">
                 <label htmlFor="relationship">Quan hệ</label>
                 <select
                   id="relationship"
                   name="relationship"
-                  className="admin-select"
+                  className="profile-field-input"
                   value={formData.relationship}
                   onChange={handleChange}
                 >
@@ -199,54 +227,82 @@ function PatientProfiles() {
                 </select>
               </div>
 
-              <div className="admin-form-group">
-                <label htmlFor="gender">Giới tính</label>
-                <select
-                  id="gender"
-                  name="gender"
-                  className="admin-select"
-                  value={formData.gender}
-                  onChange={handleChange}
-                  required
-                >
-                  {Object.entries(GENDER_LABEL).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
+              <div className="profile-field-row">
+                <span className="profile-field-label">
+                  Giới tính<span className="profile-required">*</span>
+                </span>
+                <div className="profile-gender-options">
+                  {[
+                    ["Male", GENDER_LABEL.Male],
+                    ["Female", GENDER_LABEL.Female],
+                  ].map(([value, label]) => (
+                    <label key={value} className="profile-gender-option">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value={value}
+                        checked={formData.gender === value}
+                        onChange={handleChange}
+                      />
+                      <span>{label}</span>
+                    </label>
                   ))}
-                </select>
+                </div>
               </div>
 
-              <div className="admin-form-group">
-                <label htmlFor="date_of_birth">Ngày sinh</label>
-                <input
-                  id="date_of_birth"
-                  name="date_of_birth"
-                  className="admin-input"
-                  type="date"
-                  value={formData.date_of_birth}
-                  onChange={handleChange}
-                  required
-                />
+              <div className="profile-field-row">
+                <span className="profile-field-label">
+                  Ngày sinh<span className="profile-required">*</span>
+                </span>
+                <div className="profile-birthday-inputs">
+                  <input
+                    name="birthDay"
+                    className="profile-field-input profile-birthday-input"
+                    value={formData.birthDay}
+                    onChange={handleChange}
+                    placeholder="Ngày"
+                    inputMode="numeric"
+                    maxLength={2}
+                  />
+                  <input
+                    name="birthMonth"
+                    className="profile-field-input profile-birthday-input"
+                    value={formData.birthMonth}
+                    onChange={handleChange}
+                    placeholder="Tháng"
+                    inputMode="numeric"
+                    maxLength={2}
+                  />
+                  <input
+                    name="birthYear"
+                    className="profile-field-input profile-birthday-input profile-birthday-input--year"
+                    value={formData.birthYear}
+                    onChange={handleChange}
+                    placeholder="Năm"
+                    inputMode="numeric"
+                    maxLength={4}
+                  />
+                </div>
               </div>
 
-              <div className="admin-form-group">
+              <div className="profile-field-row">
                 <label htmlFor="phone">Số điện thoại</label>
                 <input
                   id="phone"
                   name="phone"
-                  className="admin-input"
+                  className="profile-field-input"
                   value={formData.phone}
                   onChange={handleChange}
+                  placeholder="Số điện thoại"
                 />
               </div>
 
-              <div className="admin-form-group">
+              <div className="profile-field-row">
                 <label htmlFor="blood_type">Nhóm máu</label>
                 <select
                   id="blood_type"
                   name="blood_type"
-                  className="admin-select"
+                  className="profile-field-input"
                   value={formData.blood_type}
                   onChange={handleChange}
                 >
@@ -258,61 +314,65 @@ function PatientProfiles() {
                 </select>
               </div>
 
-              <div className="admin-form-group">
+              <div className="profile-field-row">
                 <label htmlFor="height">Chiều cao (cm)</label>
                 <input
                   id="height"
                   name="height"
-                  className="admin-input"
+                  className="profile-field-input"
                   type="number"
                   min="1"
                   step="0.1"
                   value={formData.height}
                   onChange={handleChange}
+                  placeholder="Chiều cao"
                 />
               </div>
 
-              <div className="admin-form-group">
+              <div className="profile-field-row">
                 <label htmlFor="weight">Cân nặng (kg)</label>
                 <input
                   id="weight"
                   name="weight"
-                  className="admin-input"
+                  className="profile-field-input"
                   type="number"
                   min="1"
                   step="0.1"
                   value={formData.weight}
                   onChange={handleChange}
+                  placeholder="Cân nặng"
                 />
               </div>
 
-              <div className="admin-form-group">
+              <div className="profile-field-row">
                 <label htmlFor="insurance_number">Số BHYT</label>
                 <input
                   id="insurance_number"
                   name="insurance_number"
-                  className="admin-input"
+                  className="profile-field-input"
                   value={formData.insurance_number}
                   onChange={handleChange}
+                  placeholder="Số BHYT"
                 />
               </div>
 
-              <div className="admin-form-group">
+              <div className="profile-field-row">
                 <label htmlFor="emergency_contact">Liên hệ khẩn cấp</label>
                 <input
                   id="emergency_contact"
                   name="emergency_contact"
-                  className="admin-input"
+                  className="profile-field-input"
                   value={formData.emergency_contact}
                   onChange={handleChange}
+                  placeholder="Liên hệ khẩn cấp"
                 />
               </div>
             </div>
 
-            <div className="admin-form-actions" style={{ marginTop: 16 }}>
+            <div className="patient-profiles-actions">
               <button
                 type="submit"
-                className="btn btn-primary"
+                className="patient-profile-save-btn"
                 disabled={saving}
               >
                 {saving
@@ -323,7 +383,7 @@ function PatientProfiles() {
               </button>
               <button
                 type="button"
-                className="btn btn-outline"
+                className="patient-profile-secondary-btn"
                 onClick={closeForm}
                 disabled={saving}
               >
@@ -332,77 +392,48 @@ function PatientProfiles() {
             </div>
           </form>
         </div>
-      )}
-
-      {loading ? (
-        <p>Đang tải hồ sơ...</p>
-      ) : profiles.length === 0 ? (
-        <div className="empty-state">
-          <h3>Chưa có hồ sơ bệnh nhân</h3>
-          <p>Thêm hồ sơ để đặt lịch khám cho bản thân hoặc người thân.</p>
-          <button type="button" className="btn btn-primary" onClick={openCreate}>
-            + Thêm hồ sơ
-          </button>
-        </div>
       ) : (
-        <div className="profile-grid">
-          {profiles.map((profile) => (
-            <article key={profile.id} className="profile-card">
-              <div className="profile-avatar">
-                {(profile.full_name || "?").charAt(0)}
-              </div>
+        <div className="patient-profiles-card">
+          <div className="patient-profiles-card-head">
+            <h1 className="patient-profiles-title">Hồ sơ bệnh nhân</h1>
+            <button
+              type="button"
+              className="patient-profiles-add-btn"
+              onClick={openCreate}
+            >
+              <Plus size={16} />
+              Thêm hồ sơ
+            </button>
+          </div>
 
-              <h3>{profile.full_name}</h3>
-
-              <span className="relationship">
-                {profile.relationship_label ||
-                  RELATIONSHIP_LABEL[profile.relationship] ||
-                  profile.relationship}
-              </span>
-
-              <div className="profile-info">
-                <p>
-                  <strong>Giới tính:</strong>{" "}
-                  {profile.gender_label || GENDER_LABEL[profile.gender]}
-                </p>
-                <p>
-                  <strong>Ngày sinh:</strong>{" "}
-                  {formatDateDisplay(profile.date_of_birth)}
-                </p>
-                <p>
-                  <strong>Điện thoại:</strong> {profile.phone || "—"}
-                </p>
-                <p>
-                  <strong>Nhóm máu:</strong> {profile.blood_type || "—"}
-                </p>
-                <p>
-                  <strong>Chiều cao:</strong>{" "}
-                  {profile.height ? `${profile.height} cm` : "—"}
-                </p>
-                <p>
-                  <strong>Cân nặng:</strong>{" "}
-                  {profile.weight ? `${profile.weight} kg` : "—"}
-                </p>
-                <p>
-                  <strong>BHYT:</strong> {profile.insurance_number || "—"}
-                </p>
-              </div>
-
-              <div className="profile-actions">
-                <button
-                  type="button"
-                  className="btn btn-outline"
-                  onClick={() => openEdit(profile)}
-                >
-                  Chỉnh sửa
-                </button>
-
-                <Link to="/doctors" className="btn btn-primary">
-                  Đặt lịch
-                </Link>
-              </div>
-            </article>
-          ))}
+          {loading ? (
+            <p className="patient-profiles-loading">Đang tải hồ sơ...</p>
+          ) : profiles.length === 0 ? (
+            <div className="profiles-empty-state">
+              <Users size={48} strokeWidth={1.75} />
+              <p>Chưa có hồ sơ bệnh nhân</p>
+              <button
+                type="button"
+                className="patient-profile-save-btn"
+                onClick={openCreate}
+              >
+                <Plus size={16} />
+                Thêm hồ sơ
+              </button>
+            </div>
+          ) : (
+            <div className="profiles-list">
+              {profiles.map((profile) => (
+                <PatientProfileCard
+                  key={profile.id}
+                  profile={profile}
+                  onEdit={openEdit}
+                  onDelete={handleDelete}
+                  deleting={deletingId === profile.id}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </PatientLayout>

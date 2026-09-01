@@ -14,5 +14,7 @@ router.get("/", patientProfileController.getMyProfiles);
 router.post("/", patientProfileController.createProfile);
 // PUT /api/patient-profiles/:id - Cập nhật hồ sơ
 router.put("/:id", patientProfileController.updateProfile);
+// DELETE /api/patient-profiles/:id - Xóa hồ sơ
+router.delete("/:id", patientProfileController.deleteProfile);
 
 export default router;

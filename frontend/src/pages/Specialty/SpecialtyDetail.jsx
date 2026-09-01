@@ -10,10 +10,7 @@ import specialtyService from "../../services/specialty.service";
 import doctorService from "../../services/doctor.service";
 import scheduleService from "../../services/schedule.service";
 import { getApiErrorMessage } from "../../api/axios";
-
-function todayYMD() {
-  return new Date().toISOString().slice(0, 10);
-}
+import { getMinBookingDateYMD } from "../../utils/booking";
 
 function SpecialtyDetail() {
   const { id } = useParams();
@@ -34,7 +31,7 @@ function SpecialtyDetail() {
             doctorService.getDoctors({ specialty_id: Number(id), limit: 50 }),
             scheduleService.getSchedules({
               specialty_id: Number(id),
-              from_date: todayYMD(),
+              from_date: getMinBookingDateYMD(),
               available_only: "false",
               page: 1,
               limit: 200,

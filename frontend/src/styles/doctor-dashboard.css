@@ -268,11 +268,23 @@
     cursor: pointer;
 }
 
-.doctor-user-btn img {
+.doctor-user-btn img,
+.doctor-user-avatar-fallback {
     width: 36px;
     height: 36px;
     border-radius: 50%;
     object-fit: cover;
+    flex-shrink: 0;
+}
+
+.doctor-user-avatar-fallback {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #0d9488;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
 }
 
 .doctor-user-info {
@@ -346,6 +358,103 @@
     display: grid;
     grid-template-columns: 1.2fr 1fr;
     gap: 18px;
+}
+
+.doctor-dashboard-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.9fr);
+    gap: 18px;
+    align-items: stretch;
+}
+
+.doctor-today-appointments,
+.doctor-today-tasks {
+    min-height: 420px;
+}
+
+.doctor-today-appointments .doctor-appointment-list {
+    max-height: 520px;
+    overflow: auto;
+}
+
+.doctor-todo-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.doctor-todo-item {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr) auto auto;
+    gap: 10px;
+    align-items: center;
+    padding: 12px;
+    border-radius: 14px;
+    background: #f8fbfa;
+    text-decoration: none;
+    color: inherit;
+}
+
+.doctor-todo-item.done {
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+}
+
+.doctor-todo-item.done strong {
+    color: #64748b;
+}
+
+.doctor-todo-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #0f766e;
+}
+
+.doctor-todo-item strong {
+    display: block;
+    font-size: 14px;
+    color: #134e4a;
+}
+
+.doctor-todo-item > div span {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.doctor-todo-count {
+    min-width: 24px;
+    height: 24px;
+    padding: 0 7px;
+    border-radius: 999px;
+    background: #0d9488;
+    color: #fff;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.doctor-todo-done-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #0d9488;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.doctor-todo-arrow {
+    color: #94a3b8;
 }
 
 .doctor-stat-card {
@@ -831,6 +940,32 @@
     color: #64748b;
 }
 
+.doctor-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 20px;
+}
+
+.doctor-detail-grid > div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.doctor-detail-grid span {
+    font-size: 13px;
+    color: #64748b;
+}
+
+.doctor-detail-grid strong {
+    font-size: 15px;
+    color: #134e4a;
+}
+
+.doctor-detail-grid--full {
+    grid-column: 1 / -1;
+}
+
 /*==================================================
                 RESPONSIVE
 ==================================================*/
@@ -840,7 +975,8 @@
         grid-template-columns: repeat(2, 1fr);
     }
 
-    .doctor-dashboard-grid {
+    .doctor-dashboard-grid,
+    .doctor-dashboard-main {
         grid-template-columns: 1fr;
     }
 }
@@ -1016,4 +1152,35 @@
     align-items: center;
     gap: 12px;
     margin-top: 20px;
+}
+
+.prescription-items {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 8px;
+}
+
+.prescription-item-row {
+    display: grid;
+    grid-template-columns: minmax(180px, 2fr) 100px minmax(160px, 1.5fr) minmax(160px, 1.5fr) auto;
+    gap: 12px;
+    align-items: end;
+    padding: 14px;
+    border-radius: 12px;
+    background: #f8fbfa;
+}
+
+.prescription-remove-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 42px;
+    padding: 10px;
+}
+
+@media (max-width: 900px) {
+    .prescription-item-row {
+        grid-template-columns: 1fr;
+    }
 }

@@ -45,7 +45,7 @@ function Profile() {
                                 id="email"
                                 className="admin-input"
                                 type="email"
-                                defaultValue="admin@bookingcare.vn"
+                                defaultValue="admin@mediute.vn"
                             />
                         </div>
 

@@ -106,6 +106,23 @@ class AppointmentRepository {
         throw error;
       }
 
+      if (!data.skipAdvanceCheck) {
+        const workDate = new Date(schedule.work_date);
+        workDate.setUTCHours(0, 0, 0, 0);
+
+        const minDate = new Date();
+        minDate.setUTCHours(0, 0, 0, 0);
+        minDate.setUTCDate(minDate.getUTCDate() + 3);
+
+        if (workDate < minDate) {
+          const error = new Error(
+            "Phải đặt lịch trước ít nhất 3 ngày",
+          );
+          error.statusCode = 400;
+          throw error;
+        }
+      }
+
       const duplicate = await tx.appointments.findFirst({
         where: {
           schedule_id: Number(data.schedule_id),

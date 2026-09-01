@@ -19,5 +19,5 @@ select{
 input:focus,
 select:focus{
 
-    border-color:#49BCE2;
+    border-color: var(--primary-color);
 }

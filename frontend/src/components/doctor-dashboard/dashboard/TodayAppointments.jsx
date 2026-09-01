@@ -7,15 +7,15 @@ function TodayAppointments({ appointments = [], loading = false }) {
     <div className="doctor-card doctor-today-appointments">
       <div className="doctor-card-header">
         <div>
-          <h3>Lịch hẹn hôm nay</h3>
+          <h3>Lịch hôm nay</h3>
           <p>
             {loading
               ? "Đang tải..."
               : `${appointments.length} cuộc hẹn trong ngày`}
           </p>
         </div>
-        <Link to="/doctor/appointments" className="doctor-view-all">
-          Xem tất cả
+        <Link to="/doctor/schedule" className="doctor-view-all">
+          Xem lịch làm việc
         </Link>
       </div>
 
@@ -28,7 +28,9 @@ function TodayAppointments({ appointments = [], loading = false }) {
           appointments.map((item) => (
             <Link
               key={item.id}
-              to={`/doctor/appointments/${item.id}`}
+              to={`/doctor/appointments/${item.id}${
+                item.status === "CONFIRMED" ? "?exam=1" : ""
+              }`}
               className="doctor-appointment-item"
             >
               <div className="doctor-appointment-time">

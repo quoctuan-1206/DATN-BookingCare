@@ -9,20 +9,20 @@
 
 .listing-hero {
     padding: 48px 0 56px;
-    background: linear-gradient(135deg, #e8f7fb 0%, #f5f7fa 100%);
+    background: linear-gradient(135deg, var(--primary-light) 0%, #f5f7fa 100%);
     border-bottom: 1px solid var(--border-color);
 }
 
 .listing-hero--specialty {
-    background: linear-gradient(135deg, #e8f7fb 0%, #eef9fc 100%);
+    background: linear-gradient(135deg, var(--primary-light) 0%, #eef8f2 100%);
 }
 
 .listing-hero--doctor {
-    background: linear-gradient(135deg, #e6f4fa 0%, #f0f8fb 100%);
+    background: linear-gradient(135deg, var(--primary-light) 0%, #f0f8f4 100%);
 }
 
 .listing-hero--clinic {
-    background: linear-gradient(135deg, #eaf6fb 0%, #f5f7fa 100%);
+    background: linear-gradient(135deg, var(--primary-light) 0%, #f5f7fa 100%);
 }
 
 .listing-hero h1 {
@@ -102,7 +102,7 @@
 .listing-filter input:focus,
 .listing-filter select:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(73, 188, 226, 0.15);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15);
 }
 
 .listing-filter__select {
@@ -162,7 +162,7 @@
 .listing-card:hover {
     transform: translateY(-6px);
     box-shadow: var(--shadow-md);
-    border-color: rgba(73, 188, 226, 0.2);
+    border-color: rgba(var(--primary-rgb), 0.2);
 }
 
 .listing-card__media {

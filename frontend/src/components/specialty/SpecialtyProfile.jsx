@@ -1,13 +1,20 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Home, ChevronRight } from "lucide-react";
 
 function SpecialtyProfile({ specialty }) {
   const [expanded, setExpanded] = useState(false);
+  const scrollYRef = useRef(null);
   const description = specialty.description || "";
   const longText = description.length > 220;
   const shown =
     !expanded && longText ? `${description.slice(0, 220).trim()}...` : description;
+
+  useLayoutEffect(() => {
+    if (scrollYRef.current == null) return;
+    window.scrollTo(0, scrollYRef.current);
+    scrollYRef.current = null;
+  }, [expanded]);
 
   return (
     <section className="specialty-hero">
@@ -31,7 +38,11 @@ function SpecialtyProfile({ specialty }) {
             <button
               type="button"
               className="specialty-more-btn"
-              onClick={() => setExpanded((v) => !v)}
+              onClick={(e) => {
+                scrollYRef.current = window.scrollY;
+                e.currentTarget.blur();
+                setExpanded((v) => !v);
+              }}
             >
               {expanded ? "Thu gọn" : "Xem thêm"}
             </button>

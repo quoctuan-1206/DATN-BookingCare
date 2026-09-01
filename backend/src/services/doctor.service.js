@@ -12,9 +12,8 @@ class DoctorService {
     const specialty = activeWorkplace?.specialties || null;
     const clinic = activeWorkplace?.clinics || null;
 
-    // Tính điểm đánh giá trung bình
-    const reviews = user.reviews || [];
-    let avgRating = 5.0;
+      const reviews = user.reviews || [];
+    let avgRating = 0;
     if (reviews.length > 0) {
       const sum = reviews.reduce((acc, r) => acc + (r.rating || 0), 0);
       avgRating = Number((sum / reviews.length).toFixed(1));

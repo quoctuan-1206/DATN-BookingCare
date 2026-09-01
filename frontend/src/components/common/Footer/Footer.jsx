@@ -8,7 +8,7 @@ function Footer() {
     <footer className="footer">
       <div className="container footer-container">
         <div className="footer-column">
-          <h2>BookingCare</h2>
+          <h2>MediUTE</h2>
 
           <p>
             Nền tảng đặt lịch khám bệnh trực tuyến, giúp người bệnh dễ dàng kết
@@ -61,7 +61,7 @@ function Footer() {
 
           <p>
             <Mail size={18} />
-            bookingcare@gmail.com
+            mediute@gmail.com
           </p>
 
           <div className="footer-social">
@@ -72,7 +72,7 @@ function Footer() {
       </div>
 
       <div className="footer-bottom">
-        © 2026 BookingCare. All Rights Reserved.
+        © 2026 MediUTE. All Rights Reserved.
       </div>
     </footer>
   );

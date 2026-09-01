@@ -1,13 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { CalendarDays, Heart, MapPin } from "lucide-react";
+import { isBookableDate } from "../../utils/booking";
 
 function SpecialtyDoctorCard({ doctor, schedules = [] }) {
   const navigate = useNavigate();
 
+  const bookableSchedules = useMemo(
+    () => schedules.filter((s) => isBookableDate(s.work_date)),
+    [schedules],
+  );
+
   const dateOptions = useMemo(() => {
     const map = {};
-    for (const slot of schedules) {
+    for (const slot of bookableSchedules) {
       if (!map[slot.work_date]) {
         map[slot.work_date] = slot.date_display || slot.work_date;
       }
@@ -15,7 +21,7 @@ function SpecialtyDoctorCard({ doctor, schedules = [] }) {
     return Object.keys(map)
       .sort()
       .map((value) => ({ value, label: map[value] }));
-  }, [schedules]);
+  }, [bookableSchedules]);
 
   const [selectedDate, setSelectedDate] = useState(dateOptions[0]?.value || "");
 
@@ -27,12 +33,12 @@ function SpecialtyDoctorCard({ doctor, schedules = [] }) {
 
   const slots = useMemo(
     () =>
-      schedules
+      bookableSchedules
         .filter((s) => s.work_date === selectedDate)
         .sort((a, b) =>
           String(a.start_time || "").localeCompare(String(b.start_time || "")),
         ),
-    [schedules, selectedDate],
+    [bookableSchedules, selectedDate],
   );
 
   const fee = Number(doctor.consultation_fee || 0).toLocaleString("vi-VN");

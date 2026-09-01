@@ -2,25 +2,36 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Star } from "lucide-react";
 import reviewService from "../../../services/review.service";
+import { useAuth } from "../../../context/AuthContext";
 
 function ReviewSummary() {
+  const { user } = useAuth();
   const [stats, setStats] = useState({ average_rating: 0, total_reviews: 0 });
   const [recent, setRecent] = useState([]);
 
   useEffect(() => {
-    const userId = JSON.parse(localStorage.getItem("user") || "{}")?.id;
+    const userId = user?.id;
     if (!userId) return;
+
+    let cancelled = false;
 
     Promise.all([
       reviewService.getDoctorStats(userId),
       reviewService.getReviews({ doctor_id: userId, page: 1, limit: 3 }),
-    ]).then(([s, r]) => {
-      setStats(s);
-      setRecent(r.data || []);
-    }).catch(() => {});
-  }, []);
+    ])
+      .then(([s, r]) => {
+        if (cancelled) return;
+        setStats(s);
+        setRecent(r.data || []);
+      })
+      .catch(() => {});
 
-  const avg = stats.average_rating;
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  const avg = Number(stats.average_rating || 0);
 
   return (
     <div className="doctor-card doctor-review-summary">
@@ -60,7 +71,14 @@ function ReviewSummary() {
               <div className="doctor-review-item-header">
                 <strong>{r.patient_name || "Bệnh nhân"}</strong>
                 <span>
-                  {"⭐".repeat(r.rating)}
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      size={14}
+                      fill={star <= r.rating ? "#f5a623" : "none"}
+                      color={star <= r.rating ? "#f5a623" : "#cbd5e1"}
+                    />
+                  ))}
                 </span>
               </div>
               {r.comment && <p>{r.comment}</p>}

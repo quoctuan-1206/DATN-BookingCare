@@ -27,7 +27,7 @@
 }
 
 .logo h2 {
-  color: #49bce2;
+  color: var(--primary-color);
   font-size: 30px;
   cursor: pointer;
 }
@@ -45,7 +45,7 @@
 }
 
 .navigation li:hover {
-  color: #49bce2;
+  color: var(--primary-color);
 }
 .actions {
   display: flex;
@@ -71,7 +71,7 @@
 
   border-radius: 30px;
 
-  background: #49bce2;
+  background: var(--primary-color);
 
   color: white;
 
@@ -83,5 +83,5 @@
   text-decoration: none;
 }
 .login-btn:hover {
-  background: #36abd4;
+  background: var(--primary-hover);
 }

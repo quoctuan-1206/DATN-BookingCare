@@ -202,11 +202,11 @@
 
 .sidebar-item.active{
 
-    background:rgb(73,188,226);
+    background:var(--primary-color);
 
     color:#fff;
 
-    box-shadow:0 8px 20px rgba(73,188,226,.25);
+    box-shadow:0 8px 20px rgba(var(--primary-rgb),.25);
 
 }
 
@@ -435,7 +435,7 @@
 
     background:#fff;
 
-    box-shadow:0 0 0 3px rgba(73,188,226,.15);
+    box-shadow:0 0 0 3px rgba(var(--primary-rgb),.15);
 
 }
 
@@ -763,7 +763,7 @@
 
 .view-all{
 
-    color:rgb(73,188,226);
+    color:var(--primary-color);
 
     text-decoration:none;
 
@@ -775,7 +775,7 @@
 
 .view-all:hover{
 
-    color:rgb(42,170,212);
+    color:var(--primary-hover);
 
 }
 /*==================================================
@@ -1237,7 +1237,7 @@
 
     font-weight:600;
 
-    color:#49bce2;
+    color:var(--primary-color);
 
 }
 
@@ -1437,7 +1437,7 @@
 
     font-weight:600;
 
-    color:#49bce2;
+    color:var(--primary-color);
 
 }
 
@@ -1722,7 +1722,7 @@
 
 .admin-bar-fill{
     width:100%;
-    background:linear-gradient(180deg, #49bce2, #2daed9);
+    background:linear-gradient(180deg, var(--primary-color), var(--primary-hover));
     border-radius:10px 10px 0 0;
     transition:height .3s ease;
 }
@@ -1805,7 +1805,7 @@
 
 .admin-btn-primary{
 
-    background:#49bce2;
+    background:var(--primary-color);
 
     color:#fff;
 
@@ -1813,7 +1813,7 @@
 
 .admin-btn-primary:hover{
 
-    background:#2daed9;
+    background:var(--primary-hover);
 
 }
 
@@ -1875,9 +1875,9 @@
 
 .admin-input:focus{
 
-    border-color:#49bce2;
+    border-color:var(--primary-color);
 
-    box-shadow:0 0 0 3px rgba(73,188,226,.15);
+    box-shadow:0 0 0 3px rgba(var(--primary-rgb),.15);
 
 }
 
@@ -2337,9 +2337,9 @@
 
 .admin-textarea:focus{
 
-    border-color:#49bce2;
+    border-color:var(--primary-color);
 
-    box-shadow:0 0 0 3px rgba(73,188,226,.15);
+    box-shadow:0 0 0 3px rgba(var(--primary-rgb),.15);
 
 }
 
@@ -2367,9 +2367,9 @@
 
 .admin-select:focus{
 
-    border-color:#49bce2;
+    border-color:var(--primary-color);
 
-    box-shadow:0 0 0 3px rgba(73,188,226,.15);
+    box-shadow:0 0 0 3px rgba(var(--primary-rgb),.15);
 
 }
 
@@ -2378,10 +2378,25 @@
     color:#64748b;
 }
 
+.admin-upload-preview-wrap{
+    display:flex;
+    align-items:flex-end;
+    gap:12px;
+    margin-top:10px;
+    flex-wrap:wrap;
+}
+
+.admin-upload-preview-actions{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+}
+
 .admin-upload-preview{
     margin-top:8px;
-    width:180px;
-    height:120px;
+    width:220px;
+    height:auto;
+    aspect-ratio:3/2;
     border-radius:10px;
     overflow:hidden;
     border:1px solid #dbe4ee;
@@ -2393,4 +2408,116 @@
     height:100%;
     object-fit:cover;
     display:block;
+}
+
+.image-crop-overlay{
+    position:fixed;
+    inset:0;
+    z-index:2000;
+    background:rgba(0,0,0,.55);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+}
+
+.image-crop-modal{
+    background:#fff;
+    border-radius:16px;
+    padding:24px;
+    width:min(560px, 100%);
+    box-shadow:0 20px 60px rgba(0,0,0,.25);
+}
+
+.image-crop-modal h3{
+    margin:0 0 6px;
+    font-size:20px;
+}
+
+.image-crop-hint{
+    margin:0 0 16px;
+    color:#64748b;
+    font-size:14px;
+}
+
+.image-crop-error{
+    margin:0 0 12px;
+    color:#dc2626;
+    font-size:14px;
+}
+
+.image-crop-board{
+    display:flex;
+    justify-content:center;
+    background:#111;
+    border-radius:12px;
+    padding:20px;
+    min-height:220px;
+    align-items:center;
+}
+
+.image-crop-loading{
+    color:#cbd5e1;
+    margin:0;
+}
+
+.image-crop-stage{
+    overflow:hidden;
+    background:#000;
+    border:2px solid var(--primary-color);
+    border-radius:8px;
+    cursor:grab;
+    touch-action:none;
+    user-select:none;
+}
+
+.image-crop-stage.is-circle{
+    border-radius:50%;
+}
+
+.image-crop-stage:active{
+    cursor:grabbing;
+}
+
+.image-crop-stage img{
+    display:block;
+    max-width:none;
+    pointer-events:none;
+}
+
+.image-crop-zoom{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin:16px 0 0;
+}
+
+.image-crop-zoom input[type="range"]{
+    flex:1;
+    accent-color:var(--primary-color);
+}
+
+.image-crop-zoom-btn{
+    width:32px;
+    height:32px;
+    border:1px solid #dbe4ee;
+    background:#fff;
+    border-radius:8px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    color:#334155;
+}
+
+.image-crop-zoom-btn:disabled{
+    opacity:.4;
+    cursor:default;
+}
+
+.image-crop-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    margin-top:18px;
 }

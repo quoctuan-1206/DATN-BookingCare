@@ -16,7 +16,7 @@
 .section-header button,
 .section-header__link {
   background: transparent;
-  color: #45c3d2;
+  color: var(--primary-color);
   border: none;
   padding: 0;
   font-size: 14px;
@@ -32,5 +32,5 @@
 .section-header button:hover,
 .section-header__link:hover {
   background: transparent;
-  color: #2eaad7;
+  color: var(--primary-hover);
 }

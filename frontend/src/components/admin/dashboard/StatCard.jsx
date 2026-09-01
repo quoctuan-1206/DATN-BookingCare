@@ -6,7 +6,7 @@ function StatCard({
 
     icon,
 
-    color = "#49bce2",
+    color = "#2E8B57",
 
     change,
 

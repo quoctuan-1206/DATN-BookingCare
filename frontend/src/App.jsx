@@ -1,4 +1,5 @@
 import { Routes, Route } from "react-router-dom";
+import ScrollToTop from "./components/common/ScrollToTop";
 
 import Home from "./pages/Home/Home";
 import Doctors from "./pages/Doctor/Doctors";
@@ -38,6 +39,9 @@ import AdminClinicEdit from "./pages/Admin/ClinicEdit";
 import AdminSpecialties from "./pages/Admin/Specialties";
 import AdminSpecialtyCreate from "./pages/Admin/SpecialtyCreate";
 import AdminSpecialtyEdit from "./pages/Admin/SpecialtyEdit";
+import AdminMedicines from "./pages/Admin/Medicines";
+import AdminMedicineCreate from "./pages/Admin/MedicineCreate";
+import AdminMedicineEdit from "./pages/Admin/MedicineEdit";
 import AdminAppointments from "./pages/Admin/Appointments";
 import AdminUsers from "./pages/Admin/Users";
 import AdminUserDetail from "./pages/Admin/UserDetail";
@@ -63,7 +67,9 @@ import DoctorNotifications from "./pages/Doctor/Notifications";
 
 function App() {
     return (
-        <Routes>
+        <>
+            <ScrollToTop />
+            <Routes>
             <Route path="/" element={<Home />} />
 
             <Route path="/doctors" element={<Doctors />} />
@@ -97,6 +103,7 @@ function App() {
                 element={<MedicalRecordDetail />}
             />
             <Route path="/patient/notifications" element={<Notifications />} />
+            <Route path="/patient/profile/password" element={<Profile />} />
             <Route path="/patient/profile" element={<Profile />} />
 
             <Route path="/doctor" element={<DoctorDashboard />} />
@@ -138,6 +145,15 @@ function App() {
                 path="/admin/specialties/:id/edit"
                 element={<AdminSpecialtyEdit />}
             />
+            <Route path="/admin/medicines" element={<AdminMedicines />} />
+            <Route
+                path="/admin/medicines/create"
+                element={<AdminMedicineCreate />}
+            />
+            <Route
+                path="/admin/medicines/:id/edit"
+                element={<AdminMedicineEdit />}
+            />
             <Route path="/admin/appointments" element={<AdminAppointments />} />
             <Route path="/admin/users" element={<AdminUsers />} />
             <Route path="/admin/users/:id" element={<AdminUserDetail />} />
@@ -162,7 +178,8 @@ function App() {
             <Route path="/verify-otp" element={<VerifyOTP />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
-        </Routes>
+            </Routes>
+        </>
     );
 }
 

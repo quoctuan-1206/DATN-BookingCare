@@ -326,6 +326,7 @@ class AppointmentService {
     const appointment = await appointmentRepository.createWithBooking({
       ...data,
       booking_code,
+      skipAdvanceCheck: user.role?.name === "Admin",
     });
 
     try {
@@ -391,7 +392,7 @@ class AppointmentService {
 
     if (role === "Doctor") {
       if (current === "PENDING") return ["CONFIRMED", "CANCELLED"];
-      if (current === "CONFIRMED") return ["COMPLETED", "CANCELLED"];
+      if (current === "CONFIRMED") return ["CANCELLED"];
       return [];
     }
 

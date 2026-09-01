@@ -55,6 +55,18 @@ class PatientProfileController {
       next(error);
     }
   }
+
+  async deleteProfile(req, res, next) {
+    try {
+      await patientProfileService.deleteProfile(req.user, req.params.id);
+      return res.status(200).json({
+        success: true,
+        message: "Xóa hồ sơ bệnh nhân thành công",
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default new PatientProfileController();

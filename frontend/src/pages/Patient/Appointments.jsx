@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { CalendarDays, Plus } from "lucide-react";
 import toast from "react-hot-toast";
 import PatientLayout from "../../components/patient/PatientLayout";
-import AppointmentCard from "../../components/patient/AppointmentCard";
+import DashboardAppointmentItem from "../../components/patient/DashboardAppointmentItem";
 import appointmentService from "../../services/appointment.service";
 import { getApiErrorMessage } from "../../api/axios";
 
@@ -40,50 +41,52 @@ function Appointments() {
 
   return (
     <PatientLayout>
-      <div className="page-header">
-        <div>
-          <h1>Lịch hẹn</h1>
-          <p>Theo dõi và quản lý tất cả lịch khám.</p>
+      <div className="patient-content-card">
+        <div className="patient-content-card-head">
+          <h1 className="patient-content-card-title">Lịch hẹn</h1>
+          <Link to="/doctors" className="patient-content-card-action">
+            <Plus size={16} />
+            Đặt lịch mới
+          </Link>
         </div>
 
-        <Link to="/doctors" className="btn btn-primary">
-          Đặt lịch mới
-        </Link>
-      </div>
+        <div className="appointment-tabs">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              className={`appointment-tab${
+                activeTab === tab.key ? " active" : ""
+              }`}
+              onClick={() => setActiveTab(tab.key)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-      <div className="appointment-tabs">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            className={`appointment-tab${
-              activeTab === tab.key ? " active" : ""
-            }`}
-            onClick={() => setActiveTab(tab.key)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="appointment-list">
-        {loading ? (
-          <p>Đang tải...</p>
-        ) : appointments.length > 0 ? (
-          appointments.map((appointment) => (
-            <AppointmentCard
-              key={appointment.id}
-              appointment={appointment}
-            />
-          ))
-        ) : (
-          <div className="empty-state">
-            <h3>Không có lịch hẹn.</h3>
-            <p>
-              <Link to="/doctors">Đặt lịch khám mới</Link>
-            </p>
-          </div>
-        )}
+        <div className="patient-content-card-body">
+          {loading ? (
+            <p className="patient-page-loading">Đang tải...</p>
+          ) : appointments.length > 0 ? (
+            <div className="dashboard-appointment-list">
+              {appointments.map((appointment) => (
+                <DashboardAppointmentItem
+                  key={appointment.id}
+                  appointment={appointment}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="patient-panel-empty">
+              <CalendarDays size={48} strokeWidth={1.75} />
+              <p>Không có lịch hẹn</p>
+              <Link to="/doctors" className="patient-profile-save-btn">
+                Đặt lịch khám mới
+              </Link>
+            </div>
+          )}
+        </div>
       </div>
     </PatientLayout>
   );

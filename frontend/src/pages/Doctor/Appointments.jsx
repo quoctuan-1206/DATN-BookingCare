@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import DoctorLayout from "../../components/doctor-dashboard/layout/DoctorLayout";
 import appointmentService, {
@@ -6,6 +7,7 @@ import appointmentService, {
   STATUS_LABEL,
 } from "../../services/appointment.service";
 import { getApiErrorMessage } from "../../api/axios";
+import { isExamDay } from "../../utils/booking";
 
 function Appointments() {
   const [status, setStatus] = useState("");
@@ -109,6 +111,12 @@ function Appointments() {
                         </span>
                       </td>
                       <td style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <Link
+                          to={`/doctor/appointments/${item.id}`}
+                          className="admin-btn admin-btn-secondary"
+                        >
+                          Chi tiết
+                        </Link>
                         {item.status === "PENDING" && (
                           <>
                             <button
@@ -129,13 +137,14 @@ function Appointments() {
                         )}
                         {item.status === "CONFIRMED" && (
                           <>
-                            <button
-                              type="button"
-                              className="admin-btn admin-btn-primary"
-                              onClick={() => handleStatus(item, "COMPLETED")}
-                            >
-                              Hoàn thành
-                            </button>
+                            {isExamDay(item.work_date) && (
+                              <Link
+                                to={`/doctor/appointments/${item.id}?exam=1`}
+                                className="admin-btn admin-btn-primary"
+                              >
+                                Bắt đầu khám
+                              </Link>
+                            )}
                             <button
                               type="button"
                               className="admin-btn admin-btn-danger"

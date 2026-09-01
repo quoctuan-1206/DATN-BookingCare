@@ -7,7 +7,7 @@ function Settings() {
                 <div className="admin-page-header">
                     <div>
                         <h3>Cài đặt hệ thống</h3>
-                        <p>Cấu hình thông tin chung của Booking Care</p>
+                        <p>Cấu hình thông tin chung của MediUTE</p>
                     </div>
                 </div>
 
@@ -22,7 +22,7 @@ function Settings() {
                                 id="siteName"
                                 className="admin-input"
                                 type="text"
-                                defaultValue="Booking Care"
+                                defaultValue="MediUTE"
                             />
                         </div>
 
@@ -32,7 +32,7 @@ function Settings() {
                                 id="supportEmail"
                                 className="admin-input"
                                 type="email"
-                                defaultValue="support@bookingcare.vn"
+                                defaultValue="support@mediute.vn"
                             />
                         </div>
 

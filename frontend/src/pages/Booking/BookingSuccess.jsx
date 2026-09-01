@@ -21,7 +21,7 @@ function BookingSuccess() {
                             ✓
                         </div>
 
-                        <p className="booking-eyebrow">Booking Care</p>
+                        <p className="booking-eyebrow">MediUTE</p>
                         <h1>Đặt lịch thành công</h1>
 
                         <p className="success-message">

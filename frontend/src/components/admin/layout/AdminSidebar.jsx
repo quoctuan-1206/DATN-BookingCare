@@ -14,6 +14,7 @@ import {
     Bell,
     Settings,
     LogOut,
+    Pill,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 
@@ -45,6 +46,12 @@ function AdminSidebar({ collapsed, setCollapsed }) {
             title: "Chuyên khoa",
             path: "/admin/specialties",
             icon: <Stethoscope size={18} />,
+        },
+
+        {
+            title: "Thuốc",
+            path: "/admin/medicines",
+            icon: <Pill size={18} />,
         },
 
         {
@@ -108,7 +115,7 @@ function AdminSidebar({ collapsed, setCollapsed }) {
                     className="sidebar-logo"
                 >
 
-                    {collapsed ? "BC" : "Booking Care"}
+                    {collapsed ? "MU" : "MediUTE"}
 
                 </Link>
 

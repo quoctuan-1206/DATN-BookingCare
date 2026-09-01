@@ -46,7 +46,7 @@ function Articles() {
         <PageBanner
           variant="specialty"
           title="Bài viết"
-          description="Tin tức và kiến thức sức khỏe từ hệ thống BookingCare."
+          description="Tin tức và kiến thức sức khỏe từ hệ thống MediUTE."
         />
 
         <section className="listing-content">

@@ -17,7 +17,7 @@
 }
 
 .footer-column h2 {
-  color: #49bce2;
+  color: var(--primary-color);
 
   margin-bottom: 20px;
 }
@@ -57,7 +57,7 @@
 }
 
 .footer-column li:hover {
-  color: #49bce2;
+  color: var(--primary-color);
 }
 
 .footer-social {
@@ -75,7 +75,7 @@
 }
 
 .footer-social svg:hover {
-  color: #49bce2;
+  color: var(--primary-color);
 }
 
 .footer-bottom {

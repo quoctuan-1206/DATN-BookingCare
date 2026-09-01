@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import DoctorLayout from "../../components/doctor-dashboard/layout/DoctorLayout";
 import reviewService from "../../services/review.service";
 import { getApiErrorMessage } from "../../api/axios";
+import { useAuth } from "../../context/AuthContext";
 
 function formatDate(value) {
   if (!value) return "";
@@ -15,6 +16,7 @@ function formatDate(value) {
 }
 
 function Reviews() {
+  const { user } = useAuth();
   const [reviews, setReviews] = useState([]);
   const [stats, setStats] = useState({ average_rating: 0, total_reviews: 0 });
   const [loading, setLoading] = useState(true);
@@ -23,17 +25,18 @@ function Reviews() {
 
   useEffect(() => {
     let cancelled = false;
+    const userId = user?.id;
 
     async function load() {
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       try {
-        const userId = JSON.parse(
-          localStorage.getItem("user") || "{}",
-        )?.id;
-
         const [result, statsData] = await Promise.all([
           reviewService.getReviews({ doctor_id: userId, page, limit: 20 }),
-          userId ? reviewService.getDoctorStats(userId) : Promise.resolve({ average_rating: 0, total_reviews: 0 }),
+          reviewService.getDoctorStats(userId),
         ]);
 
         if (!cancelled) {
@@ -52,7 +55,7 @@ function Reviews() {
 
     load();
     return () => { cancelled = true; };
-  }, [page]);
+  }, [page, user?.id]);
 
   return (
     <DoctorLayout title="Đánh giá">

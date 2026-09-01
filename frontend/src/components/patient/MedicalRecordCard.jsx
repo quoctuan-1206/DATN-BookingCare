@@ -1,56 +1,16 @@
-import {
-  Calendar,
-  ChevronRight,
-  ClipboardPlus,
-  Hospital,
-  Pill,
-  Stethoscope,
-} from "lucide-react";
+import { Calendar, ChevronRight, Pill } from "lucide-react";
 import { Link } from "react-router-dom";
 
 function MedicalRecordCard({ record }) {
   if (!record) return null;
 
   return (
-    <div className="medical-card">
-      <div className="medical-top">
+    <article className="patient-profile-card">
+      <div className="patient-profile-card-head">
         <div>
           <h3>{record.doctor_name}</h3>
-          <p>
-            <Hospital size={14} />
-            {record.clinic}
-          </p>
-          <p>
-            <Stethoscope size={14} />
-            {record.specialty}
-          </p>
+          <span className="patient-muted">{record.booking_code}</span>
         </div>
-
-        <div className="medical-date">
-          <Calendar size={14} />
-          {record.date_display}
-        </div>
-      </div>
-
-      <div className="medical-body">
-        <div className="medical-diagnosis">
-          <ClipboardPlus size={16} />
-          <div>
-            <strong>Chẩn đoán</strong>
-            <p>{record.diagnosis}</p>
-          </div>
-        </div>
-
-        <div className="medical-prescription">
-          <Pill size={16} />
-          <span>
-            {record.has_prescription ? "Có đơn thuốc" : "Không có đơn thuốc"}
-          </span>
-        </div>
-      </div>
-
-      <div className="medical-footer">
-        <span className="patient-muted">{record.booking_code}</span>
         <Link
           to={`/patient/medical-records/${record.id}`}
           className="medical-detail-btn"
@@ -59,7 +19,36 @@ function MedicalRecordCard({ record }) {
           <ChevronRight size={14} />
         </Link>
       </div>
-    </div>
+
+      <div className="patient-profile-card-body">
+        <div className="profile-field-row">
+          <span className="profile-field-label">Chuyên khoa</span>
+          <span className="profile-field-value">{record.specialty}</span>
+        </div>
+        <div className="profile-field-row">
+          <span className="profile-field-label">Phòng khám</span>
+          <span className="profile-field-value">{record.clinic}</span>
+        </div>
+        <div className="profile-field-row">
+          <span className="profile-field-label">Ngày khám</span>
+          <span className="profile-field-value">
+            <Calendar size={14} style={{ verticalAlign: "text-bottom" }} />{" "}
+            {record.date_display}
+          </span>
+        </div>
+        <div className="profile-field-row">
+          <span className="profile-field-label">Chẩn đoán</span>
+          <span className="profile-field-value">{record.diagnosis}</span>
+        </div>
+        <div className="profile-field-row">
+          <span className="profile-field-label">Đơn thuốc</span>
+          <span className="profile-field-value">
+            <Pill size={14} style={{ verticalAlign: "text-bottom" }} />{" "}
+            {record.has_prescription ? "Có đơn thuốc" : "Không có đơn thuốc"}
+          </span>
+        </div>
+      </div>
+    </article>
   );
 }
 

@@ -75,7 +75,7 @@ function DoctorSidebar({ collapsed, setCollapsed }) {
         >
             <div className="doctor-sidebar-top">
                 <Link to="/doctor" className="doctor-sidebar-logo">
-                    {collapsed ? "BS" : "Doctor Panel"}
+                    {collapsed ? "MU" : "MediUTE"}
                 </Link>
 
                 <button

@@ -170,6 +170,8 @@ function DoctorEdit() {
               <ImageUploadField
                 label="Ảnh đại diện"
                 inputId="avatar"
+                aspect={1}
+                shape="circle"
                 value={formData.avatar}
                 onChange={(url) =>
                   setFormData((prev) => ({ ...prev, avatar: url }))

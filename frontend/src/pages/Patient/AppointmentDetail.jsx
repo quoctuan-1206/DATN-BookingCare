@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Star } from "lucide-react";
+import { ArrowLeft, Star } from "lucide-react";
 import toast from "react-hot-toast";
 import PatientLayout from "../../components/patient/PatientLayout";
+import PatientPrescriptionView from "../../components/patient/PatientPrescriptionView";
+import medicalRecordService from "../../services/medical-record.service";
 import appointmentService, {
+  STATUS_CLASS,
   STATUS_LABEL,
 } from "../../services/appointment.service";
 import reviewService from "../../services/review.service";
@@ -35,9 +38,19 @@ function StarRating({ value, onChange, disabled }) {
   );
 }
 
+function DetailRow({ label, value }) {
+  return (
+    <div className="detail-field-row">
+      <span className="detail-field-label">{label}</span>
+      <span className="detail-field-value">{value}</span>
+    </div>
+  );
+}
+
 function AppointmentDetail() {
   const { id } = useParams();
   const [appointment, setAppointment] = useState(null);
+  const [medicalRecord, setMedicalRecord] = useState(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
 
@@ -71,6 +84,31 @@ function AppointmentDetail() {
       cancelled = true;
     };
   }, [id]);
+
+  useEffect(() => {
+    if (!appointment || appointment.status !== "COMPLETED") {
+      setMedicalRecord(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadRecord() {
+      try {
+        const record = await medicalRecordService.getByAppointmentId(
+          appointment.id,
+        );
+        if (!cancelled) setMedicalRecord(record);
+      } catch {
+        if (!cancelled) setMedicalRecord(null);
+      }
+    }
+
+    loadRecord();
+    return () => {
+      cancelled = true;
+    };
+  }, [appointment]);
 
   useEffect(() => {
     if (!appointment || appointment.status !== "COMPLETED") return;
@@ -150,7 +188,9 @@ function AppointmentDetail() {
   if (loading) {
     return (
       <PatientLayout>
-        <p>Đang tải...</p>
+        <div className="patient-content-card">
+          <p className="patient-page-loading">Đang tải...</p>
+        </div>
       </PatientLayout>
     );
   }
@@ -158,10 +198,15 @@ function AppointmentDetail() {
   if (!appointment) {
     return (
       <PatientLayout>
-        <h3>Không tìm thấy lịch hẹn.</h3>
-        <Link to="/patient/appointments" className="btn btn-primary">
-          Quay lại
-        </Link>
+        <div className="patient-content-card">
+          <div className="patient-panel-empty">
+            <p>Không tìm thấy lịch hẹn.</p>
+            <Link to="/patient/appointments" className="patient-detail-back">
+              <ArrowLeft size={16} />
+              Quay lại
+            </Link>
+          </div>
+        </div>
       </PatientLayout>
     );
   }
@@ -169,136 +214,173 @@ function AppointmentDetail() {
   const canCancel =
     appointment.status === "PENDING" || appointment.status === "CONFIRMED";
   const isCompleted = appointment.status === "COMPLETED";
+  const statusClass = STATUS_CLASS[appointment.status] || "pending";
 
   return (
     <PatientLayout>
-      <div className="page-header">
-        <div>
-          <h1>Chi tiết lịch hẹn</h1>
-          <p>
-            Mã lịch hẹn: <strong>{appointment.booking_code}</strong>
-          </p>
+      <div className="patient-content-card">
+        <div className="patient-content-card-head">
+          <h1 className="patient-content-card-title">Chi tiết lịch hẹn</h1>
+          <Link to="/patient/appointments" className="patient-detail-back">
+            <ArrowLeft size={16} />
+            Quay lại
+          </Link>
         </div>
-        <Link to="/patient/appointments" className="btn btn-outline">
-          Quay lại
-        </Link>
-      </div>
 
-      <div className="booking-card" style={{ marginBottom: 16 }}>
-        <h2>Thông tin lịch khám</h2>
-        <p>Trạng thái: {STATUS_LABEL[appointment.status]}</p>
-        <p>Bác sĩ: {appointment.doctor_name}</p>
-        <p>Chuyên khoa: {appointment.specialty}</p>
-        <p>Phòng khám: {appointment.clinic}</p>
-        <p>Ngày: {appointment.date_display}</p>
-        <p>Giờ: {appointment.time}</p>
-        <p>Bệnh nhân: {appointment.patient_name}</p>
-        <p>Lý do: {appointment.reason || "—"}</p>
-        <p>
-          Phí khám:{" "}
-          {Number(appointment.consultation_fee || 0).toLocaleString("vi-VN")} đ
-        </p>
-      </div>
+        <div className="detail-card">
+          <h2>Thông tin lịch khám</h2>
+          <DetailRow label="Mã lịch" value={appointment.booking_code} />
+          <DetailRow
+            label="Trạng thái"
+            value={
+              <span className={`appointment-status ${statusClass}`}>
+                {STATUS_LABEL[appointment.status]}
+              </span>
+            }
+          />
+          <DetailRow label="Bác sĩ" value={appointment.doctor_name} />
+          <DetailRow label="Chuyên khoa" value={appointment.specialty} />
+          <DetailRow label="Phòng khám" value={appointment.clinic} />
+          <DetailRow
+            label="Thời gian"
+            value={`${appointment.date_display} · ${appointment.time}`}
+          />
+          <DetailRow label="Bệnh nhân" value={appointment.patient_name} />
+          <DetailRow label="Lý do" value={appointment.reason || "—"} />
+          <DetailRow
+            label="Phí khám"
+            value={`${Number(appointment.consultation_fee || 0).toLocaleString("vi-VN")} đ`}
+          />
+        </div>
 
-      {canCancel && (
-        <button
-          type="button"
-          className="btn btn-outline"
-          disabled={cancelling}
-          onClick={handleCancel}
-        >
-          {cancelling ? "Đang hủy..." : "Hủy lịch"}
-        </button>
-      )}
+        {canCancel && (
+          <div className="patient-detail-actions">
+            <button
+              type="button"
+              className="patient-profile-secondary-btn"
+              disabled={cancelling}
+              onClick={handleCancel}
+            >
+              {cancelling ? "Đang hủy..." : "Hủy lịch"}
+            </button>
+          </div>
+        )}
 
-      {isCompleted && (
-        <div className="review-section">
-          <h2>Đánh giá bác sĩ</h2>
-
-          {reviewLoading ? (
-            <p>Đang tải đánh giá...</p>
-          ) : review && !editing ? (
-            <div className="review-display">
-              <div className="review-stars-display">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Star
-                    key={star}
-                    size={22}
-                    fill={star <= review.rating ? "#f5a623" : "none"}
-                    color={star <= review.rating ? "#f5a623" : "#cbd5e1"}
-                  />
-                ))}
-                <span className="review-rating-text">
-                  {review.rating}/5
-                </span>
+        {isCompleted && medicalRecord && (
+          <>
+            <div className="detail-card">
+              <h2>Bệnh án</h2>
+              <DetailRow label="Chẩn đoán" value={medicalRecord.diagnosis} />
+              <DetailRow label="Kết luận" value={medicalRecord.conclusion} />
+              <div className="patient-detail-actions">
+                <Link
+                  to={`/patient/medical-records/${medicalRecord.id}`}
+                  className="patient-profile-secondary-btn"
+                >
+                  Xem chi tiết bệnh án
+                </Link>
               </div>
-              {review.comment && (
-                <p className="review-comment">{review.comment}</p>
-              )}
-              <p className="review-date">
-                Đánh giá lúc:{" "}
-                {new Date(review.created_at).toLocaleDateString("vi-VN")}
-              </p>
-              <button
-                type="button"
-                className="btn btn-outline btn-sm"
-                onClick={() => setEditing(true)}
-              >
-                Sửa đánh giá
-              </button>
             </div>
-          ) : (
-            <div className="review-form">
-              <label>Chọn số sao:</label>
-              <StarRating
-                value={rating}
-                onChange={setRating}
-                disabled={submitting}
-              />
 
-              <label htmlFor="review-comment">Nhận xét (không bắt buộc):</label>
-              <textarea
-                id="review-comment"
-                className="review-textarea"
-                rows={3}
-                maxLength={2000}
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder="Chia sẻ trải nghiệm của bạn..."
-                disabled={submitting}
-              />
+            <PatientPrescriptionView
+              medicalRecordId={medicalRecord.id}
+              hasPrescription={medicalRecord.has_prescription}
+            />
+          </>
+        )}
 
-              <div className="review-form-actions">
+        {isCompleted && (
+          <div className="review-section">
+            <h2>Đánh giá bác sĩ</h2>
+
+            {reviewLoading ? (
+              <p className="patient-page-loading">Đang tải đánh giá...</p>
+            ) : review && !editing ? (
+              <div className="review-display">
+                <div className="review-stars-display">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      size={22}
+                      fill={star <= review.rating ? "#f5a623" : "none"}
+                      color={star <= review.rating ? "#f5a623" : "#cbd5e1"}
+                    />
+                  ))}
+                  <span className="review-rating-text">
+                    {review.rating}/5
+                  </span>
+                </div>
+                {review.comment && (
+                  <p className="review-comment">{review.comment}</p>
+                )}
+                <p className="review-date">
+                  Đánh giá lúc:{" "}
+                  {new Date(review.created_at).toLocaleDateString("vi-VN")}
+                </p>
                 <button
                   type="button"
-                  className="btn btn-primary"
-                  disabled={submitting || rating === 0}
-                  onClick={handleSubmitReview}
+                  className="patient-profile-secondary-btn"
+                  onClick={() => setEditing(true)}
                 >
-                  {submitting
-                    ? "Đang gửi..."
-                    : editing
-                      ? "Cập nhật"
-                      : "Gửi đánh giá"}
+                  Sửa đánh giá
                 </button>
-                {editing && (
+              </div>
+            ) : (
+              <div className="review-form">
+                <label>Chọn số sao:</label>
+                <StarRating
+                  value={rating}
+                  onChange={setRating}
+                  disabled={submitting}
+                />
+
+                <label htmlFor="review-comment">
+                  Nhận xét (không bắt buộc):
+                </label>
+                <textarea
+                  id="review-comment"
+                  className="review-textarea"
+                  rows={3}
+                  maxLength={2000}
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="Chia sẻ trải nghiệm của bạn..."
+                  disabled={submitting}
+                />
+
+                <div className="review-form-actions">
                   <button
                     type="button"
-                    className="btn btn-outline"
-                    onClick={() => {
-                      setEditing(false);
-                      setRating(review.rating);
-                      setComment(review.comment || "");
-                    }}
+                    className="patient-profile-save-btn"
+                    style={{ marginTop: 0 }}
+                    disabled={submitting || rating === 0}
+                    onClick={handleSubmitReview}
                   >
-                    Hủy
+                    {submitting
+                      ? "Đang gửi..."
+                      : editing
+                        ? "Cập nhật"
+                        : "Gửi đánh giá"}
                   </button>
-                )}
+                  {editing && (
+                    <button
+                      type="button"
+                      className="patient-profile-secondary-btn"
+                      onClick={() => {
+                        setEditing(false);
+                        setRating(review.rating);
+                        setComment(review.comment || "");
+                      }}
+                    >
+                      Hủy
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+          </div>
+        )}
+      </div>
     </PatientLayout>
   );
 }

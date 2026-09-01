@@ -85,6 +85,43 @@ async function seed() {
     }
 
     console.log("🎉 Xong. Chỉ còn roles + 2 Admin.");
+
+    console.log("Nạp danh mục thuốc mẫu...");
+    await prisma.medicines.createMany({
+      data: [
+        {
+          name: "Paracetamol 500mg",
+          unit: "viên",
+          price: 1500,
+          description: "Hạ sốt, giảm đau",
+        },
+        {
+          name: "Amoxicillin 500mg",
+          unit: "viên",
+          price: 3500,
+          description: "Kháng sinh",
+        },
+        {
+          name: "Omeprazole 20mg",
+          unit: "viên",
+          price: 2800,
+          description: "Điều trị viêm loét dạ dày",
+        },
+        {
+          name: "Vitamin C 500mg",
+          unit: "viên",
+          price: 1200,
+          description: "Bổ sung vitamin C",
+        },
+        {
+          name: "Salbutamol 2mg",
+          unit: "viên",
+          price: 4200,
+          description: "Giãn phế quản",
+        },
+      ],
+    });
+    console.log("✅ Đã thêm 5 thuốc mẫu.");
   } catch (error) {
     console.error("❌ Lỗi khi seed:", error);
   } finally {

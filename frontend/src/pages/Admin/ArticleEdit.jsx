@@ -185,6 +185,7 @@ function ArticleEdit() {
               <ImageUploadField
                 label="Ảnh"
                 inputId="image"
+                aspect={16 / 9}
                 value={formData.image}
                 onChange={(url) =>
                   setFormData((prev) => ({ ...prev, image: url }))

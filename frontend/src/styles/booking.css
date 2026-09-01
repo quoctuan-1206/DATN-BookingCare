@@ -6,15 +6,18 @@
     background:
         radial-gradient(
             circle at top right,
-            rgba(73, 188, 226, 0.12),
+            rgba(var(--primary-rgb), 0.12),
             transparent 42%
         ),
         var(--bg-color);
 }
 
 .booking-page {
-    max-width: 1100px;
-    margin: 0 auto;
+    max-width: none;
+}
+
+.booking-section .container.booking-page {
+    width: min(1480px, calc(100vw - 32px));
 }
 
 .booking-eyebrow {
@@ -27,146 +30,177 @@
     text-transform: uppercase;
 }
 
-/* ===================================================
-   STEPPER
-=================================================== */
-
-.booking-stepper-bar {
-    background: #fff;
-    border-bottom: 1px solid #eee;
-    padding: 16px 0;
-    position: sticky;
-    top: 0;
-    z-index: 50;
+.booking-board {
+    display: grid;
+    grid-template-columns:
+        minmax(180px, 0.85fr)
+        minmax(320px, 1.55fr)
+        minmax(240px, 1.15fr)
+        minmax(240px, 1.1fr)
+        minmax(140px, 150px);
+    gap: 14px;
+    align-items: stretch;
 }
 
-.booking-stepper {
+.booking-col {
+    min-width: 0;
     display: flex;
-    justify-content: center;
-    gap: 8px;
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 0 16px;
+    flex-direction: column;
 }
 
-.booking-stepper-item {
-    display: flex;
+.booking-col--doctor {
+    gap: 12px;
+}
+
+.booking-col--doctor h1 {
+    margin: 0;
+    font-size: 26px;
+    line-height: 1.25;
+    color: var(--text-color);
+}
+
+.booking-col--doctor .booking-doctor {
+    flex: 1;
+}
+
+.booking-col--doctor .booking-doctor-top {
+    flex-direction: column;
     align-items: center;
-    gap: 8px;
-    padding: 8px 18px;
-    border-radius: 999px;
-    font-size: 14px;
-    font-weight: 500;
-    color: #999;
-    background: #f0f2f5;
-    transition: all 0.2s;
+    text-align: center;
+}
+
+.booking-col--doctor .booking-doctor-identity h2 {
+    font-size: 18px;
+}
+
+.booking-col--doctor .booking-specialty,
+.booking-col--doctor .booking-clinic {
+    justify-content: center;
+}
+
+.booking-col--doctor .booking-doctor-meta {
+    grid-template-columns: 1fr;
+}
+
+.booking-col--doctor .booking-price-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.booking-board > .booking-card {
+    padding: 18px 16px;
+}
+
+.booking-board .booking-card-head {
+    margin-bottom: 14px;
+}
+
+.booking-board .booking-card-head h2 {
+    font-size: 17px;
+}
+
+.booking-board .booking-card-head p {
+    font-size: 13px;
+}
+
+.booking-board .patient-list {
+    flex: 1;
+    max-height: 380px;
+    overflow: auto;
+    margin-bottom: 12px;
+}
+
+.booking-board .patient-card {
+    padding: 12px;
+}
+
+.booking-board .patient-meta {
+    gap: 4px 12px;
+}
+
+.booking-board .patient-meta span {
     white-space: nowrap;
 }
 
-.booking-stepper-item.active {
-    background: var(--primary-color);
-    color: #fff;
+.booking-board .booking-form,
+.booking-board .booking-summary {
+    flex: 1;
 }
 
-.booking-stepper-item.done {
-    background: rgba(73, 188, 226, 0.15);
-    color: var(--primary-color);
+.booking-board .booking-form .form-group textarea {
+    min-height: 88px;
 }
 
-.booking-stepper-num {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    display: flex;
+.booking-board .summary-row {
+    padding: 7px 0;
+}
+
+.booking-board .summary-row.total strong {
+    font-size: 16px;
+}
+
+.booking-board .confirm-checkbox {
+    margin-top: auto;
+    padding-top: 10px;
+    font-size: 13px;
+}
+
+.add-patient-btn {
+    display: inline-flex;
     align-items: center;
+    width: 100%;
+    margin-top: auto;
     justify-content: center;
+    border-radius: 999px;
+}
+
+.field-counter {
+    display: block;
+    margin-top: 6px;
+    text-align: right;
     font-size: 12px;
-    font-weight: 700;
-    background: rgba(0, 0, 0, 0.08);
-    color: #999;
-    flex-shrink: 0;
+    color: #94a3b8;
 }
 
-.booking-stepper-item.active .booking-stepper-num {
-    background: rgba(255, 255, 255, 0.3);
-    color: #fff;
-}
-
-.booking-stepper-item.done .booking-stepper-num {
-    background: var(--primary-color);
-    color: #fff;
-}
-
-/* ===================================================
-   NAV
-=================================================== */
-
-.booking-nav {
-    display: flex;
-    justify-content: space-between;
+.booking-col--actions {
+    justify-content: center;
     gap: 12px;
-    margin-top: 24px;
-    padding-top: 4px;
 }
 
-.booking-nav .btn {
+.booking-action-back,
+.booking-action-submit {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+    border-radius: 999px;
+    padding: 12px 10px;
+    font-size: 13px;
+    white-space: normal;
+    line-height: 1.35;
 }
 
-/* ===================================================
-   PATIENT PREVIEW (sidebar)
-=================================================== */
-
-.booking-patient-preview {
-    padding: 16px 20px;
-    border-top: 3px solid var(--primary-color);
+.booking-action-submit {
+    border-radius: 12px;
 }
 
-.booking-patient-preview-head {
+.booking-secure-note {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-    color: var(--primary-color);
-}
-
-.booking-patient-preview-head strong {
-    font-size: 13px;
-    font-weight: 600;
-}
-
-.booking-patient-preview p {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text-color);
-    margin: 0 0 4px;
-}
-
-.booking-patient-meta {
-    font-size: 13px;
-    color: var(--gray-color);
-}
-
-.booking-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 700px) minmax(320px, 360px);
-    gap: 28px;
-    align-items: start;
     justify-content: center;
+    gap: 8px;
+    margin: 28px 0 0;
+    color: var(--gray-color);
+    font-size: 13px;
+    text-align: center;
 }
 
-.booking-main,
-.booking-aside {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.booking-aside {
-    position: sticky;
-    top: 24px;
+.booking-secure-note svg {
+    color: var(--primary-color);
+    flex-shrink: 0;
 }
 
 /* ===================================================
@@ -209,7 +243,7 @@
     margin-bottom: 8px;
     padding: 4px 10px;
     border-radius: 999px;
-    background: rgba(73, 188, 226, 0.12);
+    background: rgba(var(--primary-rgb), 0.12);
     color: var(--primary-color);
     font-size: 12px;
     font-weight: 700;
@@ -229,7 +263,7 @@
     background:
         linear-gradient(
             180deg,
-            rgba(73, 188, 226, 0.08),
+            rgba(var(--primary-rgb), 0.08),
             rgba(255, 255, 255, 0.9) 48%
         ),
         var(--white);
@@ -353,9 +387,9 @@
 }
 
 .patient-card.active {
-    background: rgba(73, 188, 226, 0.06);
+    background: rgba(var(--primary-rgb), 0.06);
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(73, 188, 226, 0.12);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.12);
 }
 
 .patient-card input[type="radio"] {
@@ -434,7 +468,7 @@
 }
 
 .add-patient-link:hover {
-    color: #2eaad7;
+    color: var(--primary-hover);
     text-decoration: underline;
 }
 
@@ -489,7 +523,7 @@
 .booking-form .form-group input:focus,
 .booking-form .form-group select:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(73, 188, 226, 0.18);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.18);
 }
 
 /* ===================================================
@@ -553,6 +587,7 @@
     display: flex;
     align-items: flex-start;
     gap: 12px;
+    margin-top: 18px;
     cursor: pointer;
     line-height: 1.6;
     color: var(--gray-color);
@@ -616,7 +651,7 @@
     justify-content: center;
     align-items: center;
     margin: 0 auto 18px;
-    box-shadow: 0 10px 24px rgba(73, 188, 226, 0.35);
+    box-shadow: 0 10px 24px rgba(var(--primary-rgb), 0.35);
 }
 
 .booking-success-card h1 {
@@ -656,7 +691,7 @@
 }
 
 .success-row--highlight {
-    background: rgba(73, 188, 226, 0.08);
+    background: rgba(var(--primary-rgb), 0.08);
 }
 
 .success-row--highlight strong {
@@ -695,17 +730,40 @@
    RESPONSIVE
 =================================================== */
 
-@media (max-width: 992px) {
-    .booking-layout {
+@media (max-width: 1320px) {
+    .booking-board {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .booking-col--doctor,
+    .booking-col--actions {
+        grid-column: 1 / -1;
+    }
+
+    .booking-col--actions {
+        flex-direction: row;
+        justify-content: flex-end;
+    }
+
+    .booking-action-back,
+    .booking-action-submit {
+        width: auto;
+        min-width: 180px;
+    }
+}
+
+@media (max-width: 768px) {
+    .booking-board {
         grid-template-columns: 1fr;
     }
 
-    .booking-aside {
-        position: static;
+    .booking-col--actions {
+        flex-direction: column;
     }
 
-    .booking-stepper {
-        flex-wrap: wrap;
+    .booking-action-back,
+    .booking-action-submit {
+        width: 100%;
     }
 }
 

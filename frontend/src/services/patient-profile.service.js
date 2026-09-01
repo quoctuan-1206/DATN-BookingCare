@@ -47,6 +47,8 @@ export const patientProfileService = {
 
   updateProfile: (id, payload) =>
     axiosClient.put(`/patient-profiles/${id}`, payload),
+
+  deleteProfile: (id) => axiosClient.delete(`/patient-profiles/${id}`),
 };
 
 export default patientProfileService;

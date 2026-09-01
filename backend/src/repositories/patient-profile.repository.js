@@ -63,6 +63,18 @@ class PatientProfileRepository {
       data: payload,
     });
   }
+
+  async delete(id) {
+    return prisma.patient_profiles.delete({
+      where: { id: Number(id) },
+    });
+  }
+
+  async countAppointments(profileId) {
+    return prisma.appointments.count({
+      where: { patient_profile_id: Number(profileId) },
+    });
+  }
 }
 
 export default new PatientProfileRepository();

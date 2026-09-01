@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { ClipboardList } from "lucide-react";
 import toast from "react-hot-toast";
 import PatientLayout from "../../components/patient/PatientLayout";
 import MedicalRecordCard from "../../components/patient/MedicalRecordCard";
@@ -32,45 +33,52 @@ function MedicalRecords() {
 
   return (
     <PatientLayout>
-      <div className="page-header">
-        <div>
-          <h1>Lịch sử khám bệnh</h1>
-          <p>Theo dõi bệnh án và kết quả khám.</p>
+      <div className="patient-content-card">
+        <div className="patient-content-card-head">
+          <h1 className="patient-content-card-title">Lịch sử khám bệnh</h1>
         </div>
-      </div>
 
-      <div className="record-search">
-        <input
-          type="text"
-          placeholder="Tìm theo bác sĩ, chẩn đoán, mã lịch..."
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") setSearch(keyword);
-          }}
-        />
-        <button
-          type="button"
-          className="btn btn-primary"
-          style={{ marginLeft: 8 }}
-          onClick={() => setSearch(keyword)}
-        >
-          Tìm
-        </button>
-      </div>
+        <div className="patient-content-card-toolbar">
+          <input
+            type="text"
+            className="patient-search-input"
+            placeholder="Tìm theo bác sĩ, chẩn đoán, mã lịch..."
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") setSearch(keyword);
+            }}
+          />
+          <button
+            type="button"
+            className="patient-profile-save-btn"
+            style={{ marginTop: 0, minWidth: 88 }}
+            onClick={() => setSearch(keyword)}
+          >
+            Tìm
+          </button>
+        </div>
 
-      <div className="medical-record-list">
-        {loading ? (
-          <p>Đang tải...</p>
-        ) : records.length > 0 ? (
-          records.map((record) => (
-            <MedicalRecordCard key={record.id} record={record} />
-          ))
-        ) : (
-          <div className="empty-state">
-            <h3>Không tìm thấy bệnh án.</h3>
-          </div>
-        )}
+        <div className="patient-content-card-body">
+          {loading ? (
+            <p className="patient-page-loading">Đang tải...</p>
+          ) : records.length > 0 ? (
+            <div className="medical-records-grid">
+              {records.map((record) => (
+                <MedicalRecordCard key={record.id} record={record} />
+              ))}
+            </div>
+          ) : (
+            <div className="patient-panel-empty">
+              <ClipboardList size={48} strokeWidth={1.75} />
+              <p>
+                {search.trim()
+                  ? "Không tìm thấy bệnh án. Vui lòng thử từ khóa khác."
+                  : "Chưa có bệnh án nào."}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </PatientLayout>
   );

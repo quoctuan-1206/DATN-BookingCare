@@ -33,5 +33,5 @@
 }
 
 .btn-outline:hover {
-  background: rgba(73, 188, 226, 0.08);
+  background: rgba(var(--primary-rgb), 0.08);
 }

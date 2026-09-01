@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import AdminLayout from "../../components/admin/layout/AdminLayout";
+import ImageUploadField from "../../components/admin/ImageUploadField";
 import doctorService from "../../services/doctor.service";
 import clinicService from "../../services/clinic.service";
 import specialtyService from "../../services/specialty.service";
@@ -24,6 +25,7 @@ function DoctorCreate() {
     degree: "",
     position: "",
     room: "",
+    avatar: "",
   });
 
   useEffect(() => {
@@ -88,6 +90,7 @@ function DoctorCreate() {
         room: formData.room || undefined,
         specialty_id: Number(formData.specialty_id),
         clinic_id: Number(formData.clinic_id),
+        avatar: formData.avatar || undefined,
       };
 
       await doctorService.createDoctor(payload);
@@ -283,6 +286,17 @@ function DoctorCreate() {
                   ))}
                 </select>
               </div>
+
+              <ImageUploadField
+                label="Ảnh đại diện"
+                inputId="avatar"
+                aspect={1}
+                shape="circle"
+                value={formData.avatar}
+                onChange={(url) =>
+                  setFormData((prev) => ({ ...prev, avatar: url }))
+                }
+              />
 
               <div className="admin-form-group">
                 <label htmlFor="room">Phòng / số phòng</label>

@@ -82,17 +82,38 @@ class ReviewRepository {
     return prisma.reviews.delete({ where: { id } });
   }
 
-  // Tính điểm trung bình và tổng đánh giá của bác sĩ
+  // Tính điểm trung bình, tổng và phân bố sao của bác sĩ
   async getStatsByDoctorId(doctorId) {
-    const result = await prisma.reviews.aggregate({
-      where: { doctor_id: doctorId },
-      _avg: { rating: true },
-      _count: { id: true },
-    });
+    const id = Number(doctorId);
+    const where = { doctor_id: id };
+
+    const [result, grouped] = await Promise.all([
+      prisma.reviews.aggregate({
+        where,
+        _avg: { rating: true },
+        _count: { id: true },
+      }),
+      prisma.reviews.groupBy({
+        by: ["rating"],
+        where: { ...where, rating: { not: null } },
+        _count: { rating: true },
+      }),
+    ]);
+
+    const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    for (const row of grouped) {
+      const star = Number(row.rating);
+      if (star >= 1 && star <= 5) {
+        distribution[star] = row._count.rating;
+      }
+    }
 
     return {
-      average_rating: result._avg.rating ? Math.round(result._avg.rating * 10) / 10 : 0,
+      average_rating: result._avg.rating
+        ? Math.round(result._avg.rating * 10) / 10
+        : 0,
       total_reviews: result._count.id,
+      distribution,
     };
   }
 }

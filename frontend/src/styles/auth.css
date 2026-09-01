@@ -30,7 +30,7 @@
 .auth-banner {
     position: relative;
     padding: 70px 60px;
-    background: linear-gradient(135deg, rgb(73, 188, 226), rgb(42, 170, 212));
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
     color: #fff;
     display: flex;
     flex-direction: column;
@@ -135,7 +135,7 @@
     left: 0;
     width: 100%;
     height: 6px;
-    background: linear-gradient(90deg, rgb(73, 188, 226), rgb(42, 170, 212));
+    background: linear-gradient(90deg, var(--primary-color), var(--primary-hover));
 }
 
 .auth-header {
@@ -209,8 +209,8 @@
 .auth-form .form-group input:focus,
 .auth-form .form-group select:focus,
 .auth-form .form-group textarea:focus {
-    border-color: rgb(73, 188, 226);
-    box-shadow: 0 0 0 4px rgba(73, 188, 226, 0.12);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.12);
 }
 
 .auth-grid {
@@ -258,13 +258,13 @@
 
 .forgot-password {
     text-decoration: none;
-    color: rgb(73, 188, 226);
+    color: var(--primary-color);
     font-size: 14px;
     font-weight: 600;
 }
 
 .forgot-password:hover {
-    color: rgb(42, 170, 212);
+    color: var(--primary-hover);
 }
 
 .auth-btn {
@@ -272,7 +272,7 @@
     height: 52px;
     border: none;
     border-radius: 10px;
-    background: rgb(73, 188, 226);
+    background: var(--primary-color);
     color: #fff;
     font-size: 16px;
     font-weight: 600;
@@ -281,18 +281,18 @@
 }
 
 .auth-btn:hover {
-    background: rgb(42, 170, 212);
+    background: var(--primary-hover);
     transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(73, 188, 226, 0.25);
+    box-shadow: 0 10px 20px rgba(var(--primary-rgb), 0.25);
 }
 
 .auth-btn-outline {
     width: 100%;
     height: 52px;
-    border: 1px solid rgb(73, 188, 226);
+    border: 1px solid var(--primary-color);
     border-radius: 10px;
     background: #fff;
-    color: rgb(73, 188, 226);
+    color: var(--primary-color);
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
@@ -303,7 +303,7 @@
 }
 
 .auth-btn-outline:hover {
-    background: rgb(73, 188, 226);
+    background: var(--primary-color);
     color: #fff;
 }
 
@@ -340,7 +340,7 @@
 
 .auth-footer a {
     margin-left: 6px;
-    color: rgb(73, 188, 226);
+    color: var(--primary-color);
     font-weight: 600;
     text-decoration: none;
 }
@@ -370,8 +370,8 @@
 }
 
 .password-input input:focus {
-    border-color: rgb(73, 188, 226);
-    box-shadow: 0 0 0 4px rgba(73, 188, 226, 0.12);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.12);
 }
 
 .password-toggle {
@@ -413,8 +413,8 @@
 }
 
 .social-btn:hover {
-    border-color: rgb(73, 188, 226);
-    color: rgb(73, 188, 226);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
 }
 
 /*==================================================
@@ -440,8 +440,8 @@
 }
 
 .otp-inputs input:focus {
-    border-color: rgb(73, 188, 226);
-    box-shadow: 0 0 0 4px rgba(73, 188, 226, 0.12);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.12);
 }
 
 .otp-resend {
@@ -454,7 +454,7 @@
 .otp-resend button {
     border: none;
     background: none;
-    color: rgb(73, 188, 226);
+    color: var(--primary-color);
     font-weight: 600;
     cursor: pointer;
 }

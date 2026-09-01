@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import toast from "react-hot-toast";
+import { ChevronRight, Home } from "lucide-react";
 
 import Header from "../../components/common/Header/Header";
 import Footer from "../../components/common/Footer/Footer";
@@ -13,6 +14,7 @@ import BookingPanel from "../../components/doctor/BookingPanel";
 import doctorService from "../../services/doctor.service";
 import scheduleService from "../../services/schedule.service";
 import { getApiErrorMessage } from "../../api/axios";
+import { getMinBookingDateYMD } from "../../utils/booking";
 
 function DoctorDetail() {
   const { id } = useParams();
@@ -32,7 +34,7 @@ function DoctorDetail() {
         const [doctorData, scheduleMap] = await Promise.all([
           doctorService.getDoctorById(id),
           scheduleService.getDoctorScheduleMap(id, {
-            from_date: new Date().toISOString().slice(0, 10),
+            from_date: getMinBookingDateYMD(),
           }),
         ]);
 
@@ -63,16 +65,10 @@ function DoctorDetail() {
 
   const slots = useMemo(() => {
     if (!selectedDate) return [];
-    return schedulesByDate[selectedDate] || [];
+    return [...(schedulesByDate[selectedDate] || [])].sort((a, b) =>
+      String(a.start_time || "").localeCompare(String(b.start_time || "")),
+    );
   }, [schedulesByDate, selectedDate]);
-
-  const clinic = doctor
-    ? {
-        id: doctor.clinic_id,
-        name: doctor.clinic,
-        address: doctor.clinic_address || "—",
-      }
-    : null;
 
   const handleSelectSlot = (slot) => {
     setSelectedSchedule({
@@ -93,7 +89,7 @@ function DoctorDetail() {
     return (
       <>
         <Header />
-        <section className="section">
+        <section className="doctor-detail-page">
           <div className="container doctor-detail">
             <p>Đang tải thông tin bác sĩ...</p>
           </div>
@@ -107,7 +103,7 @@ function DoctorDetail() {
     return (
       <>
         <Header />
-        <section className="section">
+        <section className="doctor-detail-page">
           <div className="container doctor-detail">
             <h1>Không tìm thấy bác sĩ</h1>
             <Link to="/doctors" className="btn btn-primary">
@@ -120,6 +116,10 @@ function DoctorDetail() {
     );
   }
 
+  const displayName =
+    [doctor.last_name, doctor.first_name].filter(Boolean).join(" ") ||
+    doctor.name;
+
   const doctorView = {
     ...doctor,
     price:
@@ -131,15 +131,24 @@ function DoctorDetail() {
     <>
       <Header />
 
-      <section className="section">
+      <section className="doctor-detail-page">
         <div className="container doctor-detail">
+          <nav className="doctor-breadcrumb">
+            <Link to="/">
+              <Home size={15} />
+              Trang chủ
+            </Link>
+            <ChevronRight size={14} />
+            <Link to="/doctors">Bác sĩ</Link>
+            <ChevronRight size={14} />
+            <span>Bác sĩ {displayName}</span>
+          </nav>
+
           <DoctorProfile doctor={doctorView} />
           <DoctorBiography doctor={doctorView} />
 
           <div className="doctor-booking-flow">
             <DoctorSchedule
-              doctor={doctorView}
-              clinic={clinic}
               dateOptions={dateOptions}
               slots={slots}
               selectedDate={selectedDate}
@@ -150,16 +159,12 @@ function DoctorDetail() {
 
             <BookingPanel
               doctor={doctorView}
+              selectedDate={selectedDate}
               selectedSchedule={selectedSchedule}
             />
           </div>
 
-          <DoctorReview
-            doctorId={doctor.id}
-            reviews={doctor.reviews}
-            rating={doctor.rating}
-            reviewCount={doctor.review_count}
-          />
+          <DoctorReview doctorId={doctor.id} />
         </div>
       </section>
 

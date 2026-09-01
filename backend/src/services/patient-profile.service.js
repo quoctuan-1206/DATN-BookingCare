@@ -89,6 +89,28 @@ class PatientProfileService {
     const profile = await patientProfileRepository.update(id, data);
     return this.formatProfile(profile);
   }
+
+  async deleteProfile(user, id) {
+    const existing = await patientProfileRepository.findById(id);
+    if (!existing || existing.account_id !== user.id) {
+      const error = new Error("Không tìm thấy hồ sơ bệnh nhân");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const appointmentCount =
+      await patientProfileRepository.countAppointments(id);
+    if (appointmentCount > 0) {
+      const error = new Error(
+        "Không thể xóa hồ sơ đã có lịch hẹn",
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
+    await patientProfileRepository.delete(id);
+    return { id: Number(id) };
+  }
 }
 
 export default new PatientProfileService();

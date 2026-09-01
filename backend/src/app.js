@@ -17,6 +17,8 @@ import medicalRecordRoutes from "./routes/medical-record.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 import uploadRoutes from "./routes/upload.routes.js";
 import reviewRoutes from "./routes/review.routes.js";
+import medicineRoutes from "./routes/medicine.routes.js";
+import prescriptionRoutes from "./routes/prescription.routes.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -32,7 +34,7 @@ app.use("/uploads", express.static(path.resolve(__dirname, "../uploads")));
 app.get("/", (req, res) => {
   res.json({
     success: true,
-    message: "Hệ thống Booking Care API đang hoạt động",
+    message: "Hệ thống MediUTE API đang hoạt động",
   });
 });
 
@@ -74,6 +76,10 @@ app.use("/api/upload", uploadRoutes);
 
 // Đánh giá
 app.use("/api/reviews", reviewRoutes);
+
+// Thuốc & đơn thuốc
+app.use("/api/medicines", medicineRoutes);
+app.use("/api/prescriptions", prescriptionRoutes);
 
 // Middleware bắt lỗi chung toàn hệ thống
 app.use((err, req, res, next) => {

@@ -17,6 +17,9 @@ function Navigation() {
           <Link to="/doctors">Bác sĩ</Link>
         </li>
         <li>
+          <Link to="/clinical-services">Cận lâm sàng</Link>
+        </li>
+        <li>
           <Link to="/articles">Bài viết</Link>
         </li>
       </ul>

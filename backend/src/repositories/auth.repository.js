@@ -32,6 +32,31 @@ export async function updatePassword(userId, password) {
   });
 }
 
+// Đổi mật khẩu và thu hồi toàn bộ phiên đăng nhập trong cùng giao dịch
+export async function changePasswordAndRevokeTokens(userId, password) {
+  return prisma.$transaction([
+    prisma.users.update({
+      where: { id: Number(userId) },
+      data: { password, updated_at: new Date() },
+    }),
+    prisma.refresh_tokens.deleteMany({
+      where: { user_id: Number(userId) },
+    }),
+  ]);
+}
+
+// Cập nhật thông tin cơ bản của tài khoản
+export async function updateUserProfile(userId, data) {
+  return prisma.users.update({
+    where: { id: Number(userId) },
+    data: {
+      ...data,
+      updated_at: new Date(),
+    },
+    include: { role: true },
+  });
+}
+
 // Lưu refresh token vào bảng refresh_tokens
 export async function createRefreshToken(data) {
   return prisma.refresh_tokens.create({ data });

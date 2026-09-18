@@ -14,12 +14,15 @@ import "./styles/form.css";
 import "./styles/doctor.css";
 import "./styles/clinic.css";
 import "./styles/specialty.css";
+import "./styles/article.css";
 import "./styles/listing.css";
 import "./styles/booking.css";
 import "./styles/patient.css";
 import "./styles/auth.css";
 import "./styles/admin.css";
 import "./styles/doctor-dashboard.css";
+import "./styles/lab.css";
+import "./styles/clinical.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

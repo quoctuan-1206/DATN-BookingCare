@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import DoctorLayout from "../../components/doctor-dashboard/layout/DoctorLayout";
-import appointmentService from "../../services/appointment.service";
+import DoctorPrescriptionTable from "../../components/doctor-dashboard/DoctorPrescriptionTable";
+import ClinicalRecordSection from "../../components/clinical/ClinicalRecordSection";
 import medicalRecordService from "../../services/medical-record.service";
+import clinicalService from "../../services/clinical.service";
 import { getApiErrorMessage } from "../../api/axios";
 
 const emptyForm = {
-  appointment_id: "",
   symptoms: "",
   diagnosis: "",
   conclusion: "",
@@ -15,44 +17,24 @@ const emptyForm = {
 
 function MedicalRecord() {
   const [records, setRecords] = useState([]);
-  const [eligibleAppointments, setEligibleAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState(emptyForm);
+  const [expandedId, setExpandedId] = useState(null);
+  const [clinicalExpandedId, setClinicalExpandedId] = useState(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [recordsResult, confirmed, completed] = await Promise.all([
-        medicalRecordService.getRecords({ page: 1, limit: 50 }),
-        appointmentService.getAppointments({
-          status: "CONFIRMED",
-          page: 1,
-          limit: 50,
-        }),
-        appointmentService.getAppointments({
-          status: "COMPLETED",
-          page: 1,
-          limit: 50,
-        }),
-      ]);
-
-      const existingAppointmentIds = new Set(
-        (recordsResult.data || []).map((r) => r.appointment_id),
-      );
-
-      const eligible = [...confirmed.data, ...completed.data].filter(
-        (a) => !existingAppointmentIds.has(a.id),
-      );
-
+      const recordsResult = await medicalRecordService.getRecords({
+        page: 1,
+        limit: 50,
+      });
       setRecords(recordsResult.data || []);
-      setEligibleAppointments(eligible);
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Không tải được bệnh án"));
       setRecords([]);
-      setEligibleAppointments([]);
     } finally {
       setLoading(false);
     }
@@ -62,26 +44,19 @@ function MedicalRecord() {
     loadData();
   }, [loadData]);
 
-  const openCreate = () => {
-    setEditingId(null);
-    setFormData(emptyForm);
-    setShowForm(true);
-  };
-
   const openEdit = (record) => {
+    setExpandedId(null);
+    setClinicalExpandedId(null);
     setEditingId(record.id);
     setFormData({
-      appointment_id: String(record.appointment_id),
       symptoms: record.symptoms === "—" ? "" : record.symptoms || "",
       diagnosis: record.diagnosis === "—" ? "" : record.diagnosis || "",
       conclusion: record.conclusion === "—" ? "" : record.conclusion || "",
       note: record.note || "",
     });
-    setShowForm(true);
   };
 
-  const closeForm = () => {
-    setShowForm(false);
+  const closeEdit = () => {
     setEditingId(null);
     setFormData(emptyForm);
   };
@@ -94,37 +69,23 @@ function MedicalRecord() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!editingId) return;
+
     if (!formData.diagnosis.trim()) {
       toast.error("Vui lòng nhập chẩn đoán");
       return;
     }
 
-    if (!editingId && !formData.appointment_id) {
-      toast.error("Vui lòng chọn lịch hẹn");
-      return;
-    }
-
     setSaving(true);
     try {
-      const payload = {
+      await medicalRecordService.update(editingId, {
         symptoms: formData.symptoms.trim() || null,
         diagnosis: formData.diagnosis.trim(),
         conclusion: formData.conclusion.trim() || null,
         note: formData.note.trim() || null,
-      };
-
-      if (editingId) {
-        await medicalRecordService.update(editingId, payload);
-        toast.success("Đã cập nhật bệnh án");
-      } else {
-        await medicalRecordService.create({
-          ...payload,
-          appointment_id: Number(formData.appointment_id),
-        });
-        toast.success("Đã tạo bệnh án");
-      }
-
-      closeForm();
+      });
+      toast.success("Đã cập nhật bệnh án");
+      closeEdit();
       await loadData();
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Không lưu được bệnh án"));
@@ -133,139 +94,25 @@ function MedicalRecord() {
     }
   };
 
+  const openClinicalAttachment = async (attachment) => {
+    try {
+      await clinicalService.openAttachment(attachment);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Không mở được tệp cận lâm sàng"));
+    }
+  };
+
   return (
     <DoctorLayout title="Hồ sơ bệnh án">
       <div className="doctor-page">
-        <div className="doctor-card" style={{ marginBottom: 20 }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 12,
-              marginBottom: 12,
-              flexWrap: "wrap",
-              alignItems: "center",
-            }}
-          >
-            <div>
-              <h3>Hồ sơ bệnh án</h3>
-              <p style={{ color: "#666", marginTop: 4 }}>
-                Ghi bệnh án cho lịch đã xác nhận / hoàn thành.
-              </p>
-            </div>
-            <button
-              type="button"
-              className="admin-btn admin-btn-primary"
-              onClick={openCreate}
-              disabled={eligibleAppointments.length === 0 && !editingId}
-            >
-              + Tạo bệnh án
-            </button>
+        <div className="doctor-card">
+          <div style={{ marginBottom: 12 }}>
+            <h3>Danh sách bệnh án</h3>
+            <p style={{ color: "#666", marginTop: 4 }}>
+              Xem và chỉnh sửa bệnh án đã tạo từ lịch khám.
+            </p>
           </div>
 
-          {showForm && (
-            <form
-              className="admin-form"
-              onSubmit={handleSubmit}
-              style={{ marginTop: 16 }}
-            >
-              {!editingId && (
-                <div className="admin-form-group">
-                  <label htmlFor="appointment_id">Lịch hẹn</label>
-                  <select
-                    id="appointment_id"
-                    name="appointment_id"
-                    className="admin-select"
-                    value={formData.appointment_id}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">Chọn lịch hẹn...</option>
-                    {eligibleAppointments.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.booking_code} · {a.patient_name} · {a.date_display}{" "}
-                        {a.start_time}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div className="admin-form-group">
-                <label htmlFor="symptoms">Triệu chứng</label>
-                <textarea
-                  id="symptoms"
-                  name="symptoms"
-                  className="admin-textarea"
-                  rows={3}
-                  value={formData.symptoms}
-                  onChange={handleChange}
-                />
-              </div>
-
-              <div className="admin-form-group">
-                <label htmlFor="diagnosis">Chẩn đoán</label>
-                <textarea
-                  id="diagnosis"
-                  name="diagnosis"
-                  className="admin-textarea"
-                  rows={3}
-                  value={formData.diagnosis}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              <div className="admin-form-group">
-                <label htmlFor="conclusion">Kết luận</label>
-                <textarea
-                  id="conclusion"
-                  name="conclusion"
-                  className="admin-textarea"
-                  rows={3}
-                  value={formData.conclusion}
-                  onChange={handleChange}
-                />
-              </div>
-
-              <div className="admin-form-group">
-                <label htmlFor="note">Ghi chú</label>
-                <textarea
-                  id="note"
-                  name="note"
-                  className="admin-textarea"
-                  rows={2}
-                  value={formData.note}
-                  onChange={handleChange}
-                />
-              </div>
-
-              <div className="admin-form-actions">
-                <button
-                  type="submit"
-                  className="admin-btn admin-btn-primary"
-                  disabled={saving}
-                >
-                  {saving
-                    ? "Đang lưu..."
-                    : editingId
-                      ? "Cập nhật bệnh án"
-                      : "Lưu bệnh án"}
-                </button>
-                <button
-                  type="button"
-                  className="admin-btn admin-btn-secondary"
-                  onClick={closeForm}
-                >
-                  Hủy
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
-
-        <div className="doctor-card">
-          <h3 style={{ marginBottom: 12 }}>Danh sách bệnh án</h3>
           {loading ? (
             <p>Đang tải...</p>
           ) : records.length === 0 ? (
@@ -277,31 +124,200 @@ function MedicalRecord() {
                   <tr>
                     <th>Mã lịch</th>
                     <th>Bệnh nhân</th>
-                    <th>Ngày</th>
+                    <th>Ngày / giờ bắt đầu</th>
                     <th>Chẩn đoán</th>
+                    <th>Đơn thuốc</th>
+                    <th>Cận lâm sàng</th>
                     <th>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {records.map((item) => (
-                    <tr key={item.id}>
-                      <td>{item.booking_code}</td>
-                      <td>{item.patient_name}</td>
-                      <td>
-                        {item.date_display} {item.start_time}
-                      </td>
-                      <td>{item.diagnosis}</td>
-                      <td>
-                        <button
-                          type="button"
-                          className="admin-btn admin-btn-secondary"
-                          onClick={() => openEdit(item)}
-                        >
-                          Sửa
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {records.map((item) => {
+                    const isExpanded = expandedId === item.id;
+                    const isClinicalExpanded = clinicalExpandedId === item.id;
+                    const isEditing = editingId === item.id;
+
+                    return (
+                      <Fragment key={item.id}>
+                        <tr>
+                          <td>{item.booking_code}</td>
+                          <td>{item.patient_name}</td>
+                          <td>
+                            {item.date_display}
+                            <br />
+                            <strong>{item.start_time || "—"}</strong>
+                          </td>
+                          <td>{item.diagnosis}</td>
+                          <td>
+                            {item.has_prescription ? (
+                              <button
+                                type="button"
+                                className="admin-btn admin-btn-secondary"
+                                onClick={() => {
+                                  closeEdit();
+                                  setExpandedId(isExpanded ? null : item.id);
+                                }}
+                              >
+                                {isExpanded ? "Ẩn đơn" : "Xem đơn"}
+                              </button>
+                            ) : (
+                              <span className="doctor-muted">Chưa kê</span>
+                            )}
+                          </td>
+                          <td>
+                            {item.has_clinical_services || item.clinical_services?.length ? (
+                              <button
+                                type="button"
+                                className="admin-btn admin-btn-secondary"
+                                onClick={() => {
+                                  closeEdit();
+                                  setExpandedId(null);
+                                  setClinicalExpandedId(isClinicalExpanded ? null : item.id);
+                                }}
+                              >
+                                {isClinicalExpanded ? "Ẩn kết quả" : "Xem kết quả"}
+                              </button>
+                            ) : (
+                              <span className="doctor-muted">Chưa có</span>
+                            )}
+                          </td>
+                          <td>
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: 8,
+                                flexWrap: "wrap",
+                              }}
+                            >
+                              <button
+                                type="button"
+                                className="admin-btn admin-btn-secondary"
+                                onClick={() =>
+                                  isEditing ? closeEdit() : openEdit(item)
+                                }
+                              >
+                                {isEditing ? "Đóng" : "Sửa"}
+                              </button>
+                              <Link
+                                to={`/doctor/appointments/${item.appointment_id}`}
+                                className="admin-btn admin-btn-primary"
+                              >
+                                Chi tiết
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
+
+                        {isEditing ? (
+                          <tr className="doctor-rx-expand-row">
+                            <td colSpan={7}>
+                              <form
+                                className="admin-form"
+                                onSubmit={handleSubmit}
+                              >
+                                <div className="admin-form-group">
+                                  <label htmlFor={`symptoms-${item.id}`}>
+                                    Triệu chứng
+                                  </label>
+                                  <textarea
+                                    id={`symptoms-${item.id}`}
+                                    name="symptoms"
+                                    className="admin-textarea"
+                                    rows={3}
+                                    value={formData.symptoms}
+                                    onChange={handleChange}
+                                  />
+                                </div>
+
+                                <div className="admin-form-group">
+                                  <label htmlFor={`diagnosis-${item.id}`}>
+                                    Chẩn đoán
+                                  </label>
+                                  <textarea
+                                    id={`diagnosis-${item.id}`}
+                                    name="diagnosis"
+                                    className="admin-textarea"
+                                    rows={3}
+                                    value={formData.diagnosis}
+                                    onChange={handleChange}
+                                    required
+                                  />
+                                </div>
+
+                                <div className="admin-form-group">
+                                  <label htmlFor={`conclusion-${item.id}`}>
+                                    Kết luận
+                                  </label>
+                                  <textarea
+                                    id={`conclusion-${item.id}`}
+                                    name="conclusion"
+                                    className="admin-textarea"
+                                    rows={3}
+                                    value={formData.conclusion}
+                                    onChange={handleChange}
+                                  />
+                                </div>
+
+                                <div className="admin-form-group">
+                                  <label htmlFor={`note-${item.id}`}>
+                                    Ghi chú
+                                  </label>
+                                  <textarea
+                                    id={`note-${item.id}`}
+                                    name="note"
+                                    className="admin-textarea"
+                                    rows={2}
+                                    value={formData.note}
+                                    onChange={handleChange}
+                                  />
+                                </div>
+
+                                <div className="admin-form-actions">
+                                  <button
+                                    type="submit"
+                                    className="admin-btn admin-btn-primary"
+                                    disabled={saving}
+                                  >
+                                    {saving
+                                      ? "Đang lưu..."
+                                      : "Cập nhật bệnh án"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="admin-btn admin-btn-secondary"
+                                    onClick={closeEdit}
+                                  >
+                                    Hủy
+                                  </button>
+                                </div>
+                              </form>
+                            </td>
+                          </tr>
+                        ) : null}
+
+                        {isExpanded && item.prescription ? (
+                          <tr className="doctor-rx-expand-row">
+                            <td colSpan={7}>
+                              <DoctorPrescriptionTable
+                                prescription={item.prescription}
+                              />
+                            </td>
+                          </tr>
+                        ) : null}
+
+                        {isClinicalExpanded ? (
+                          <tr className="doctor-rx-expand-row">
+                            <td colSpan={7}>
+                              <ClinicalRecordSection
+                                orders={item.clinical_services || []}
+                                onOpenAttachment={openClinicalAttachment}
+                              />
+                            </td>
+                          </tr>
+                        ) : null}
+                      </Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

@@ -12,6 +12,7 @@ function ImageUploadField({
   inputId = "image-upload",
   aspect = 1.5,
   shape = "rect",
+  allowRemove = false,
 }) {
   const inputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
@@ -108,6 +109,16 @@ function ImageUploadField({
             >
               Đổi ảnh
             </button>
+            {allowRemove ? (
+              <button
+                type="button"
+                className="admin-btn admin-btn-secondary"
+                onClick={() => onChange?.("")}
+                disabled={uploading}
+              >
+                Xóa ảnh
+              </button>
+            ) : null}
           </div>
         </div>
       ) : null}

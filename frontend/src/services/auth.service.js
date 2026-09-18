@@ -23,6 +23,11 @@ export const authService = {
     axiosClient.post("/auth/reset-password", { email, newPassword }),
 
   me: () => axiosClient.get("/auth/me"),
+
+  updateProfile: (payload) => axiosClient.put("/auth/profile", payload),
+
+  changePassword: (payload) =>
+    axiosClient.put("/auth/change-password", payload),
 };
 
 export default authService;

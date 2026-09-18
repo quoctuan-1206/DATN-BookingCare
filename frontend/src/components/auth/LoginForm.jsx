@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import PasswordInput from "./PasswordInput";
 import SocialLogin from "./SocialLogin";
@@ -7,6 +7,7 @@ import { useAuth } from "../../context/AuthContext";
 
 function LoginForm() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, getApiErrorMessage } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -30,7 +31,11 @@ function LoginForm() {
     try {
       const result = await login(formData.email, formData.password);
       toast.success("Đăng nhập thành công");
-      navigate(result.redirectTo);
+      const requestedPath = location.state?.from;
+      const safePath = typeof requestedPath === "string" && requestedPath.startsWith("/")
+        ? requestedPath
+        : result.redirectTo;
+      navigate(safePath, { state: location.state?.booking || undefined });
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Đăng nhập thất bại"));
     } finally {

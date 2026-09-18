@@ -1,27 +1,21 @@
-import { Link } from "react-router-dom";
+import DoctorCard from "../doctor/DoctorCard";
 
 function ClinicDoctors({ doctors = [] }) {
-    return (
-        <section className="clinic-doctors">
-            <h2>Bác sĩ đang công tác</h2>
-
-            {doctors.map((doctor) => (
-                <div key={doctor.id} className="doctor-row">
-                    <div>
-                        <strong>{doctor.name}</strong>
-                        <p>{doctor.specialty}</p>
-                    </div>
-
-                    <Link
-                        to={`/doctors/${doctor.id}`}
-                        className="btn btn-primary"
-                    >
-                        Xem bác sĩ
-                    </Link>
-                </div>
-            ))}
-        </section>
-    );
+  return (
+    <section className="clinic-section clinic-doctors">
+      <div className="clinic-section__heading">
+        <div><span>Đội ngũ chuyên môn</span><h2>Bác sĩ đang công tác</h2></div>
+        <strong>{doctors.length} bác sĩ</strong>
+      </div>
+      {doctors.length === 0 ? (
+        <p className="clinic-section__empty">Chưa có thông tin bác sĩ tại cơ sở này.</p>
+      ) : (
+        <div className="clinic-doctors__grid">
+          {doctors.map((doctor) => <DoctorCard key={doctor.id} doctor={doctor} />)}
+        </div>
+      )}
+    </section>
+  );
 }
 
 export default ClinicDoctors;

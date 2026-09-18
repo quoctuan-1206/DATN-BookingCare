@@ -148,6 +148,52 @@
   padding: 14px 16px;
 }
 
+.hero-lab-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 16px;
+  color: #fff;
+  text-decoration: none;
+  background: linear-gradient(135deg, #0f766e, var(--primary-color));
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 24px rgba(var(--primary-rgb), 0.22);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hero-lab-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 30px rgba(var(--primary-rgb), 0.28);
+}
+
+.hero-lab-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  color: var(--primary-color);
+  background: #fff;
+  border-radius: 14px;
+}
+
+.hero-lab-card__copy strong,
+.hero-lab-card__copy span {
+  display: block;
+}
+
+.hero-lab-card__copy strong {
+  font-size: 18px;
+}
+
+.hero-lab-card__copy span {
+  margin-top: 3px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 .hero-stat svg {
   color: var(--primary-color);
   flex-shrink: 0;

@@ -1,27 +1,28 @@
-function ClinicFilter({ search = "", onSearchChange, onSubmit }) {
-  return (
-    <form
-      className="listing-filter"
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSubmit?.();
-      }}
-    >
-      <div className="listing-filter__field">
-        <input
-          type="text"
-          placeholder="Tìm kiếm phòng khám..."
-          value={search}
-          onChange={(e) => onSearchChange?.(e.target.value)}
-        />
-      </div>
+import { Search, X } from "lucide-react";
 
-      <div className="listing-filter__row">
-        <button type="submit" className="btn btn-primary listing-filter__btn">
-          Tìm kiếm
+function ClinicFilter({ search = "", onSearchChange, onClear }) {
+  return (
+    <div className="clinic-search-box">
+      <Search size={18} className="clinic-search-icon" />
+      <input
+        type="search"
+        className="clinic-search-input"
+        placeholder="Tìm theo tên, địa chỉ hoặc số điện thoại..."
+        aria-label="Tìm kiếm phòng khám"
+        value={search}
+        onChange={(event) => onSearchChange?.(event.target.value)}
+      />
+      {search && (
+        <button
+          type="button"
+          className="clinic-search-clear"
+          aria-label="Xóa nội dung tìm kiếm"
+          onClick={onClear}
+        >
+          <X size={17} />
         </button>
-      </div>
-    </form>
+      )}
+    </div>
   );
 }
 

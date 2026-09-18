@@ -98,11 +98,13 @@ class PatientProfileService {
       throw error;
     }
 
-    const appointmentCount =
-      await patientProfileRepository.countAppointments(id);
-    if (appointmentCount > 0) {
+    const [appointmentCount, labOrderCount] = await Promise.all([
+      patientProfileRepository.countAppointments(id),
+      patientProfileRepository.countLabOrders(id),
+    ]);
+    if (appointmentCount > 0 || labOrderCount > 0) {
       const error = new Error(
-        "Không thể xóa hồ sơ đã có lịch hẹn",
+        "Không thể xóa hồ sơ đã có lịch hẹn hoặc phiếu xét nghiệm",
       );
       error.statusCode = 400;
       throw error;

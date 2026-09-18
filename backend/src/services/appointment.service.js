@@ -6,7 +6,24 @@ import {
   formatDateOnly,
   formatTimeOnly,
   formatDateDisplay,
+  formatDateTimeDisplay,
+  formatClockTime,
 } from "../utils/datetime.js";
+
+const genderLabel = {
+  Male: "Nam",
+  Female: "Nữ",
+  Other: "Khác",
+};
+
+const relationshipLabel = {
+  Self: "Bản thân",
+  Spouse: "Vợ/Chồng",
+  Child: "Con",
+  Parent: "Cha/Mẹ",
+  Sibling: "Anh/Chị/Em",
+  Other: "Khác",
+};
 
 class AppointmentService {
   // Lấy các bên liên quan của lịch hẹn (bác sĩ, bệnh nhân, mã đặt)
@@ -159,6 +176,10 @@ class AppointmentService {
       workplace?.consultation_fee ??
       workplace?.doctor_profiles?.consultation_fee ??
       0;
+    const clinicalOrders = appointment.lab_orders || [];
+    const incompleteClinicalOrderCount = clinicalOrders.filter(
+      (order) => order.status === "PENDING" || order.status === "IN_PROGRESS",
+    ).length;
 
     return {
       id: appointment.id,
@@ -183,8 +204,34 @@ class AppointmentService {
       consultation_fee: Number(fee),
       patient_name: patient?.full_name || null,
       patient_phone: patient?.phone || null,
+      patient_gender: patient?.gender || null,
+      patient_gender_label:
+        genderLabel[patient?.gender] || patient?.gender || null,
+      patient_date_of_birth: formatDateOnly(patient?.date_of_birth),
       patient_relationship: patient?.relationship || null,
+      patient_relationship_label:
+        relationshipLabel[patient?.relationship] ||
+        patient?.relationship ||
+        null,
+      patient_blood_type: patient?.blood_type || null,
+      patient_height:
+        patient?.height != null ? Number(patient.height) : null,
+      patient_weight:
+        patient?.weight != null ? Number(patient.weight) : null,
+      patient_insurance_number: patient?.insurance_number || null,
+      patient_emergency_contact: patient?.emergency_contact || null,
       account_id: patient?.account_id || null,
+      exam_started_at: appointment.exam_started_at || null,
+      exam_started_at_display: formatDateTimeDisplay(
+        appointment.exam_started_at,
+      ),
+      exam_started_time: formatClockTime(appointment.exam_started_at),
+      has_medical_record: Boolean(appointment.medical_records?.id),
+      clinical_order_count: clinicalOrders.length,
+      incomplete_clinical_order_count: incompleteClinicalOrderCount,
+      can_complete_exam:
+        Boolean(appointment.medical_records?.id) &&
+        incompleteClinicalOrderCount === 0,
       created_at: appointment.created_at,
       updated_at: appointment.updated_at,
     };
@@ -363,6 +410,27 @@ class AppointmentService {
       throw error;
     }
 
+    if (status === "COMPLETED") {
+      if (!existing.medical_records?.id) {
+        const error = new Error(
+          "Cần lưu hồ sơ bệnh án trước khi hoàn thành buổi khám",
+        );
+        error.statusCode = 400;
+        throw error;
+      }
+
+      const incompleteClinicalOrders = (existing.lab_orders || []).filter(
+        (order) => order.status === "PENDING" || order.status === "IN_PROGRESS",
+      );
+      if (incompleteClinicalOrders.length > 0) {
+        const error = new Error(
+          `Không thể hoàn thành buổi khám khi còn ${incompleteClinicalOrders.length} chỉ định cận lâm sàng chưa hoàn tất`,
+        );
+        error.statusCode = 409;
+        throw error;
+      }
+    }
+
     const releasing =
       (current === "PENDING" || current === "CONFIRMED") &&
       status === "CANCELLED";
@@ -382,6 +450,40 @@ class AppointmentService {
     return this.formatAppointment(updated);
   }
 
+  // Bác sĩ bắt đầu khám — lưu thời điểm hiện tại
+  async startExam(user, id) {
+    const appointmentId = this.parseId(id);
+    const existing = await appointmentRepository.findById(appointmentId);
+
+    if (!existing) {
+      const error = new Error("Không tìm thấy lịch hẹn");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    this.assertCanView(user, existing);
+
+    const role = user.role?.name;
+    if (role !== "Doctor" && role !== "Admin") {
+      const error = new Error("Chỉ bác sĩ được bắt đầu khám");
+      error.statusCode = 403;
+      throw error;
+    }
+
+    if (existing.status !== "CONFIRMED") {
+      const error = new Error("Chỉ bắt đầu khám khi lịch đã được xác nhận");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (existing.exam_started_at) {
+      return this.formatAppointment(existing);
+    }
+
+    const updated = await appointmentRepository.markExamStarted(appointmentId);
+    return this.formatAppointment(updated);
+  }
+
   // Lấy các trạng thái được phép chuyển theo vai trò
   getAllowedTransitions(role, current) {
     if (role === "Admin") {
@@ -392,7 +494,7 @@ class AppointmentService {
 
     if (role === "Doctor") {
       if (current === "PENDING") return ["CONFIRMED", "CANCELLED"];
-      if (current === "CONFIRMED") return ["CANCELLED"];
+      if (current === "CONFIRMED") return ["COMPLETED", "CANCELLED"];
       return [];
     }
 

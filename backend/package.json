@@ -3,9 +3,15 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "predev": "npm run db:prepare",
     "dev": "nodemon src/server.js",
+    "prestart": "npm run db:prepare",
     "start": "node src/server.js",
-    "seed": "node src/seed.js"
+    "seed": "node src/seed.js",
+    "check:clinical-permissions": "node scripts/check-clinical-permissions.js",
+    "db:migrate": "node scripts/ensure-clinic-content-columns.js && node scripts/ensure-lab-schema.js",
+    "db:generate": "prisma generate",
+    "db:prepare": "npm run db:migrate && npm run db:generate"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

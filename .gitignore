@@ -26,6 +26,7 @@ frontend/dist
 # Uploaded images
 backend/uploads/*
 !backend/uploads/.gitkeep
+backend/private-uploads/
 
 # Coverage
 coverage
@@ -33,3 +34,6 @@ coverage
 # Markdown docs
 *.md
 **/*.md
+
+
+.codex/

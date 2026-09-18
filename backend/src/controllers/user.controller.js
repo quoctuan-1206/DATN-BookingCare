@@ -2,9 +2,23 @@ import userService from "../services/user.service.js";
 import {
   queryUserSchema,
   updateUserStatusSchema,
+  createStaffSchema,
 } from "../validators/user.validator.js";
 
 class UserController {
+  async createStaff(req, res, next) {
+    try {
+      const staff = await userService.createStaff(createStaffSchema.parse(req.body));
+      return res.status(201).json({
+        success: true,
+        message: "Tạo tài khoản STAFF thành công",
+        data: staff,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Danh sách người dùng (GET /api/users)
   async getAllUsers(req, res, next) {
     try {

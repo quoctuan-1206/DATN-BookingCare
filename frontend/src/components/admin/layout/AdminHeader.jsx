@@ -1,33 +1,16 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
-    Bell,
     Search,
     ChevronDown,
     UserCircle,
     Settings,
     LogOut,
 } from "lucide-react";
-import notificationService from "../../../services/notification.service";
+import NotificationBell from "../../common/NotificationBell/NotificationBell";
 
 function AdminHeader({ title }) {
     const [showMenu, setShowMenu] = useState(false);
-    const [unreadCount, setUnreadCount] = useState(0);
-
-    useEffect(() => {
-        let alive = true;
-        notificationService
-            .getUnreadCount()
-            .then((count) => {
-                if (alive) setUnreadCount(count);
-            })
-            .catch(() => {
-                if (alive) setUnreadCount(0);
-            });
-        return () => {
-            alive = false;
-        };
-    }, []);
 
     return (
         <header className="admin-header">
@@ -42,10 +25,10 @@ function AdminHeader({ title }) {
                     <input type="text" placeholder="Tìm kiếm..." />
                 </div>
 
-                <Link to="/admin/notifications" className="admin-notification">
-                    <Bell size={16} />
-                    {unreadCount > 0 && <span>{unreadCount}</span>}
-                </Link>
+                <NotificationBell
+                    viewAllTo="/admin/notifications"
+                    buttonClassName="admin-notification"
+                />
 
                 <div className="admin-user">
                     <button

@@ -42,6 +42,8 @@ export const userService = {
 
   updateUserStatus: (id, isActive) =>
     axiosClient.patch(`/users/${id}/status`, { is_active: isActive }),
+
+  createStaff: (payload) => axiosClient.post("/users/staff", payload),
 };
 
 export default userService;

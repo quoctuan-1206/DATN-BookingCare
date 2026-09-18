@@ -2,6 +2,7 @@ import { Router } from "express";
 import medicalRecordController from "../controllers/medical-record.controller.js";
 import { verifyAccessTokenMiddleware } from "../middlewares/auth.middleware.js";
 import { authorize } from "../middlewares/role.middleware.js";
+import { preventSensitiveCaching } from "../middlewares/security.middleware.js";
 
 const router = Router();
 
@@ -9,6 +10,7 @@ const router = Router();
 router.use(
   verifyAccessTokenMiddleware,
   authorize("Patient", "Doctor", "Admin"),
+  preventSensitiveCaching,
 );
 
 // GET /api/medical-records - Danh sách bệnh án

@@ -9,6 +9,7 @@ export function mapMedicalRecord(record) {
     conclusion: record.conclusion || "—",
     note: record.note || "",
     has_prescription: Boolean(record.has_prescription),
+    prescription: record.prescription || null,
   };
 }
 

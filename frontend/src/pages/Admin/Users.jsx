@@ -10,6 +10,7 @@ const roleClass = {
   Doctor: "doctor",
   Patient: "patient",
   Receptionist: "patient",
+  STAFF: "doctor",
 };
 
 const roleLabel = {
@@ -17,6 +18,7 @@ const roleLabel = {
   Doctor: "Bác sĩ",
   Patient: "Bệnh nhân",
   Receptionist: "Tiếp tân",
+  STAFF: "Nhân viên xét nghiệm",
 };
 
 function Users() {
@@ -30,6 +32,8 @@ function Users() {
     role: "",
     status: "",
   });
+  const [showStaffForm, setShowStaffForm] = useState(false);
+  const [staffForm, setStaffForm] = useState({ email: "", password: "", first_name: "", last_name: "", phone: "" });
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -77,6 +81,19 @@ function Users() {
     }
   };
 
+  const handleCreateStaff = async (event) => {
+    event.preventDefault();
+    try {
+      await userService.createStaff({ ...staffForm, phone: staffForm.phone || null });
+      setStaffForm({ email: "", password: "", first_name: "", last_name: "", phone: "" });
+      setShowStaffForm(false);
+      toast.success("Đã tạo tài khoản STAFF");
+      fetchUsers();
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Không tạo được tài khoản STAFF"));
+    }
+  };
+
   return (
     <AdminLayout title="Người dùng">
       <div className="admin-page">
@@ -85,7 +102,24 @@ function Users() {
             <h3>Quản lý người dùng</h3>
             <p>Xem, tìm kiếm và khóa/mở tài khoản</p>
           </div>
+          <button type="button" className="admin-btn admin-btn-primary" onClick={() => setShowStaffForm((value) => !value)}>
+            {showStaffForm ? "Đóng" : "Thêm STAFF"}
+          </button>
         </div>
+
+        {showStaffForm && (
+          <div className="dashboard-card" style={{ marginBottom: 20 }}>
+            <h3 style={{ marginBottom: 16 }}>Tạo nhân viên xét nghiệm</h3>
+            <form className="admin-form" onSubmit={handleCreateStaff}>
+              <div className="admin-form-group"><label>Họ</label><input className="admin-input" value={staffForm.last_name} onChange={(e) => setStaffForm((v) => ({ ...v, last_name: e.target.value }))} required /></div>
+              <div className="admin-form-group"><label>Tên</label><input className="admin-input" value={staffForm.first_name} onChange={(e) => setStaffForm((v) => ({ ...v, first_name: e.target.value }))} required /></div>
+              <div className="admin-form-group"><label>Email</label><input className="admin-input" type="email" value={staffForm.email} onChange={(e) => setStaffForm((v) => ({ ...v, email: e.target.value }))} required /></div>
+              <div className="admin-form-group"><label>Mật khẩu</label><input className="admin-input" type="password" minLength={6} value={staffForm.password} onChange={(e) => setStaffForm((v) => ({ ...v, password: e.target.value }))} required /></div>
+              <div className="admin-form-group"><label>Số điện thoại</label><input className="admin-input" value={staffForm.phone} onChange={(e) => setStaffForm((v) => ({ ...v, phone: e.target.value }))} /></div>
+              <div className="admin-form-actions"><button className="admin-btn admin-btn-primary">Tạo tài khoản</button></div>
+            </form>
+          </div>
+        )}
 
         <div className="dashboard-card">
           <div className="admin-toolbar">
@@ -110,6 +144,7 @@ function Users() {
               <option value="Doctor">Bác sĩ</option>
               <option value="Patient">Bệnh nhân</option>
               <option value="Receptionist">Tiếp tân</option>
+              <option value="STAFF">Nhân viên xét nghiệm</option>
             </select>
             <select
               className="admin-select"

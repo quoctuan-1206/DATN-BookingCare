@@ -19,5 +19,7 @@ router.get("/:id", appointmentController.getAppointmentById);
 router.post("/", appointmentController.createAppointment);
 // PATCH /api/appointments/:id/status - Cập nhật trạng thái
 router.patch("/:id/status", appointmentController.updateStatus);
+// PATCH /api/appointments/:id/start-exam - Bác sĩ bắt đầu khám
+router.patch("/:id/start-exam", appointmentController.startExam);
 
 export default router;

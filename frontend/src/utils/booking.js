@@ -1,4 +1,5 @@
-export const MIN_ADVANCE_DAYS = 3;
+// TODO: bật lại = 3 sau khi test khám bệnh xong
+export const MIN_ADVANCE_DAYS = 0;
 
 export function todayYMD() {
   const d = new Date();
@@ -35,5 +36,7 @@ export function isExamDay(ymd) {
 }
 
 export function minAdvanceNotice() {
-  return `Lịch khám phải đặt trước ít nhất ${MIN_ADVANCE_DAYS} ngày. Sau khi đặt, bác sĩ sẽ xác nhận lịch.`;
+  // TODO: bật lại message khi MIN_ADVANCE_DAYS = 3
+  // return `Lịch khám phải đặt trước ít nhất ${MIN_ADVANCE_DAYS} ngày. Sau khi đặt, bác sĩ sẽ xác nhận lịch.`;
+  return "Sau khi đặt, bác sĩ sẽ xác nhận lịch.";
 }

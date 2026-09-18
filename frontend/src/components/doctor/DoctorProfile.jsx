@@ -19,13 +19,22 @@ function DoctorProfile({ doctor }) {
 
       <div className="doctor-profile__info">
         <span className="doctor-profile__badge">{badge}</span>
-        <h1>Bác sĩ {displayName}</h1>
+        <h1>{displayName}</h1>
 
         <ul className="doctor-profile__meta">
           {doctor.specialty ? (
             <li>
               <Heart size={16} />
-              <span className="doctor-profile__specialty">{doctor.specialty}</span>
+              {doctor.specialty_id ? (
+                <Link
+                  to={`/specialties/${doctor.specialty_id}`}
+                  className="doctor-profile__specialty"
+                >
+                  {doctor.specialty}
+                </Link>
+              ) : (
+                <span className="doctor-profile__specialty">{doctor.specialty}</span>
+              )}
             </li>
           ) : null}
           {doctor.clinic ? (

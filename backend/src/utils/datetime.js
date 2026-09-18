@@ -31,3 +31,27 @@ export function formatDateDisplay(dateStr) {
   if (!y || !m || !d) return dateStr;
   return `${d}/${m}/${y}`;
 }
+
+// DateTime → chuỗi hiển thị DD/MM/YYYY HH:mm (theo giờ máy chủ/local)
+export function formatDateTimeDisplay(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mi = String(d.getMinutes()).padStart(2, "0");
+  return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
+}
+
+// DateTime → HH:mm local
+export function formatClockTime(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mi = String(d.getMinutes()).padStart(2, "0");
+  return `${hh}:${mi}`;
+}

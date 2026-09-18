@@ -75,6 +75,12 @@ class PatientProfileRepository {
       where: { patient_profile_id: Number(profileId) },
     });
   }
+
+  async countLabOrders(profileId) {
+    return prisma.lab_orders.count({
+      where: { patient_id: Number(profileId) },
+    });
+  }
 }
 
 export default new PatientProfileRepository();

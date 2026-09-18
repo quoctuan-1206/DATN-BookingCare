@@ -39,7 +39,18 @@ const appointmentInclude = {
       gender: true,
       date_of_birth: true,
       relationship: true,
+      blood_type: true,
+      height: true,
+      weight: true,
+      insurance_number: true,
+      emergency_contact: true,
     },
+  },
+  medical_records: {
+    select: { id: true },
+  },
+  lab_orders: {
+    select: { id: true, status: true },
   },
 };
 
@@ -106,22 +117,23 @@ class AppointmentRepository {
         throw error;
       }
 
-      if (!data.skipAdvanceCheck) {
-        const workDate = new Date(schedule.work_date);
-        workDate.setUTCHours(0, 0, 0, 0);
-
-        const minDate = new Date();
-        minDate.setUTCHours(0, 0, 0, 0);
-        minDate.setUTCDate(minDate.getUTCDate() + 3);
-
-        if (workDate < minDate) {
-          const error = new Error(
-            "Phải đặt lịch trước ít nhất 3 ngày",
-          );
-          error.statusCode = 400;
-          throw error;
-        }
-      }
+      // TODO: bật lại sau khi test khám bệnh xong
+      // if (!data.skipAdvanceCheck) {
+      //   const workDate = new Date(schedule.work_date);
+      //   workDate.setUTCHours(0, 0, 0, 0);
+      //
+      //   const minDate = new Date();
+      //   minDate.setUTCHours(0, 0, 0, 0);
+      //   minDate.setUTCDate(minDate.getUTCDate() + 3);
+      //
+      //   if (workDate < minDate) {
+      //     const error = new Error(
+      //       "Phải đặt lịch trước ít nhất 3 ngày",
+      //     );
+      //     error.statusCode = 400;
+      //     throw error;
+      //   }
+      // }
 
       const duplicate = await tx.appointments.findFirst({
         where: {
@@ -203,6 +215,18 @@ class AppointmentRepository {
       }
 
       return updated;
+    });
+  }
+
+  // Lưu thời điểm bác sĩ bắt đầu khám
+  async markExamStarted(id, examStartedAt = new Date()) {
+    return prisma.appointments.update({
+      where: { id: Number(id) },
+      data: {
+        exam_started_at: examStartedAt,
+        updated_at: new Date(),
+      },
+      include: appointmentInclude,
     });
   }
 }

@@ -1,22 +1,29 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
+  Activity,
   Calendar,
+  CalendarCheck2,
   CalendarDays,
-  ChevronLeft,
+  CircleUserRound,
   Clock,
+  FilePenLine,
+  Headphones,
   Hospital,
-  Stethoscope,
+  Pencil,
+  UserRound,
+  Wallet,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
 import Header from "../../components/common/Header/Header";
 import Footer from "../../components/common/Footer/Footer";
+import PatientSelector from "../../components/booking/PatientSelector";
 import { useAuth } from "../../context/AuthContext";
 import patientProfileService from "../../services/patient-profile.service";
 import appointmentService from "../../services/appointment.service";
 import { getApiErrorMessage } from "../../api/axios";
-import { isBookableDate, minAdvanceNotice } from "../../utils/booking";
+import { isBookableDate } from "../../utils/booking";
 
 const REASON_MAX = 500;
 const NOTE_MAX = 300;
@@ -180,6 +187,13 @@ function Booking() {
     consultationFee: doctor.consultationFee ?? doctor.consultation_fee ?? 0,
   };
 
+  const patientName =
+    selectedPatient?.fullName || selectedPatient?.full_name || "—";
+
+  const specialtyPath = dv.specialty_id
+    ? `/specialties/${dv.specialty_id}`
+    : "/specialties";
+
   return (
     <>
       <Header />
@@ -187,20 +201,24 @@ function Booking() {
       <section className="section booking-section">
         <div className="container booking-page">
           <div className="booking-board">
-            <aside className="booking-col booking-col--doctor">
-              <h1>Đặt lịch khám</h1>
-              <p className="booking-advance-note">{minAdvanceNotice()}</p>
+            <aside className="booking-sidebar">
               <div className="booking-card booking-doctor">
                 <div className="booking-doctor-top">
-                  <img
-                    src={dv.avatar}
-                    alt={dv.name}
-                    className="booking-doctor-avatar"
-                  />
+                  {dv.avatar ? (
+                    <img
+                      src={dv.avatar}
+                      alt={dv.name}
+                      className="booking-doctor-avatar"
+                    />
+                  ) : (
+                    <div className="booking-doctor-avatar booking-doctor-avatar--fallback">
+                      <UserRound size={28} />
+                    </div>
+                  )}
                   <div className="booking-doctor-identity">
                     <h2>{dv.name}</h2>
                     <p className="booking-specialty">
-                      <Stethoscope size={15} /> {dv.specialty}
+                      <Activity size={15} /> {dv.specialty}
                     </p>
                     <p className="booking-clinic">
                       <Hospital size={15} /> {dv.clinic}
@@ -208,213 +226,240 @@ function Booking() {
                   </div>
                 </div>
 
-                <div className="booking-doctor-meta">
+                <Link
+                  to={specialtyPath}
+                  className="btn btn-outline booking-change-doctor"
+                >
+                  <Pencil size={14} /> Đổi bác sĩ
+                </Link>
+
+                <div className="booking-meta-list">
                   <div className="booking-meta-chip">
-                    <Calendar size={15} />
+                    <Calendar size={18} />
                     <div>
                       <span>Ngày khám</span>
                       <strong>{schedule.date}</strong>
                     </div>
                   </div>
                   <div className="booking-meta-chip">
-                    <Clock size={15} />
+                    <Clock size={18} />
                     <div>
                       <span>Khung giờ</span>
                       <strong>{schedule.time}</strong>
                     </div>
                   </div>
-                </div>
-
-                <div className="booking-price-row">
-                  <span>Phí khám</span>
-                  <strong className="booking-price">
-                    {formatMoney(dv.consultationFee)}
-                  </strong>
+                  <div className="booking-meta-chip">
+                    <Wallet size={18} />
+                    <div>
+                      <span>Phí khám</span>
+                      <strong className="booking-price">
+                        {formatMoney(dv.consultationFee)}
+                      </strong>
+                    </div>
+                  </div>
                 </div>
               </div>
             </aside>
 
-            <div className="booking-card booking-col booking-col--patient">
-              <div className="booking-card-head">
-                <h2>Hồ sơ bệnh nhân</h2>
-                <p>Chọn người sẽ đi khám trong lần đặt lịch này.</p>
-              </div>
+            <div className="booking-main">
+              <PatientSelector
+                patients={patients}
+                selectedPatientId={selectedPatientId}
+                onSelectPatient={setSelectedPatientId}
+                loading={loadingPatients}
+              />
 
-              {loadingPatients ? (
-                <p>Đang tải hồ sơ...</p>
-              ) : patients.length === 0 ? (
-                <div>
-                  <p>Chưa có hồ sơ. Vui lòng thêm hồ sơ trước.</p>
-                  <Link
-                    to="/patient/profiles"
-                    className="btn btn-primary"
-                    style={{ marginTop: 12 }}
-                  >
-                    Thêm hồ sơ
-                  </Link>
+              <div className="booking-card">
+                <div className="booking-card-head">
+                  <span className="booking-step-num">2</span>
+                  <div>
+                    <h2>Thông tin khám bệnh</h2>
+                  </div>
                 </div>
-              ) : (
-                <div className="patient-list">
-                  {patients.map((p) => (
-                    <label
-                      key={p.id}
-                      className={`patient-card ${
-                        selectedPatientId === p.id ? "active" : ""
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="patient"
-                        checked={selectedPatientId === p.id}
-                        onChange={() => setSelectedPatientId(p.id)}
-                      />
-                      <div className="patient-info">
-                        <div className="patient-info-top">
-                          <h3>{p.fullName || p.full_name}</h3>
-                          <span className="patient-badge">
-                            {p.relationship_label || p.relationship}
-                          </span>
-                        </div>
-                        <div className="patient-meta">
-                          <span>{p.gender_label || p.gender || "—"}</span>
-                          <span>{p.dateOfBirth || p.date_of_birth || "—"}</span>
-                          <span>{p.phone || "—"}</span>
-                        </div>
-                      </div>
+                <div className="booking-form">
+                  <div className="form-group">
+                    <label>
+                      Lý do khám <span>*</span>
                     </label>
-                  ))}
-                </div>
-              )}
-
-              <Link
-                to="/patient/profiles"
-                className="btn btn-outline add-patient-btn"
-              >
-                + Quản lý hồ sơ
-              </Link>
-            </div>
-
-            <div className="booking-card booking-col">
-              <div className="booking-card-head">
-                <h2>Thông tin khám bệnh</h2>
-                <p>Mô tả ngắn triệu chứng để bác sĩ chuẩn bị trước.</p>
-              </div>
-              <div className="booking-form">
-                <div className="form-group">
-                  <label>
-                    Lý do khám <span>*</span>
-                  </label>
-                  <textarea
-                    name="reason"
-                    rows="6"
-                    maxLength={REASON_MAX}
-                    placeholder="Ví dụ: Ho kéo dài, đau đầu, sốt cao..."
-                    value={formData.reason}
-                    onChange={handleFieldChange("reason", REASON_MAX)}
-                  />
-                  <small className="field-counter">
-                    {formData.reason.length}/{REASON_MAX}
-                  </small>
-                </div>
-                <div className="form-group">
-                  <label>Ghi chú thêm</label>
-                  <textarea
-                    name="note"
-                    rows="4"
-                    maxLength={NOTE_MAX}
-                    placeholder="Thông tin bổ sung cho bác sĩ (nếu có)..."
-                    value={formData.note}
-                    onChange={handleFieldChange("note", NOTE_MAX)}
-                  />
-                  <small className="field-counter">
-                    {formData.note.length}/{NOTE_MAX}
-                  </small>
+                    <textarea
+                      name="reason"
+                      rows="4"
+                      maxLength={REASON_MAX}
+                      placeholder="Ví dụ: Ho kéo dài, đau đầu, sốt cao..."
+                      value={formData.reason}
+                      onChange={handleFieldChange("reason", REASON_MAX)}
+                    />
+                    <small className="field-counter">
+                      {formData.reason.length}/{REASON_MAX}
+                    </small>
+                  </div>
+                  <div className="form-group">
+                    <label>Ghi chú thêm</label>
+                    <textarea
+                      name="note"
+                      rows="3"
+                      maxLength={NOTE_MAX}
+                      placeholder="Thông tin bổ sung cho bác sĩ (nếu có)..."
+                      value={formData.note}
+                      onChange={handleFieldChange("note", NOTE_MAX)}
+                    />
+                    <small className="field-counter">
+                      {formData.note.length}/{NOTE_MAX}
+                    </small>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="booking-card booking-col">
-              <div className="booking-card-head">
-                <h2>Xác nhận thông tin</h2>
-                <p>Kiểm tra lại thông tin trước khi đặt lịch.</p>
-              </div>
+              <div className="booking-card">
+                <div className="booking-card-head">
+                  <span className="booking-step-num">3</span>
+                  <div>
+                    <h2>Xác nhận thông tin</h2>
+                  </div>
+                </div>
 
-              <div className="booking-summary">
-                <div className="summary-row">
-                  <span>Bệnh nhân</span>
-                  <strong>
-                    {selectedPatient?.fullName ||
-                      selectedPatient?.full_name ||
-                      "—"}
-                  </strong>
+                <div className="booking-summary-grid">
+                  <div className="summary-item">
+                    <UserRound size={16} />
+                    <div>
+                      <span>Bệnh nhân</span>
+                      <strong>{patientName}</strong>
+                    </div>
+                  </div>
+                  <div className="summary-item">
+                    <Calendar size={16} />
+                    <div>
+                      <span>Ngày khám</span>
+                      <strong>{schedule.date}</strong>
+                    </div>
+                  </div>
+                  <div className="summary-item">
+                    <UserRound size={16} />
+                    <div>
+                      <span>Bác sĩ</span>
+                      <strong>{dv.name}</strong>
+                    </div>
+                  </div>
+                  <div className="summary-item">
+                    <Clock size={16} />
+                    <div>
+                      <span>Khung giờ</span>
+                      <strong>{schedule.time}</strong>
+                    </div>
+                  </div>
+                  <div className="summary-item">
+                    <Activity size={16} />
+                    <div>
+                      <span>Chuyên khoa</span>
+                      <strong>{dv.specialty}</strong>
+                    </div>
+                  </div>
+                  <div className="summary-item">
+                    <Activity size={16} />
+                    <div>
+                      <span>Lý do khám</span>
+                      <strong>{formData.reason.trim() || "—"}</strong>
+                    </div>
+                  </div>
+                  <div className="summary-item">
+                    <Hospital size={16} />
+                    <div>
+                      <span>Phòng khám</span>
+                      <strong>{dv.clinic}</strong>
+                    </div>
+                  </div>
+                  <div className="summary-item">
+                    <Wallet size={16} />
+                    <div>
+                      <span>Thanh toán</span>
+                      <strong>Tại phòng</strong>
+                    </div>
+                  </div>
                 </div>
-                <div className="summary-row">
-                  <span>Bác sĩ</span>
-                  <strong>{dv.name}</strong>
-                </div>
-                <div className="summary-row">
-                  <span>Chuyên khoa</span>
-                  <strong>{dv.specialty}</strong>
-                </div>
-                <div className="summary-row">
-                  <span>Phòng khám</span>
-                  <strong>{dv.clinic}</strong>
-                </div>
-                <div className="summary-row">
-                  <span>Ngày khám</span>
-                  <strong>{schedule.date}</strong>
-                </div>
-                <div className="summary-row">
-                  <span>Khung giờ</span>
-                  <strong>{schedule.time}</strong>
-                </div>
-                <div className="summary-row">
-                  <span>Lý do khám</span>
-                  <strong>{formData.reason.trim() || "—"}</strong>
-                </div>
-                <div className="summary-row">
-                  <span>Thanh toán</span>
-                  <strong>Tại phòng khám</strong>
-                </div>
-                <div className="summary-row total">
+
+                <div className="booking-fee-row">
                   <span>Phí khám</span>
                   <strong>{formatMoney(dv.consultationFee)}</strong>
                 </div>
+
+                <button
+                  type="button"
+                  className="btn btn-primary booking-confirm-btn"
+                  disabled={!canSubmit}
+                  onClick={handleConfirm}
+                >
+                  <CalendarDays size={18} />
+                  {submitting ? "Đang đặt..." : "Xác nhận đặt lịch"}
+                </button>
+
+                <label className="confirm-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={agree}
+                    onChange={(e) => setAgree(e.target.checked)}
+                  />
+                  <span>
+                    Tôi xác nhận thông tin trên là chính xác và đồng ý với điều
+                    khoản sử dụng của hệ thống.
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <aside className="booking-aside">
+              <div className="booking-card booking-guide">
+                <h3>Hướng dẫn</h3>
+                <ol className="booking-guide-list">
+                  <li>
+                    <span className="booking-guide-icon">
+                      <CircleUserRound size={18} />
+                    </span>
+                    <div>
+                      <strong>Chọn hồ sơ bệnh nhân</strong>
+                      <p>Chọn người sẽ đi khám trong lần đặt lịch.</p>
+                    </div>
+                  </li>
+                  <li>
+                    <span className="booking-guide-icon">
+                      <FilePenLine size={18} />
+                    </span>
+                    <div>
+                      <strong>Nhập thông tin khám</strong>
+                      <p>Mô tả lý do khám để bác sĩ chuẩn bị trước.</p>
+                    </div>
+                  </li>
+                  <li>
+                    <span className="booking-guide-icon">
+                      <CalendarCheck2 size={18} />
+                    </span>
+                    <div>
+                      <strong>Xác nhận thông tin</strong>
+                      <p>Kiểm tra lại thông tin và xác nhận đặt lịch.</p>
+                    </div>
+                  </li>
+                  <li>
+                    <span className="booking-guide-icon">
+                      <Clock size={18} />
+                    </span>
+                    <div>
+                      <strong>Chờ xác nhận</strong>
+                      <p>Bác sĩ sẽ xác nhận lịch hẹn của bạn.</p>
+                    </div>
+                  </li>
+                </ol>
               </div>
 
-              <label className="confirm-checkbox">
-                <input
-                  type="checkbox"
-                  checked={agree}
-                  onChange={(e) => setAgree(e.target.checked)}
-                />
-                <span>
-                  Tôi xác nhận thông tin trên là chính xác và đồng ý với điều
-                  khoản sử dụng của hệ thống.
-                </span>
-              </label>
-            </div>
-
-            <div className="booking-col booking-col--actions">
-              <Link
-                to={`/doctors/${dv.id || ""}`}
-                className="btn btn-outline booking-action-back"
-              >
-                <ChevronLeft size={16} /> Chọn lại bác sĩ
-              </Link>
-
-              <button
-                type="button"
-                className="btn btn-primary booking-action-submit"
-                disabled={!canSubmit}
-                onClick={handleConfirm}
-              >
-                <CalendarDays size={16} />
-                {submitting ? "Đang đặt..." : "Xác nhận đặt lịch"}
-              </button>
-            </div>
+              <div className="booking-card booking-support">
+                <h3>Cần hỗ trợ?</h3>
+                <div className="booking-support-body">
+                  <Headphones size={28} />
+                  <p>
+                    Liên hệ qua hotline hoặc chat để được hỗ trợ nhanh chóng.
+                  </p>
+                </div>
+              </div>
+            </aside>
           </div>
-
         </div>
       </section>
       <Footer />

@@ -11,6 +11,8 @@ import {
   markOTPVerified,
   deleteOTPsByEmail,
   updatePassword,
+  updateUserProfile,
+  changePasswordAndRevokeTokens,
 } from "../repositories/auth.repository.js";
 import { hashPassword, comparePassword } from "../utils/bcrypt.js";
 import {
@@ -283,4 +285,51 @@ export async function resetPassword(email, newPassword) {
   await deleteAllRefreshTokens(user.id);
 
   return { message: "Password reset successfully" };
+}
+
+// Cập nhật thông tin cá nhân của chính tài khoản đang đăng nhập
+export async function updateProfile(userId, data) {
+  const user = await findUserById(Number(userId));
+  if (!user) {
+    throw Object.assign(new Error("Không tìm thấy người dùng"), {
+      statusCode: 404,
+    });
+  }
+
+  const profileData = { ...data };
+  if (profileData.date_of_birth !== undefined) {
+    profileData.date_of_birth = profileData.date_of_birth
+      ? new Date(profileData.date_of_birth)
+      : null;
+  }
+
+  const updatedUser = await updateUserProfile(user.id, profileData);
+  return sanitizeUser(updatedUser);
+}
+
+// Đổi mật khẩu, yêu cầu xác nhận đúng mật khẩu hiện tại
+export async function changePassword(userId, currentPassword, newPassword) {
+  const user = await findUserById(Number(userId));
+  if (!user) {
+    throw Object.assign(new Error("Không tìm thấy người dùng"), {
+      statusCode: 404,
+    });
+  }
+
+  if (!(await comparePassword(currentPassword, user.password))) {
+    throw Object.assign(new Error("Mật khẩu hiện tại không đúng"), {
+      statusCode: 400,
+    });
+  }
+
+  if (await comparePassword(newPassword, user.password)) {
+    throw Object.assign(new Error("Mật khẩu mới phải khác mật khẩu hiện tại"), {
+      statusCode: 400,
+    });
+  }
+
+  const hashedPassword = await hashPassword(newPassword);
+  await changePasswordAndRevokeTokens(user.id, hashedPassword);
+
+  return { message: "Đổi mật khẩu thành công. Vui lòng đăng nhập lại" };
 }

@@ -1,9 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
+import {
+  ArrowLeft,
+  Building2,
+  CalendarDays,
+  ClipboardPlus,
+  Clock3,
+  Stethoscope,
+} from "lucide-react";
 import toast from "react-hot-toast";
 import DoctorLayout from "../../components/doctor-dashboard/layout/DoctorLayout";
+import DoctorPatientInfo from "../../components/doctor-dashboard/DoctorPatientInfo";
 import MedicalRecordForm from "../../components/doctor-dashboard/MedicalRecordForm";
 import PrescriptionForm from "../../components/doctor-dashboard/PrescriptionForm";
+import AppointmentClinicalOrders from "../../components/doctor-dashboard/AppointmentClinicalOrders";
 import appointmentService, {
   STATUS_CLASS,
   STATUS_LABEL,
@@ -13,6 +23,23 @@ import prescriptionService from "../../services/prescription.service";
 import { getApiErrorMessage } from "../../api/axios";
 import { isExamDay } from "../../utils/booking";
 import { mapMedicalRecord } from "../../services/medical-record.service";
+
+function splitAppointmentReason(value, fallbackNote) {
+  const rawReason = String(value || "").trim();
+  const noteMatch = rawReason.match(/(?:^|\r?\n)\s*Ghi chú:\s*([\s\S]*)$/i);
+
+  if (!noteMatch) {
+    return {
+      reason: rawReason || "—",
+      note: fallbackNote || "—",
+    };
+  }
+
+  return {
+    reason: rawReason.slice(0, noteMatch.index).trim() || "—",
+    note: fallbackNote || noteMatch[1].trim() || "—",
+  };
+}
 
 function AppointmentDetail() {
   const { id } = useParams();
@@ -28,6 +55,7 @@ function AppointmentDetail() {
   const [examStarted, setExamStarted] = useState(false);
   const [prescriptionStep, setPrescriptionStep] = useState(false);
   const [prescriptionSkipped, setPrescriptionSkipped] = useState(false);
+  const [clinicalOrderSummary, setClinicalOrderSummary] = useState(null);
 
   const canStartExam = useMemo(() => {
     if (!appointment) return false;
@@ -74,6 +102,9 @@ function AppointmentDetail() {
         }
         setMedicalRecord(null);
         setPrescription(null);
+        if (data?.exam_started_at && data.status === "CONFIRMED") {
+          setExamStarted(true);
+        }
       }
     } catch (error) {
       setAppointment(null);
@@ -87,11 +118,41 @@ function AppointmentDetail() {
     loadAppointment();
   }, [id]);
 
-  useEffect(() => {
-    if (autoStartExam && canStartExam && !medicalRecord) {
+  const handleStartExam = async () => {
+    if (!appointment?.id || updating) return;
+
+    setUpdating(true);
+    try {
+      const updated = await appointmentService.startExam(appointment.id);
+      setAppointment(updated);
       setExamStarted(true);
+      toast.success("Đã bắt đầu khám");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Không bắt đầu được khám"));
+    } finally {
+      setUpdating(false);
     }
-  }, [autoStartExam, canStartExam, medicalRecord]);
+  };
+
+  useEffect(() => {
+    if (
+      autoStartExam &&
+      canStartExam &&
+      !medicalRecord &&
+      !appointment?.exam_started_at &&
+      !loading &&
+      appointment
+    ) {
+      handleStartExam();
+    }
+  }, [
+    autoStartExam,
+    canStartExam,
+    medicalRecord,
+    appointment?.exam_started_at,
+    loading,
+    appointment?.id,
+  ]);
 
   useEffect(() => {
     if (autoPrescribe && medicalRecord && !prescription) {
@@ -137,6 +198,16 @@ function AppointmentDetail() {
     toast.success("Đã bỏ qua kê thuốc cho lần khám này");
   };
 
+  const handleClinicalOrdersChange = useCallback(({ appointmentId, orders }) => {
+    setClinicalOrderSummary({
+      appointmentId: Number(appointmentId),
+      total: orders.length,
+      incomplete: orders.filter(
+        (order) => order.status === "PENDING" || order.status === "IN_PROGRESS",
+      ).length,
+    });
+  }, []);
+
   if (loading) {
     return (
       <DoctorLayout title="Chi tiết lịch hẹn">
@@ -162,176 +233,247 @@ function AppointmentDetail() {
     );
   }
 
+  const examInformation = splitAppointmentReason(
+    appointment.reason,
+    appointment.note,
+  );
+  const currentClinicalSummary =
+    clinicalOrderSummary?.appointmentId === Number(appointment.id)
+      ? clinicalOrderSummary
+      : null;
+  const incompleteClinicalOrderCount = currentClinicalSummary
+    ? currentClinicalSummary.incomplete
+    : Number(appointment.incomplete_clinical_order_count || 0);
+
   return (
     <DoctorLayout title="Chi tiết lịch hẹn">
-      <div className="doctor-page">
-        <div className="doctor-card">
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 12,
-              marginBottom: 16,
-              flexWrap: "wrap",
-              alignItems: "center",
-            }}
-          >
-            <div>
+      <div className="doctor-page doctor-appointment-detail-page">
+        <div className="doctor-appointment-detail-heading">
+          <div>
+            <div className="doctor-appointment-title-line">
               <h3>Chi tiết lịch hẹn #{appointment.booking_code}</h3>
-              <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: 14 }}>
-                Xác nhận lịch → khám bệnh → ghi bệnh án → kê đơn thuốc.
-              </p>
+              <span
+                className={`status ${
+                  STATUS_CLASS[appointment.status] || "pending"
+                }`}
+              >
+                {STATUS_LABEL[appointment.status]}
+              </span>
             </div>
-            <Link to="/doctor/appointments" className="admin-btn admin-btn-secondary">
-              Quay lại danh sách
-            </Link>
+            <p>Xác nhận lịch → khám bệnh → ghi bệnh án → kê đơn thuốc.</p>
           </div>
+          <Link
+            to="/doctor/appointments"
+            className="admin-btn admin-btn-secondary doctor-appointment-back"
+          >
+            <ArrowLeft size={16} />
+            Quay lại danh sách
+          </Link>
+        </div>
 
-          <div className="doctor-detail-grid">
-            <div>
-              <span>Trạng thái</span>
-              <strong>
-                <span
-                  className={`status ${
-                    STATUS_CLASS[appointment.status] || "pending"
-                  }`}
-                >
-                  {STATUS_LABEL[appointment.status]}
-                </span>
-              </strong>
-            </div>
-            <div>
-              <span>Bệnh nhân</span>
-              <strong>{appointment.patient_name}</strong>
-            </div>
+        <section
+          className="doctor-appointment-summary"
+          aria-label="Thông tin lịch khám"
+        >
+          <div className="doctor-appointment-summary-item">
+            <span className="doctor-appointment-summary-icon" aria-hidden="true">
+              <CalendarDays size={19} />
+            </span>
             <div>
               <span>Ngày khám</span>
-              <strong>{appointment.date_display}</strong>
-            </div>
-            <div>
-              <span>Giờ khám</span>
-              <strong>{appointment.time}</strong>
-            </div>
-            <div>
-              <span>Chuyên khoa</span>
-              <strong>{appointment.specialty}</strong>
-            </div>
-            <div>
-              <span>Phòng khám</span>
-              <strong>{appointment.clinic}</strong>
-            </div>
-            <div className="doctor-detail-grid--full">
-              <span>Lý do khám</span>
-              <strong>{appointment.reason || "—"}</strong>
-            </div>
-            <div>
-              <span>Phí khám</span>
-              <strong>
-                {Number(appointment.consultation_fee || 0).toLocaleString("vi-VN")} đ
-              </strong>
+              <strong>{appointment.date_display || "—"}</strong>
             </div>
           </div>
+          <div className="doctor-appointment-summary-item">
+            <span className="doctor-appointment-summary-icon" aria-hidden="true">
+              <Clock3 size={19} />
+            </span>
+            <div>
+              <span>Khung giờ</span>
+              <strong>{appointment.time || "—"}</strong>
+            </div>
+          </div>
+          <div className="doctor-appointment-summary-item">
+            <span className="doctor-appointment-summary-icon" aria-hidden="true">
+              <Building2 size={19} />
+            </span>
+            <div>
+              <span>Phòng khám</span>
+              <strong>{appointment.clinic || "—"}</strong>
+            </div>
+          </div>
+          <div className="doctor-appointment-summary-item">
+            <span className="doctor-appointment-summary-icon" aria-hidden="true">
+              <Stethoscope size={19} />
+            </span>
+            <div>
+              <span>Chuyên khoa</span>
+              <strong>{appointment.specialty || "—"}</strong>
+            </div>
+          </div>
+        </section>
 
-          <div
-            style={{
-              display: "flex",
-              gap: 8,
-              flexWrap: "wrap",
-              marginTop: 20,
-            }}
-          >
-            {appointment.status === "PENDING" && (
-              <>
-                <button
-                  type="button"
-                  className="admin-btn admin-btn-primary"
-                  disabled={updating}
-                  onClick={() => handleStatus("CONFIRMED")}
-                >
-                  Xác nhận lịch
-                </button>
-                <button
-                  type="button"
-                  className="admin-btn admin-btn-danger"
-                  disabled={updating}
-                  onClick={() => handleStatus("CANCELLED")}
-                >
-                  Hủy
-                </button>
-              </>
-            )}
+        <div className="doctor-appointment-content-grid">
+          <DoctorPatientInfo data={appointment} />
 
-            {appointment.status === "CONFIRMED" && !medicalRecord && !examStarted && (
-              <>
-                {canStartExam ? (
+          <section className="doctor-appointment-panel doctor-exam-info-card">
+            <div className="doctor-appointment-panel-title">
+              <span className="doctor-appointment-panel-icon" aria-hidden="true">
+                <ClipboardPlus size={18} />
+              </span>
+              <h4>Thông tin khám</h4>
+            </div>
+
+            <div className="doctor-compact-info-list doctor-exam-info-list">
+              <div className="doctor-compact-info-row doctor-compact-info-row--stacked">
+                <span>Lý do khám</span>
+                <strong>{examInformation.reason}</strong>
+              </div>
+              <div className="doctor-compact-info-row">
+                <span>Phí khám</span>
+                <strong className="doctor-appointment-fee">
+                  {Number(appointment.consultation_fee || 0).toLocaleString(
+                    "vi-VN",
+                  )}{" "}
+                  đ
+                </strong>
+              </div>
+              <div className="doctor-compact-info-row doctor-compact-info-row--stacked">
+                <span>Ghi chú</span>
+                <strong>{examInformation.note}</strong>
+              </div>
+            </div>
+
+            <div className="doctor-appointment-actions">
+              {appointment.status === "PENDING" && (
+                <>
                   <button
                     type="button"
                     className="admin-btn admin-btn-primary"
                     disabled={updating}
-                    onClick={() => setExamStarted(true)}
+                    onClick={() => handleStatus("CONFIRMED")}
                   >
-                    Bắt đầu khám
+                    Xác nhận khám
                   </button>
-                ) : (
-                  <p
-                    style={{
-                      margin: 0,
-                      color: "#64748b",
-                      fontSize: 14,
-                      flex: "1 1 100%",
-                    }}
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn-danger"
+                    disabled={updating}
+                    onClick={() => handleStatus("CANCELLED")}
                   >
-                    Lịch khám vào {appointment.date_display}. Bạn có thể bắt đầu
-                    khám vào ngày hẹn.
-                  </p>
+                    Hủy
+                  </button>
+                </>
+              )}
+
+              {appointment.status === "CONFIRMED" &&
+                !medicalRecord &&
+                !examStarted && (
+                  <>
+                    {appointment.exam_started_at ? (
+                      <button
+                        type="button"
+                        className="admin-btn admin-btn-primary"
+                        onClick={() => setExamStarted(true)}
+                      >
+                        Tiếp tục khám
+                      </button>
+                    ) : canStartExam ? (
+                      <button
+                        type="button"
+                        className="admin-btn admin-btn-primary"
+                        disabled={updating}
+                        onClick={handleStartExam}
+                      >
+                        {updating ? "Đang lưu..." : "Bắt đầu khám"}
+                      </button>
+                    ) : (
+                      <p className="doctor-appointment-action-note">
+                        Lịch khám vào {appointment.date_display}. Bạn có thể bắt
+                        đầu khám vào ngày hẹn.
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn-danger"
+                      disabled={updating}
+                      onClick={() => handleStatus("CANCELLED")}
+                    >
+                      Hủy
+                    </button>
+                  </>
                 )}
-                <button
-                  type="button"
-                  className="admin-btn admin-btn-danger"
-                  disabled={updating}
-                  onClick={() => handleStatus("CANCELLED")}
-                >
-                  Hủy
-                </button>
-              </>
-            )}
 
-            {appointment.status === "CONFIRMED" && examStarted && !medicalRecord && (
-              <button
-                type="button"
-                className="admin-btn admin-btn-secondary"
-                onClick={() => setExamStarted(false)}
-              >
-                Đóng form
-              </button>
-            )}
+              {appointment.status === "CONFIRMED" &&
+                examStarted &&
+                !medicalRecord && (
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn-secondary"
+                    onClick={() => setExamStarted(false)}
+                  >
+                    Đóng form
+                  </button>
+                )}
 
-            {medicalRecord && !prescription && !prescriptionStep && !prescriptionSkipped && (
-              <button
-                type="button"
-                className="admin-btn admin-btn-primary"
-                onClick={() => setPrescriptionStep(true)}
-              >
-                Kê đơn thuốc
-              </button>
-            )}
-          </div>
+              {medicalRecord &&
+                !prescription &&
+                !prescriptionStep &&
+                !prescriptionSkipped && (
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn-primary"
+                    onClick={() => setPrescriptionStep(true)}
+                  >
+                    Kê đơn thuốc
+                  </button>
+                )}
+
+              {medicalRecord && appointment.status === "CONFIRMED" && (
+                <>
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn-primary doctor-complete-exam-btn"
+                    disabled={updating || incompleteClinicalOrderCount > 0}
+                    onClick={() => handleStatus("COMPLETED")}
+                  >
+                    {updating ? "Đang lưu..." : "Hoàn thành khám"}
+                  </button>
+                  {incompleteClinicalOrderCount > 0 && (
+                    <p className="doctor-appointment-action-note">
+                      Còn {incompleteClinicalOrderCount} chỉ định cận lâm sàng chưa hoàn tất.
+                      Chỉ có thể hoàn thành khám sau khi có đầy đủ kết quả.
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          </section>
         </div>
 
         {showMedicalForm && (
-          <div className="doctor-card" style={{ marginTop: 20 }}>
-            <MedicalRecordForm
-              key={medicalRecord?.id || "new"}
-              appointmentId={appointment.id}
-              initialRecord={medicalRecord}
-              onSaved={handleRecordSaved}
-              readOnly={appointment.status === "CANCELLED"}
-            />
-          </div>
+          <>
+            <div className="doctor-card" style={{ marginTop: 20 }}>
+              <MedicalRecordForm
+                key={medicalRecord?.id || "new"}
+                appointmentId={appointment.id}
+                initialRecord={medicalRecord}
+                onSaved={handleRecordSaved}
+                readOnly={appointment.status === "CANCELLED"}
+              />
+            </div>
+
+            <div style={{ marginTop: 20 }}>
+              <AppointmentClinicalOrders
+                appointment={appointment}
+                onOrdersChange={handleClinicalOrdersChange}
+              />
+            </div>
+          </>
         )}
 
         {showPrescriptionForm && (
-          <div className="doctor-card" style={{ marginTop: 20 }}>
+          <div className="doctor-card doctor-prescription-card-shell">
             <PrescriptionForm
               key={prescription?.id || "new"}
               medicalRecordId={medicalRecord.id}

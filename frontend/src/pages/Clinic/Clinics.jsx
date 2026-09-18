@@ -1,86 +1,101 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { Home } from "lucide-react";
 import toast from "react-hot-toast";
 import Header from "../../components/common/Header/Header";
 import Footer from "../../components/common/Footer/Footer";
-import PageBanner from "../../components/common/PageBanner/PageBanner";
 import ClinicFilter from "../../components/clinic/ClinicFilter";
 import ClinicCard from "../../components/clinic/ClinicCard";
 import clinicService from "../../services/clinic.service";
 import { getApiErrorMessage } from "../../api/axios";
 
 function Clinics() {
-  const [clinics, setClinics] = useState([]);
-  const [total, setTotal] = useState(0);
+  const [allClinics, setAllClinics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
-  const fetchClinics = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = { page: 1, limit: 50 };
-      if (search.trim()) params.search = search.trim();
-
-      const result = await clinicService.getClinics(params);
-      setClinics(result.data);
-      setTotal(result.pagination?.total ?? result.data.length);
-    } catch (error) {
-      toast.error(
-        getApiErrorMessage(error, "Không tải được danh sách phòng khám"),
-      );
-      setClinics([]);
-      setTotal(0);
-    } finally {
-      setLoading(false);
-    }
-  }, [search]);
-
   useEffect(() => {
-    fetchClinics();
-  }, [fetchClinics]);
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      try {
+        const result = await clinicService.getClinics({ page: 1, limit: 100 });
+        if (!cancelled) setAllClinics(result.data || []);
+      } catch (error) {
+        if (!cancelled) {
+          setAllClinics([]);
+          toast.error(
+            getApiErrorMessage(error, "Không tải được danh sách phòng khám"),
+          );
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const clinics = useMemo(() => {
+    const keyword = search.trim().toLocaleLowerCase("vi");
+    if (!keyword) return allClinics;
+
+    return allClinics.filter((clinic) =>
+      [clinic.name, clinic.address, clinic.email, clinic.phone].some((value) =>
+        value?.toLocaleLowerCase("vi").includes(keyword),
+      ),
+    );
+  }, [allClinics, search]);
 
   return (
     <>
       <Header />
 
-      <div className="listing-page">
-        <PageBanner
-          variant="clinic"
-          title="Danh sách phòng khám"
-          description="Khám phá các cơ sở y tế uy tín trên toàn quốc và đặt lịch khám dễ dàng."
-        />
+      <main className="clinic-list-page">
+        <div className="clinic-list-inner">
+          <nav className="clinic-breadcrumb" aria-label="Điều hướng">
+            <Link to="/" aria-label="Trang chủ">
+              <Home size={16} />
+            </Link>
+            <span>/ Phòng khám</span>
+          </nav>
+          <ClinicFilter
+            search={search}
+            onSearchChange={setSearch}
+            onClear={() => setSearch("")}
+          />
 
-        <section className="listing-content">
-          <div className="container listing-body">
-            <div className="listing-toolbar">
-              <ClinicFilter
-                search={search}
-                onSearchChange={setSearch}
-                onSubmit={fetchClinics}
-              />
-
-              <div className="listing-meta">
-                <span>
-                  Tìm thấy <strong>{total}</strong> phòng khám
-                </span>
-              </div>
+          {search.trim() && !loading && (
+            <div className="clinic-filter-info">
+              <span>
+                Tìm thấy <strong>{clinics.length}</strong> phòng khám
+              </span>
+              <button type="button" onClick={() => setSearch("")}>
+                Xóa bộ lọc
+              </button>
             </div>
+          )}
 
-            <div className="listing-results">
-              {loading ? (
-                <p>Đang tải danh sách phòng khám...</p>
-              ) : clinics.length === 0 ? (
-                <p>Không tìm thấy phòng khám phù hợp.</p>
-              ) : (
-                <div className="listing-grid">
-                  {clinics.map((clinic) => (
-                    <ClinicCard key={clinic.id} clinic={clinic} />
-                  ))}
-                </div>
-              )}
+          {loading ? (
+            <div className="clinic-state">Đang tải danh sách phòng khám...</div>
+          ) : clinics.length === 0 ? (
+            <div className="clinic-state clinic-state--empty">
+              <h2>Không tìm thấy phòng khám</h2>
+              <p>Hãy thử tìm bằng tên, địa chỉ hoặc số điện thoại khác.</p>
             </div>
-          </div>
-        </section>
-      </div>
+          ) : (
+            <div className="clinic-grid">
+              {clinics.map((clinic) => (
+                <ClinicCard key={clinic.id} clinic={clinic} />
+              ))}
+            </div>
+          )}
+        </div>
+      </main>
 
       <Footer />
     </>

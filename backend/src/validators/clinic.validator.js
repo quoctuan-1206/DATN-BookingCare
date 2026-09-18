@@ -4,20 +4,24 @@ import { z } from "zod";
 export const createClinicSchema = z.object({
   name: z.string().min(1, "Tên phòng khám không được để trống"),
   address: z.string().min(1, "Địa chỉ không được để trống"),
-  phone: z.string().optional(),
-  email: z.string().email("Email không hợp lệ").optional().or(z.literal("")),
+  phone: z.string().nullable().optional(),
+  email: z.string().email("Email không hợp lệ").nullable().optional().or(z.literal("")),
   description: z.string().optional(),
-  image: z.string().optional(),
+  specialties_content: z.string().optional(),
+  equipment_content: z.string().optional(),
+  image: z.string().nullable().optional(),
 });
 
 // Schema cập nhật phòng khám
 export const updateClinicSchema = z.object({
   name: z.string().min(1).optional(),
   address: z.string().min(1).optional(),
-  phone: z.string().optional(),
-  email: z.string().email("Email không hợp lệ").optional().or(z.literal("")),
+  phone: z.string().nullable().optional(),
+  email: z.string().email("Email không hợp lệ").nullable().optional().or(z.literal("")),
   description: z.string().optional(),
-  image: z.string().optional(),
+  specialties_content: z.string().optional(),
+  equipment_content: z.string().optional(),
+  image: z.string().nullable().optional(),
   is_active: z.boolean().optional(),
 });
 

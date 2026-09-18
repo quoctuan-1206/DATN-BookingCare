@@ -16,11 +16,6 @@ export function mapClinicFromApi(clinic) {
     mapQuery:
       clinic.mapQuery ||
       encodeURIComponent(clinic.name || clinic.address || ""),
-    images: clinic.images || [
-      image,
-      `https://picsum.photos/400/300?c${clinic.id}a`,
-      `https://picsum.photos/400/300?c${clinic.id}b`,
-    ],
   };
 }
 

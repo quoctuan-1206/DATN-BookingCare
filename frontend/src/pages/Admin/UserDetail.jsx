@@ -10,6 +10,7 @@ const roleLabel = {
   Doctor: "Bác sĩ",
   Patient: "Bệnh nhân",
   Receptionist: "Tiếp tân",
+  STAFF: "Nhân viên xét nghiệm",
 };
 
 const genderLabel = {

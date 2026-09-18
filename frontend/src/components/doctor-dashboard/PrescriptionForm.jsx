@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { CalendarDays, Pill, Plus, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import medicineService from "../../services/medicine.service";
 import prescriptionService from "../../services/prescription.service";
 import { getApiErrorMessage } from "../../api/axios";
+import DoctorPrescriptionTable from "./DoctorPrescriptionTable";
 
 const emptyItem = () => ({
   medicine_id: "",
@@ -11,6 +12,26 @@ const emptyItem = () => ({
   dosage: "",
   instruction: "",
 });
+
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+function dateAfterDays(days = 7) {
+  const date = new Date();
+  date.setHours(12, 0, 0, 0);
+  date.setDate(date.getDate() + Number(days || 7));
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function daysUntilDate(value) {
+  if (!value) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(`${value}T00:00:00`);
+  return Math.ceil((target.getTime() - today.getTime()) / DAY_IN_MS);
+}
 
 function PrescriptionForm({
   medicalRecordId,
@@ -25,6 +46,12 @@ function PrescriptionForm({
   const [editing, setEditing] = useState(!readOnly && !hasPrescription);
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState(initialPrescription?.note || "");
+  const [needFollowUp, setNeedFollowUp] = useState(
+    initialPrescription?.follow_up_days != null,
+  );
+  const [followUpDate, setFollowUpDate] = useState(
+    dateAfterDays(initialPrescription?.follow_up_days ?? 7),
+  );
   const [items, setItems] = useState(() => {
     if (initialPrescription?.items?.length) {
       return initialPrescription.items.map((item) => ({
@@ -90,6 +117,22 @@ function PrescriptionForm({
     );
   };
 
+  const resetFromInitial = () => {
+    setNote(initialPrescription?.note || "");
+    setNeedFollowUp(initialPrescription?.follow_up_days != null);
+    setFollowUpDate(dateAfterDays(initialPrescription?.follow_up_days ?? 7));
+    setItems(
+      initialPrescription?.items?.length
+        ? initialPrescription.items.map((item) => ({
+            medicine_id: String(item.medicine_id),
+            quantity: item.quantity,
+            dosage: item.dosage || "",
+            instruction: item.instruction || "",
+          }))
+        : [emptyItem()],
+    );
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -112,10 +155,21 @@ function PrescriptionForm({
       return;
     }
 
+    let resolvedFollowUpDays = null;
+    if (needFollowUp) {
+      const days = daysUntilDate(followUpDate);
+      if (!Number.isInteger(days) || days < 1 || days > 365) {
+        toast.error("Ngày tái khám phải trong vòng 365 ngày tới");
+        return;
+      }
+      resolvedFollowUpDays = days;
+    }
+
     setSaving(true);
     try {
       const payload = {
         note: note.trim() || null,
+        follow_up_days: resolvedFollowUpDays,
         items: payloadItems,
       };
 
@@ -139,256 +193,275 @@ function PrescriptionForm({
     }
   };
 
-  if (readOnly || (hasPrescription && !editing)) {
-    const displayItems = initialPrescription?.items || [];
+  const handleCancel = () => {
+    if (hasPrescription) {
+      resetFromInitial();
+      setEditing(false);
+      return;
+    }
 
+    if (onSkip) {
+      onSkip();
+      return;
+    }
+
+    resetFromInitial();
+  };
+
+  if (readOnly || (hasPrescription && !editing)) {
     return (
       <div className="doctor-prescription-view">
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            marginBottom: 16,
-            flexWrap: "wrap",
-            alignItems: "center",
-          }}
-        >
-          <h4 style={{ margin: 0 }}>Đơn thuốc</h4>
+        <header className="doctor-prescription-form__header">
+          <div className="doctor-prescription-form__heading">
+            <span className="doctor-prescription-form__icon" aria-hidden="true">
+              <Pill size={19} />
+            </span>
+            <h3>Kê đơn thuốc</h3>
+          </div>
           {!readOnly && (
             <button
               type="button"
-              className="admin-btn admin-btn-secondary"
+              className="doctor-prescription-header-action"
               onClick={() => setEditing(true)}
             >
               Chỉnh sửa đơn
             </button>
           )}
+        </header>
+
+        <div className="doctor-prescription-view__body">
+          <DoctorPrescriptionTable
+            prescription={initialPrescription}
+            emptyText="Chưa kê thuốc."
+          />
         </div>
-
-        {displayItems.length === 0 ? (
-          <p style={{ margin: 0, color: "#64748b" }}>Chưa kê thuốc.</p>
-        ) : (
-          <div className="table-wrapper">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Thuốc</th>
-                  <th>Số lượng</th>
-                  <th>Liều dùng</th>
-                  <th>Hướng dẫn</th>
-                  <th>Thành tiền</th>
-                </tr>
-              </thead>
-              <tbody>
-                {displayItems.map((item) => (
-                  <tr key={item.id || `${item.medicine_id}-${item.dosage}`}>
-                    <td>{item.medicine_name}</td>
-                    <td>
-                      {item.quantity} {item.unit || ""}
-                    </td>
-                    <td>{item.dosage || "—"}</td>
-                    <td>{item.instruction || "—"}</td>
-                    <td>
-                      {Number(item.line_total || 0).toLocaleString("vi-VN")} đ
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {initialPrescription?.note && (
-          <p style={{ marginTop: 12, color: "#475569" }}>
-            <strong>Ghi chú đơn:</strong> {initialPrescription.note}
-          </p>
-        )}
-
-        {displayItems.length > 0 && (
-          <p style={{ marginTop: 12, fontWeight: 600 }}>
-            Tổng tiền thuốc: {Number(totalAmount).toLocaleString("vi-VN")} đ
-          </p>
-        )}
       </div>
     );
   }
 
   return (
-    <form className="admin-form doctor-prescription-form" onSubmit={handleSubmit}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 12,
-          marginBottom: 16,
-          flexWrap: "wrap",
-          alignItems: "center",
-        }}
-      >
-        <h4 style={{ margin: 0 }}>
-          {hasPrescription ? "Cập nhật đơn thuốc" : "Kê đơn thuốc"}
-        </h4>
+    <form className="doctor-prescription-form" onSubmit={handleSubmit}>
+      <header className="doctor-prescription-form__header">
+        <div className="doctor-prescription-form__heading">
+          <span className="doctor-prescription-form__icon" aria-hidden="true">
+            <Pill size={19} />
+          </span>
+          <h3>Kê đơn thuốc</h3>
+        </div>
         {!hasPrescription && onSkip && (
           <button
             type="button"
-            className="admin-btn admin-btn-secondary"
+            className="doctor-prescription-skip-btn"
             onClick={onSkip}
           >
             Không kê thuốc
           </button>
         )}
-      </div>
+      </header>
 
-      {loadingMedicines ? (
-        <p>Đang tải danh sách thuốc...</p>
-      ) : medicines.length === 0 ? (
-        <p>Chưa có thuốc trong hệ thống. Vui lòng liên hệ quản trị viên.</p>
-      ) : (
-        <>
-          <div className="prescription-items">
-            {items.map((item, index) => (
-              <div key={index} className="prescription-item-row">
-                <div className="admin-form-group">
-                  <label>Thuốc</label>
-                  <select
-                    className="admin-select"
-                    value={item.medicine_id}
-                    onChange={(e) =>
-                      handleItemChange(index, "medicine_id", e.target.value)
-                    }
-                    required
-                  >
-                    <option value="">Chọn thuốc...</option>
-                    {medicines.map((medicine) => (
-                      <option key={medicine.id} value={medicine.id}>
-                        {medicine.name}
-                        {medicine.unit ? ` (${medicine.unit})` : ""}
-                        {medicine.price
-                          ? ` — ${Number(medicine.price).toLocaleString("vi-VN")} đ`
-                          : ""}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="admin-form-group">
-                  <label>Số lượng</label>
-                  <input
-                    type="number"
-                    className="admin-input"
-                    min={1}
-                    value={item.quantity}
-                    onChange={(e) =>
-                      handleItemChange(index, "quantity", e.target.value)
-                    }
-                    required
-                  />
-                </div>
-
-                <div className="admin-form-group">
-                  <label>Liều dùng</label>
-                  <input
-                    type="text"
-                    className="admin-input"
-                    placeholder="VD: 1 viên x 2 lần/ngày"
-                    value={item.dosage}
-                    onChange={(e) =>
-                      handleItemChange(index, "dosage", e.target.value)
-                    }
-                  />
-                </div>
-
-                <div className="admin-form-group">
-                  <label>Hướng dẫn</label>
-                  <input
-                    type="text"
-                    className="admin-input"
-                    placeholder="VD: Uống sau ăn"
-                    value={item.instruction}
-                    onChange={(e) =>
-                      handleItemChange(index, "instruction", e.target.value)
-                    }
-                  />
-                </div>
-
-                <button
-                  type="button"
-                  className="admin-btn admin-btn-danger prescription-remove-btn"
-                  onClick={() => removeItem(index)}
-                  disabled={items.length <= 1}
-                  aria-label="Xóa dòng thuốc"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <button
-            type="button"
-            className="admin-btn admin-btn-secondary"
-            onClick={addItem}
-            style={{ marginBottom: 16 }}
-          >
-            <Plus size={16} style={{ marginRight: 6 }} />
-            Thêm thuốc
-          </button>
-
-          <div className="admin-form-group">
-            <label htmlFor="prescription_note">Ghi chú đơn thuốc</label>
-            <textarea
-              id="prescription_note"
-              className="admin-textarea"
-              rows={2}
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="VD: Uống đủ liệu trình 5 ngày"
-            />
-          </div>
-
-          <p style={{ margin: "0 0 16px", fontWeight: 600 }}>
-            Tạm tính: {Number(totalAmount).toLocaleString("vi-VN")} đ
+      <div className="doctor-prescription-form__body">
+        {loadingMedicines ? (
+          <p className="doctor-prescription-form__state">Đang tải danh sách thuốc...</p>
+        ) : medicines.length === 0 ? (
+          <p className="doctor-prescription-form__state">
+            Chưa có thuốc trong hệ thống. Vui lòng liên hệ quản trị viên.
           </p>
+        ) : (
+          <>
+            <section className="doctor-prescription-medicines" aria-labelledby="prescription-medicines-title">
+              <h4 id="prescription-medicines-title">Danh sách thuốc</h4>
 
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button
-              type="submit"
-              className="admin-btn admin-btn-primary"
-              disabled={saving}
-            >
-              {saving
-                ? "Đang lưu..."
-                : hasPrescription
-                  ? "Cập nhật đơn thuốc"
-                  : "Lưu đơn thuốc"}
-            </button>
-            {hasPrescription && (
+              <div className="prescription-table-wrap">
+                <div className="prescription-table" role="table" aria-label="Danh sách thuốc kê đơn">
+                  <div className="prescription-table__head" role="row">
+                    <span role="columnheader">STT</span>
+                    <span role="columnheader">Tên thuốc</span>
+                    <span role="columnheader">Liều dùng</span>
+                    <span role="columnheader">Số lượng</span>
+                    <span role="columnheader">Đơn vị</span>
+                    <span role="columnheader">Hướng dẫn</span>
+                    <span role="columnheader">Thao tác</span>
+                  </div>
+
+                  {items.map((item, index) => {
+                    const selectedMedicine = medicines.find(
+                      (medicine) => String(medicine.id) === String(item.medicine_id),
+                    );
+
+                    return (
+                      <div key={index} className="prescription-item-row" role="row">
+                        <span className="prescription-item-index" role="cell">{index + 1}</span>
+
+                        <div role="cell">
+                          <label className="sr-only" htmlFor={`prescription_medicine_${index}`}>Tên thuốc</label>
+                          <select
+                            id={`prescription_medicine_${index}`}
+                            value={item.medicine_id}
+                            onChange={(e) =>
+                              handleItemChange(index, "medicine_id", e.target.value)
+                            }
+                            required
+                          >
+                            <option value="">Chọn thuốc...</option>
+                            {medicines.map((medicine) => (
+                              <option key={medicine.id} value={medicine.id}>
+                                {medicine.name}
+                                {medicine.unit ? ` (${medicine.unit})` : ""}
+                                {medicine.price
+                                  ? ` — ${Number(medicine.price).toLocaleString("vi-VN")} đ`
+                                  : ""}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div role="cell">
+                          <label className="sr-only" htmlFor={`prescription_dosage_${index}`}>Liều dùng</label>
+                          <input
+                            id={`prescription_dosage_${index}`}
+                            type="text"
+                            placeholder="VD: 1 viên x 2 lần/ngày"
+                            value={item.dosage}
+                            onChange={(e) =>
+                              handleItemChange(index, "dosage", e.target.value)
+                            }
+                          />
+                        </div>
+
+                        <div role="cell">
+                          <label className="sr-only" htmlFor={`prescription_quantity_${index}`}>Số lượng</label>
+                          <input
+                            id={`prescription_quantity_${index}`}
+                            type="number"
+                            min={1}
+                            value={item.quantity}
+                            onChange={(e) =>
+                              handleItemChange(index, "quantity", e.target.value)
+                            }
+                            required
+                          />
+                        </div>
+
+                        <div role="cell">
+                          <label className="sr-only" htmlFor={`prescription_unit_${index}`}>Đơn vị</label>
+                          <input
+                            id={`prescription_unit_${index}`}
+                            type="text"
+                            value={selectedMedicine?.unit || "viên"}
+                            readOnly
+                          />
+                        </div>
+
+                        <div role="cell">
+                          <label className="sr-only" htmlFor={`prescription_instruction_${index}`}>Hướng dẫn</label>
+                          <input
+                            id={`prescription_instruction_${index}`}
+                            type="text"
+                            placeholder="VD: Uống sau ăn"
+                            value={item.instruction}
+                            onChange={(e) =>
+                              handleItemChange(index, "instruction", e.target.value)
+                            }
+                          />
+                        </div>
+
+                        <div className="prescription-item-action" role="cell">
+                          <button
+                            type="button"
+                            className="prescription-remove-btn"
+                            onClick={() => removeItem(index)}
+                            disabled={items.length <= 1}
+                            aria-label={`Xóa thuốc dòng ${index + 1}`}
+                          >
+                            <Trash2 size={17} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
               <button
                 type="button"
-                className="admin-btn admin-btn-secondary"
-                disabled={saving}
-                onClick={() => {
-                  setNote(initialPrescription?.note || "");
-                  setItems(
-                    initialPrescription?.items?.length
-                      ? initialPrescription.items.map((item) => ({
-                          medicine_id: String(item.medicine_id),
-                          quantity: item.quantity,
-                          dosage: item.dosage || "",
-                          instruction: item.instruction || "",
-                        }))
-                      : [emptyItem()],
-                  );
-                  setEditing(false);
-                }}
+                className="doctor-prescription-add-btn"
+                onClick={addItem}
               >
-                Hủy
+                <Plus size={16} />
+                Thêm thuốc
               </button>
-            )}
-          </div>
-        </>
-      )}
+            </section>
+
+            <div className="doctor-prescription-details">
+              <section className="doctor-prescription-note-panel">
+                <label htmlFor="prescription_note">Ghi chú đơn thuốc</label>
+                <textarea
+                  id="prescription_note"
+                  rows={3}
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="VD: Uống đủ liệu trình 5 ngày"
+                />
+
+                <div className="doctor-prescription-follow-up-row">
+                  <label className="doctor-follow-up-toggle">
+                    <input
+                      type="checkbox"
+                      checked={needFollowUp}
+                      onChange={(e) => setNeedFollowUp(e.target.checked)}
+                    />
+                    <span>Hẹn tái khám</span>
+                  </label>
+
+                  {needFollowUp && (
+                    <label className="doctor-follow-up-date" htmlFor="follow_up_date">
+                      <span><CalendarDays size={15} /> Ngày tái khám</span>
+                      <input
+                        id="follow_up_date"
+                        type="date"
+                        min={dateAfterDays(1)}
+                        max={dateAfterDays(365)}
+                        value={followUpDate}
+                        onChange={(e) => setFollowUpDate(e.target.value)}
+                        required
+                      />
+                    </label>
+                  )}
+                </div>
+              </section>
+
+              <aside className="doctor-prescription-total-card" aria-live="polite">
+                <span>Tổng tiền thuốc</span>
+                <strong>{Number(totalAmount).toLocaleString("vi-VN")} đ</strong>
+                <p>Chi phí thuốc sẽ được cập nhật sau khi lưu đơn thuốc.</p>
+              </aside>
+            </div>
+
+            <footer className="doctor-prescription-form__footer">
+              <p>
+                Tạm tính: <strong>{Number(totalAmount).toLocaleString("vi-VN")} đ</strong>
+              </p>
+              <div className="doctor-prescription-form__actions">
+                <button
+                  type="button"
+                  className="doctor-prescription-cancel-btn"
+                  disabled={saving}
+                  onClick={handleCancel}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="doctor-prescription-save-btn"
+                  disabled={saving}
+                >
+                  {saving ? "Đang lưu..." : "Lưu đơn thuốc"}
+                </button>
+              </div>
+            </footer>
+          </>
+        )}
+      </div>
     </form>
   );
 }

@@ -1,6 +1,29 @@
 import userRepository from "../repositories/user.repository.js";
+import { hashPassword } from "../utils/bcrypt.js";
 
 class UserService {
+  async createStaff(data) {
+    const [existing, role] = await Promise.all([
+      userRepository.findByEmail(data.email),
+      userRepository.findRoleByName("STAFF"),
+    ]);
+    if (existing) {
+      const error = new Error("Email đã tồn tại trong hệ thống");
+      error.statusCode = 409;
+      throw error;
+    }
+    if (!role) {
+      const error = new Error("Role STAFF chưa được khởi tạo");
+      error.statusCode = 500;
+      throw error;
+    }
+    const staff = await userRepository.createStaff(
+      { ...data, password: await hashPassword(data.password) },
+      role.id,
+    );
+    return this.formatUserResponse(staff);
+  }
+
   // Chuẩn hóa dữ liệu người dùng trả về API
   formatUserResponse(user) {
     if (!user) return null;

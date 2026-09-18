@@ -17,15 +17,12 @@ class ClinicService {
       phone: clinic.phone || null,
       email: clinic.email || null,
       description: clinic.description || null,
+      specialties_content: clinic.specialties_content || null,
+      equipment_content: clinic.equipment_content || null,
       image,
       is_active: clinic.is_active,
       doctor_count: doctorCount,
       mapQuery: encodeURIComponent(clinic.name || clinic.address || ""),
-      images: [
-        image,
-        `https://picsum.photos/400/300?c${clinic.id}a`,
-        `https://picsum.photos/400/300?c${clinic.id}b`,
-      ],
       created_at: clinic.created_at,
       updated_at: clinic.updated_at,
     };
@@ -78,6 +75,8 @@ class ClinicService {
       phone: data.phone || null,
       email: data.email || null,
       description: data.description || null,
+      specialties_content: data.specialties_content || null,
+      equipment_content: data.equipment_content || null,
       image: data.image || null,
     };
 
@@ -104,8 +103,14 @@ class ClinicService {
     if (data.address !== undefined) payload.address = data.address;
     if (data.phone !== undefined) payload.phone = data.phone || null;
     if (data.email !== undefined) payload.email = data.email || null;
-    if (data.description !== undefined) payload.description = data.description;
-    if (data.image !== undefined) payload.image = data.image;
+    if (data.description !== undefined) payload.description = data.description || null;
+    if (data.specialties_content !== undefined) {
+      payload.specialties_content = data.specialties_content || null;
+    }
+    if (data.equipment_content !== undefined) {
+      payload.equipment_content = data.equipment_content || null;
+    }
+    if (data.image !== undefined) payload.image = data.image || null;
     if (data.is_active !== undefined) payload.is_active = data.is_active;
 
     if (payload.email === "") payload.email = null;

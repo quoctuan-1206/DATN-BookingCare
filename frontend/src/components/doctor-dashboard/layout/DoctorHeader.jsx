@@ -1,16 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  Bell,
   Search,
   ChevronDown,
   UserCircle,
   LogOut,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import notificationService from "../../../services/notification.service";
 import doctorService from "../../../services/doctor.service";
 import { useAuth } from "../../../context/AuthContext";
+import NotificationBell from "../../common/NotificationBell/NotificationBell";
 
 function getDisplayName(user, doctor) {
   if (doctor?.name) return doctor.name;
@@ -22,23 +21,7 @@ function DoctorHeader({ title }) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [showMenu, setShowMenu] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [doctor, setDoctor] = useState(null);
-
-  useEffect(() => {
-    let alive = true;
-    notificationService
-      .getUnreadCount()
-      .then((count) => {
-        if (alive) setUnreadCount(count);
-      })
-      .catch(() => {
-        if (alive) setUnreadCount(0);
-      });
-    return () => {
-      alive = false;
-    };
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -86,10 +69,10 @@ function DoctorHeader({ title }) {
           <input type="text" placeholder="Tìm bệnh nhân, lịch hẹn..." />
         </div>
 
-        <Link to="/doctor/notifications" className="doctor-notification">
-          <Bell size={16} />
-          {unreadCount > 0 && <span>{unreadCount}</span>}
-        </Link>
+        <NotificationBell
+          viewAllTo="/doctor/notifications"
+          buttonClassName="doctor-notification"
+        />
 
         <div className="doctor-user">
           <button

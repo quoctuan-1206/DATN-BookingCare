@@ -9,22 +9,28 @@ async function seed() {
 
   try {
     // 1. Roles (bắt buộc để gắn role_id Admin)
-    const rolesCount = await prisma.roles.count();
-    if (rolesCount === 0) {
-      console.log("Nạp danh sách vai trò (roles)...");
-      await prisma.roles.createMany({
-        data: [
-          { id: 1, name: "Admin", description: "Quản trị viên" },
-          { id: 2, name: "Doctor", description: "Bác sĩ" },
-          { id: 3, name: "Patient", description: "Bệnh nhân" },
-          { id: 4, name: "Receptionist", description: "Tiếp tân" },
-        ],
+    const roles = [
+      { name: "Admin", description: "Quản trị viên" },
+      { name: "Doctor", description: "Bác sĩ" },
+      { name: "Patient", description: "Bệnh nhân" },
+      { name: "Receptionist", description: "Tiếp tân" },
+      { name: "STAFF", description: "Nhân viên xét nghiệm" },
+    ];
+    console.log("Nạp danh sách vai trò (roles)...");
+    for (const role of roles) {
+      await prisma.roles.upsert({
+        where: { name: role.name },
+        update: { description: role.description },
+        create: role,
       });
     }
 
     // 2. Xóa toàn bộ dữ liệu nghiệp vụ / mẫu (giữ roles + sẽ tạo lại Admin)
     console.log("Dọn dữ liệu mẫu (giữ roles)...");
 
+    await prisma.lab_results.deleteMany();
+    await prisma.lab_orders.deleteMany();
+    await prisma.lab_tests.deleteMany();
     await prisma.invoices.deleteMany();
     await prisma.medical_records.deleteMany();
     await prisma.prescription_details.deleteMany();

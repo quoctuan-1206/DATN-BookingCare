@@ -1,43 +1,40 @@
 import { Link } from "react-router-dom";
-import { MapPin, Phone } from "lucide-react";
+import { ChevronRight, MapPin, Phone, Users } from "lucide-react";
 
 function ClinicCard({ clinic }) {
-    return (
-        <article className="listing-card">
-            <div className="listing-card__media">
-                <img
-                    src={clinic.image}
-                    alt={clinic.name}
-                />
-                <span className="listing-card__badge">Phòng khám</span>
-            </div>
+  return (
+    <Link to={`/clinics/${clinic.id}`} className="clinic-card">
+      <div className="clinic-card__image">
+        <img src={clinic.image} alt={clinic.name} />
+        <span className="clinic-card__badge">Phòng khám</span>
+      </div>
 
-            <div className="listing-card__body">
-                <h3 className="listing-card__title">{clinic.name}</h3>
+      <div className="clinic-card__body">
+        <h2>{clinic.name}</h2>
+        <p className="clinic-card__address">
+          <MapPin size={16} />
+          <span>{clinic.address || "Đang cập nhật địa chỉ"}</span>
+        </p>
 
-                <div className="listing-card__meta">
-                    <span className="listing-card__meta-item">
-                        <MapPin size={16} />
-                        {clinic.address}
-                    </span>
+        <div className="clinic-card__meta">
+          <span>
+            <Users size={15} />
+            {clinic.doctor_count || 0} bác sĩ
+          </span>
+          {clinic.phone && (
+            <span>
+              <Phone size={15} />
+              {clinic.phone}
+            </span>
+          )}
+        </div>
 
-                    <span className="listing-card__meta-item">
-                        <Phone size={16} />
-                        {clinic.phone}
-                    </span>
-                </div>
-
-                <div className="listing-card__footer">
-                    <Link
-                        to={`/clinics/${clinic.id}`}
-                        className="btn btn-primary"
-                    >
-                        Xem chi tiết
-                    </Link>
-                </div>
-            </div>
-        </article>
-    );
+        <span className="clinic-card__link">
+          Xem chi tiết <ChevronRight size={15} />
+        </span>
+      </div>
+    </Link>
+  );
 }
 
 export default ClinicCard;

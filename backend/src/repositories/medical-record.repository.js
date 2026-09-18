@@ -9,7 +9,14 @@ const recordInclude = {
           account_id: true,
           full_name: true,
           phone: true,
+          gender: true,
+          date_of_birth: true,
           relationship: true,
+          blood_type: true,
+          height: true,
+          weight: true,
+          insurance_number: true,
+          emergency_contact: true,
         },
       },
       schedules: {
@@ -39,10 +46,46 @@ const recordInclude = {
           },
         },
       },
+      lab_orders: {
+        orderBy: [{ ordered_at: "desc" }, { id: "desc" }],
+        include: {
+          performed_by_user: {
+            select: { id: true, first_name: true, last_name: true },
+          },
+          lab_results: {
+            orderBy: { id: "asc" },
+            include: { lab_tests: true },
+          },
+          clinical_attachments: {
+            orderBy: { created_at: "asc" },
+            select: {
+              id: true,
+              kind: true,
+              original_name: true,
+              mime_type: true,
+              file_size: true,
+              created_at: true,
+            },
+          },
+        },
+      },
     },
   },
   prescriptions: {
-    select: { id: true },
+    include: {
+      prescription_details: {
+        include: {
+          medicines: {
+            select: {
+              id: true,
+              name: true,
+              unit: true,
+            },
+          },
+        },
+        orderBy: { id: "asc" },
+      },
+    },
   },
 };
 
@@ -81,7 +124,7 @@ class MedicalRecordRepository {
     });
   }
 
-  // Tạo bệnh án mới và đánh dấu lịch đã hoàn thành
+  // Tạo bệnh án mới; chỉ hoàn thành lịch khi không còn chỉ định cận lâm sàng đang xử lý.
   async create(data) {
     return prisma.$transaction(async (tx) => {
       const record = await tx.medical_records.create({
@@ -94,14 +137,22 @@ class MedicalRecordRepository {
         },
       });
 
-      // Đánh dấu lịch đã hoàn thành nếu chưa
-      await tx.appointments.update({
-        where: { id: Number(data.appointment_id) },
-        data: {
-          status: "COMPLETED",
-          updated_at: new Date(),
+      const incompleteClinicalOrderCount = await tx.lab_orders.count({
+        where: {
+          appointment_id: Number(data.appointment_id),
+          status: { in: ["PENDING", "IN_PROGRESS"] },
         },
       });
+
+      if (incompleteClinicalOrderCount === 0) {
+        await tx.appointments.update({
+          where: { id: Number(data.appointment_id) },
+          data: {
+            status: "COMPLETED",
+            updated_at: new Date(),
+          },
+        });
+      }
 
       return tx.medical_records.findFirst({
         where: { id: record.id },

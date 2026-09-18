@@ -2,6 +2,18 @@ import prescriptionRepository from "../repositories/prescription.repository.js";
 import medicalRecordRepository from "../repositories/medical-record.repository.js";
 import medicineRepository from "../repositories/medicine.repository.js";
 import notificationService from "./notification.service.js";
+import {
+  formatDateDisplay,
+  formatDateOnly,
+} from "../utils/datetime.js";
+
+function addDaysYMD(ymd, days) {
+  if (!ymd || days == null) return null;
+  const d = new Date(`${ymd}T00:00:00.000Z`);
+  if (Number.isNaN(d.getTime())) return null;
+  d.setUTCDate(d.getUTCDate() + Number(days));
+  return d.toISOString().slice(0, 10);
+}
 
 class PrescriptionService {
   formatPrescription(prescription) {
@@ -12,6 +24,12 @@ class PrescriptionService {
     const patient = appointment?.patient_profiles;
     const schedule = appointment?.schedules;
     const workplace = schedule?.doctor_workplaces;
+    const workDate = formatDateOnly(schedule?.work_date);
+    const followUpDays =
+      prescription.follow_up_days != null
+        ? Number(prescription.follow_up_days)
+        : null;
+    const followUpDate = addDaysYMD(workDate, followUpDays);
 
     const items = (prescription.prescription_details || []).map((detail) => ({
       id: detail.id,
@@ -32,6 +50,9 @@ class PrescriptionService {
       medical_record_id: prescription.medical_record_id,
       appointment_id: record?.appointment_id || null,
       note: prescription.note || null,
+      follow_up_days: followUpDays,
+      follow_up_date: followUpDate,
+      follow_up_date_display: formatDateDisplay(followUpDate),
       booking_code: appointment?.booking_code || null,
       patient_name: patient?.full_name || null,
       doctor_id:
@@ -168,8 +189,14 @@ class PrescriptionService {
     }
 
     const items = await this.resolveItems(data.items || []);
+    const followUpDays =
+      data.follow_up_days != null ? Number(data.follow_up_days) : null;
     const prescription = await prescriptionRepository.create(
-      { medical_record_id: data.medical_record_id, note: data.note },
+      {
+        medical_record_id: data.medical_record_id,
+        note: data.note,
+        follow_up_days: followUpDays,
+      },
       items,
     );
 
@@ -177,9 +204,13 @@ class PrescriptionService {
     const bookingCode = record.appointments?.booking_code || "";
     if (accountId) {
       try {
+        const followUpText =
+          followUpDays != null
+            ? ` Hẹn tái khám sau ${followUpDays} ngày.`
+            : "";
         await notificationService.notify(accountId, {
           title: "Có đơn thuốc mới",
-          content: `Bác sĩ đã kê đơn thuốc cho lịch ${bookingCode}.`,
+          content: `Bác sĩ đã kê đơn thuốc cho lịch ${bookingCode}.${followUpText}`,
           link: `/patient/medical-records/${record.id}`,
           type: "PRESCRIPTION",
         });
@@ -206,7 +237,11 @@ class PrescriptionService {
     const items = await this.resolveItems(data.items || []);
     const updated = await prescriptionRepository.update(
       prescriptionId,
-      { note: data.note },
+      {
+        note: data.note,
+        follow_up_days:
+          data.follow_up_days != null ? Number(data.follow_up_days) : null,
+      },
       items,
     );
 

@@ -8,6 +8,9 @@ const router = Router();
 // Chỉ Admin được quản lý người dùng
 router.use(verifyAccessTokenMiddleware, authorize("Admin"));
 
+// POST /api/users/staff - Tạo tài khoản nhân viên xét nghiệm
+router.post("/staff", userController.createStaff);
+
 // GET /api/users - Danh sách người dùng
 router.get("/", userController.getAllUsers);
 // GET /api/users/:id - Chi tiết người dùng

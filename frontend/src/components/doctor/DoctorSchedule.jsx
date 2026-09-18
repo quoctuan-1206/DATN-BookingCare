@@ -73,8 +73,7 @@ function DoctorSchedule({
         </div>
       ) : (
         <p className="schedule-empty">
-          Chưa có lịch khám từ 3 ngày trở đi. Vui lòng chọn ngày khác hoặc quay
-          lại sau.
+          Chưa có lịch khám. Vui lòng chọn ngày khác hoặc quay lại sau.
         </p>
       )}
 

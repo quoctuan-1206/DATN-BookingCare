@@ -22,6 +22,7 @@ function BookingPanel({ doctor, selectedDate, selectedSchedule }) {
           name: doctor.name,
           avatar: doctor.image || doctor.avatar,
           specialty: doctor.specialty,
+          specialty_id: doctor.specialty_id,
           clinic: doctor.clinic,
           consultationFee: doctor.consultation_fee,
         },

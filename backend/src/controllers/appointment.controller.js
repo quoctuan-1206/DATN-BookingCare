@@ -81,6 +81,23 @@ class AppointmentController {
       next(error);
     }
   }
+
+  // Bắt đầu khám (PATCH /api/appointments/:id/start-exam)
+  async startExam(req, res, next) {
+    try {
+      const data = await appointmentService.startExam(
+        req.user,
+        req.params.id,
+      );
+      return res.status(200).json({
+        success: true,
+        message: "Đã bắt đầu khám",
+        data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default new AppointmentController();

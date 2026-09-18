@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
+import { Calendar, ChevronRight, Home, UserRound } from "lucide-react";
 import Header from "../../components/common/Header/Header";
 import Footer from "../../components/common/Footer/Footer";
 import articleService from "../../services/article.service";
@@ -13,6 +14,10 @@ function formatDate(value) {
   } catch {
     return "";
   }
+}
+
+function looksLikeHtml(value) {
+  return /<\/?[a-z][\s\S]*>/i.test(value || "");
 }
 
 function ArticleDetail() {
@@ -31,9 +36,7 @@ function ArticleDetail() {
       } catch (error) {
         if (!cancelled) {
           setArticle(null);
-          toast.error(
-            getApiErrorMessage(error, "Không tải được bài viết"),
-          );
+          toast.error(getApiErrorMessage(error, "Không tải được bài viết"));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -46,56 +49,102 @@ function ArticleDetail() {
     };
   }, [id]);
 
+  if (loading) {
+    return (
+      <>
+        <Header />
+        <section className="article-detail-page">
+          <div className="article-detail-inner">
+            <p>Đang tải bài viết...</p>
+          </div>
+        </section>
+        <Footer />
+      </>
+    );
+  }
+
+  if (!article) {
+    return (
+      <>
+        <Header />
+        <section className="article-detail-page">
+          <div className="article-detail-inner">
+            <h1>Không tìm thấy bài viết</h1>
+            <Link to="/articles" className="btn btn-primary">
+              Quay lại danh sách
+            </Link>
+          </div>
+        </section>
+        <Footer />
+      </>
+    );
+  }
+
+  const content = article.content || "Nội dung đang được cập nhật.";
+  const html = looksLikeHtml(content);
+
   return (
     <>
       <Header />
-      <section className="section">
-        <div className="container" style={{ maxWidth: 860 }}>
-          {loading ? (
-            <p>Đang tải bài viết...</p>
-          ) : !article ? (
-            <>
-              <h1>Không tìm thấy bài viết</h1>
-              <Link to="/articles" className="btn btn-primary">
-                Quay lại danh sách
-              </Link>
-            </>
-          ) : (
-            <>
-              <p style={{ marginBottom: 8 }}>
-                <Link to="/articles">← Bài viết</Link>
-              </p>
+      <section className="article-detail-page">
+        <div className="article-detail-inner">
+          <nav className="doctor-breadcrumb">
+            <Link to="/">
+              <Home size={15} />
+              Trang chủ
+            </Link>
+            <ChevronRight size={14} />
+            <Link to="/articles">Bài viết</Link>
+            <ChevronRight size={14} />
+            <span>{article.title}</span>
+          </nav>
+
+          <article className="article-detail-card">
+            {article.image ? (
               <img
                 src={article.image}
                 alt={article.title}
-                style={{
-                  width: "100%",
-                  maxHeight: 420,
-                  objectFit: "cover",
-                  borderRadius: 12,
-                  marginBottom: 20,
-                }}
+                className="article-detail-cover"
               />
-              <h1 style={{ marginBottom: 8 }}>{article.title}</h1>
-              <p style={{ color: "#666", marginBottom: 24 }}>
-                {article.category}
-                {article.author ? ` · ${article.author}` : ""}
-                {article.created_at
-                  ? ` · ${formatDate(article.created_at)}`
-                  : ""}
-              </p>
-              {article.description && (
-                <p style={{ fontSize: 18, marginBottom: 20 }}>
-                  {article.description}
-                </p>
+            ) : null}
+
+            <div className="article-detail-body">
+              {article.category ? (
+                <span className="doctor-profile__badge">{article.category}</span>
+              ) : null}
+              <h1>{article.title}</h1>
+
+              <ul className="article-detail-meta">
+                {article.author ? (
+                  <li>
+                    <UserRound size={15} />
+                    {article.author}
+                  </li>
+                ) : null}
+                {article.created_at ? (
+                  <li>
+                    <Calendar size={15} />
+                    {formatDate(article.created_at)}
+                  </li>
+                ) : null}
+              </ul>
+
+              {article.description ? (
+                <p className="article-detail-lead">{article.description}</p>
+              ) : null}
+
+              {html ? (
+                <div
+                  className="article-detail-content"
+                  dangerouslySetInnerHTML={{ __html: content }}
+                />
+              ) : (
+                <div className="article-detail-content article-detail-content--plain">
+                  {content}
+                </div>
               )}
-              <div
-                style={{ lineHeight: 1.7, whiteSpace: "pre-wrap" }}
-              >
-                {article.content || "Nội dung đang được cập nhật."}
-              </div>
-            </>
-          )}
+            </div>
+          </article>
         </div>
       </section>
       <Footer />

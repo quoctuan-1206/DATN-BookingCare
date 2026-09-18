@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 import DoctorLayout from "../../components/doctor-dashboard/layout/DoctorLayout";
 import doctorService from "../../services/doctor.service";
 import clinicService from "../../services/clinic.service";
 import specialtyService from "../../services/specialty.service";
 import { getApiErrorMessage } from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
+import authService from "../../services/auth.service";
 
 function Profile() {
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { user, updateCurrentUser, clearSession } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [addingWorkplace, setAddingWorkplace] = useState(false);
@@ -16,10 +19,21 @@ function Profile() {
   const [clinics, setClinics] = useState([]);
   const [specialties, setSpecialties] = useState([]);
   const [formData, setFormData] = useState({
+    first_name: "",
+    last_name: "",
     phone: "",
+    gender: "",
+    date_of_birth: "",
+    address: "",
     degree: "",
     position: "",
     biography: "",
+  });
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [password, setPassword] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   });
   const [workplaceForm, setWorkplaceForm] = useState({
     clinic_id: "",
@@ -48,7 +62,12 @@ function Profile() {
         setClinics(clinicsResult.data || []);
         setSpecialties(specialtiesResult.data || []);
         setFormData({
+          first_name: doctorData.first_name || "",
+          last_name: doctorData.last_name || "",
           phone: doctorData.phone || "",
+          gender: doctorData.gender || "",
+          date_of_birth: doctorData.date_of_birth || "",
+          address: doctorData.address || "",
           degree: doctorData.degree || "",
           position: doctorData.position || "",
           biography: doctorData.biography || "",
@@ -87,20 +106,51 @@ function Profile() {
     setSaving(true);
     try {
       const res = await doctorService.updateDoctor(user.id, {
-        phone: formData.phone || undefined,
-        degree: formData.degree || undefined,
-        position: formData.position || undefined,
-        biography: formData.biography || undefined,
+        ...formData,
+        gender: formData.gender || null,
+        date_of_birth: formData.date_of_birth || null,
       });
 
       const updated = res.data?.data;
-      if (updated) setDoctor(updated);
+      if (updated) {
+        setDoctor(updated);
+        updateCurrentUser({
+          ...user,
+          first_name: updated.first_name,
+          last_name: updated.last_name,
+          phone: updated.phone,
+          gender: updated.gender,
+          date_of_birth: updated.date_of_birth,
+          address: updated.address,
+          avatar: updated.avatar,
+        });
+      }
 
       toast.success("Đã cập nhật hồ sơ");
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Không cập nhật được hồ sơ"));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (password.newPassword !== password.confirmPassword) {
+      toast.error("Mật khẩu xác nhận không khớp");
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      await authService.changePassword(password);
+      clearSession();
+      toast.success("Đổi mật khẩu thành công. Vui lòng đăng nhập lại");
+      navigate("/login", { replace: true });
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Không đổi được mật khẩu"));
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -197,12 +247,13 @@ function Profile() {
           ) : (
             <form className="admin-form" onSubmit={handleSubmit}>
               <div className="admin-form-group">
-                <label>Họ tên</label>
-                <input
-                  className="admin-input"
-                  value={doctor.name || ""}
-                  readOnly
-                />
+                <label htmlFor="last_name">Họ</label>
+                <input id="last_name" name="last_name" className="admin-input" value={formData.last_name} onChange={handleChange} required />
+              </div>
+
+              <div className="admin-form-group">
+                <label htmlFor="first_name">Tên</label>
+                <input id="first_name" name="first_name" className="admin-input" value={formData.first_name} onChange={handleChange} required />
               </div>
 
               <div className="admin-form-group">
@@ -224,6 +275,26 @@ function Profile() {
                   value={formData.phone}
                   onChange={handleChange}
                 />
+              </div>
+
+              <div className="admin-form-group">
+                <label htmlFor="gender">Giới tính</label>
+                <select id="gender" name="gender" className="admin-select" value={formData.gender} onChange={handleChange}>
+                  <option value="">Chưa chọn</option>
+                  <option value="Male">Nam</option>
+                  <option value="Female">Nữ</option>
+                  <option value="Other">Khác</option>
+                </select>
+              </div>
+
+              <div className="admin-form-group">
+                <label htmlFor="date_of_birth">Ngày sinh</label>
+                <input id="date_of_birth" name="date_of_birth" className="admin-input" type="date" value={formData.date_of_birth} onChange={handleChange} max={new Date().toISOString().slice(0, 10)} />
+              </div>
+
+              <div className="admin-form-group">
+                <label htmlFor="address">Địa chỉ</label>
+                <input id="address" name="address" className="admin-input" value={formData.address} onChange={handleChange} maxLength={255} />
               </div>
 
               <div className="admin-form-group">
@@ -276,6 +347,34 @@ function Profile() {
             </form>
           )}
         </div>
+
+        {!loading && doctor && (
+          <div className="doctor-card" style={{ marginBottom: 20 }}>
+            <h3 style={{ marginBottom: 8 }}>Đổi mật khẩu</h3>
+            <p style={{ marginBottom: 20, color: "#666" }}>
+              Sau khi đổi mật khẩu, bạn cần đăng nhập lại để bảo vệ tài khoản.
+            </p>
+            <form className="admin-form" onSubmit={handleChangePassword}>
+              <div className="admin-form-group">
+                <label htmlFor="currentPassword">Mật khẩu hiện tại</label>
+                <input id="currentPassword" className="admin-input" type="password" autoComplete="current-password" value={password.currentPassword} onChange={(e) => setPassword((current) => ({ ...current, currentPassword: e.target.value }))} required />
+              </div>
+              <div className="admin-form-group">
+                <label htmlFor="newPassword">Mật khẩu mới</label>
+                <input id="newPassword" className="admin-input" type="password" autoComplete="new-password" minLength={6} value={password.newPassword} onChange={(e) => setPassword((current) => ({ ...current, newPassword: e.target.value }))} required />
+              </div>
+              <div className="admin-form-group">
+                <label htmlFor="confirmPassword">Xác nhận mật khẩu mới</label>
+                <input id="confirmPassword" className="admin-input" type="password" autoComplete="new-password" minLength={6} value={password.confirmPassword} onChange={(e) => setPassword((current) => ({ ...current, confirmPassword: e.target.value }))} required />
+              </div>
+              <div className="admin-form-actions">
+                <button type="submit" className="admin-btn admin-btn-primary" disabled={changingPassword}>
+                  {changingPassword ? "Đang đổi..." : "Đổi mật khẩu"}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
 
         {!loading && doctor && (
           <div className="doctor-card">

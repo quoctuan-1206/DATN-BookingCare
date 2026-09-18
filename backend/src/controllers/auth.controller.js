@@ -100,3 +100,28 @@ export async function me(req, res) {
     return errorResponse(res, error.message, getStatusCode(error, 400));
   }
 }
+
+// Cập nhật hồ sơ tài khoản hiện tại (PUT /api/auth/profile)
+export async function updateProfile(req, res) {
+  try {
+    const user = await authService.updateProfile(req.user.id, req.body);
+    return successResponse(res, "Cập nhật thông tin cá nhân thành công", user);
+  } catch (error) {
+    return errorResponse(res, error.message, getStatusCode(error, 400));
+  }
+}
+
+// Đổi mật khẩu tài khoản hiện tại (PUT /api/auth/change-password)
+export async function changePassword(req, res) {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const result = await authService.changePassword(
+      req.user.id,
+      currentPassword,
+      newPassword,
+    );
+    return successResponse(res, result.message);
+  } catch (error) {
+    return errorResponse(res, error.message, getStatusCode(error, 400));
+  }
+}

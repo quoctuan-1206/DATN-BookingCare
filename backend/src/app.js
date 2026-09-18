@@ -19,6 +19,8 @@ import uploadRoutes from "./routes/upload.routes.js";
 import reviewRoutes from "./routes/review.routes.js";
 import medicineRoutes from "./routes/medicine.routes.js";
 import prescriptionRoutes from "./routes/prescription.routes.js";
+import labRoutes from "./routes/lab.routes.js";
+import clinicalRoutes from "./routes/clinical.routes.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -81,6 +83,12 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/medicines", medicineRoutes);
 app.use("/api/prescriptions", prescriptionRoutes);
 
+// Xét nghiệm (Doctor chỉ định/xem; STAFF thực hiện/nhập kết quả)
+app.use("/api/labs", labRoutes);
+
+// Cận lâm sàng dùng chung lõi dữ liệu với Xét nghiệm.
+app.use("/api/clinical", clinicalRoutes);
+
 // Middleware bắt lỗi chung toàn hệ thống
 app.use((err, req, res, next) => {
   console.error("Lỗi API:", err);
@@ -88,7 +96,11 @@ app.use((err, req, res, next) => {
   if (err?.name === "MulterError") {
     const message =
       err.code === "LIMIT_FILE_SIZE"
-        ? "Ảnh tối đa 5MB"
+        ? err.field === "result_file"
+          ? "File kết quả tối đa 10MB"
+          : err.field === "attachment"
+            ? "File cận lâm sàng tối đa 25MB"
+            : "Ảnh tối đa 5MB"
         : err.message || "Không tải được ảnh";
     return res.status(400).json({
       success: false,

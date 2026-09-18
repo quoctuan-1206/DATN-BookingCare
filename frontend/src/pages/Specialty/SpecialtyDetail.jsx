@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import toast from "react-hot-toast";
+import { ChevronRight, Home } from "lucide-react";
 
 import Header from "../../components/common/Header/Header";
 import Footer from "../../components/common/Footer/Footer";
@@ -47,9 +48,7 @@ function SpecialtyDetail() {
           setSpecialty(null);
           setDoctors([]);
           setSchedules([]);
-          toast.error(
-            getApiErrorMessage(error, "Không tải được chuyên khoa"),
-          );
+          toast.error(getApiErrorMessage(error, "Không tải được chuyên khoa"));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -76,8 +75,8 @@ function SpecialtyDetail() {
     return (
       <>
         <Header />
-        <section className="specialty-detail-page">
-          <div className="specialty-detail-inner">
+        <section className="doctor-detail-page">
+          <div className="container doctor-detail">
             <p>Đang tải thông tin chuyên khoa...</p>
           </div>
         </section>
@@ -90,8 +89,8 @@ function SpecialtyDetail() {
     return (
       <>
         <Header />
-        <section className="specialty-detail-page">
-          <div className="specialty-detail-inner">
+        <section className="doctor-detail-page">
+          <div className="container doctor-detail">
             <h1>Không tìm thấy chuyên khoa</h1>
             <Link to="/specialties" className="btn btn-primary">
               Quay lại danh sách
@@ -106,25 +105,41 @@ function SpecialtyDetail() {
   return (
     <>
       <Header />
-      <div className="specialty-detail-page">
-        <div className="specialty-detail-inner">
+      <section className="doctor-detail-page">
+        <div className="container doctor-detail">
+          <nav className="doctor-breadcrumb">
+            <Link to="/">
+              <Home size={15} />
+              Trang chủ
+            </Link>
+            <ChevronRight size={14} />
+            <Link to="/specialties">Chuyên khoa</Link>
+            <ChevronRight size={14} />
+            <span>{specialty.name}</span>
+          </nav>
+
           <SpecialtyProfile specialty={specialty} />
 
           <div className="specialty-booking-list">
             {doctors.length === 0 ? (
-              <p>Chưa có bác sĩ thuộc chuyên khoa này.</p>
+              <p className="specialty-empty">
+                Chưa có bác sĩ thuộc chuyên khoa này.
+              </p>
             ) : (
               doctors.map((doctor) => (
                 <SpecialtyDoctorCard
                   key={doctor.id}
-                  doctor={doctor}
+                  doctor={{
+                    ...doctor,
+                    specialty_id: doctor.specialty_id || Number(id),
+                  }}
                   schedules={schedulesByDoctor[doctor.id] || []}
                 />
               ))
             )}
           </div>
         </div>
-      </div>
+      </section>
       <Footer />
     </>
   );

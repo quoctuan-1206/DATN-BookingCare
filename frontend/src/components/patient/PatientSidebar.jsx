@@ -8,6 +8,7 @@ import {
     ClipboardList,
     User,
     Users,
+    FlaskConical,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { resolveMediaUrl } from "../../utils/media";
@@ -22,6 +23,7 @@ const accountSubmenus = [
 
 const menus = [
     { title: "Hồ sơ bệnh nhân", icon: Users, path: "/patient/profiles" },
+    { title: "Cận lâm sàng", icon: FlaskConical, path: "/patient/clinical" },
     { title: "Lịch hẹn", icon: CalendarDays, path: "/patient/appointments" },
     {
         title: "Lịch sử khám",

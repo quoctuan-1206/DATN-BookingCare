@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
+  ArrowRight,
   Building2,
   CalendarDays,
+  FlaskConical,
   Lock,
   Search,
   ShieldCheck,
@@ -99,6 +101,16 @@ function Hero() {
 
         <div className="hero-visual">
           <div className="hero-stats">
+            <Link to="/lab-tests" className="hero-lab-card">
+              <span className="hero-lab-card__icon">
+                <FlaskConical size={26} />
+              </span>
+              <span className="hero-lab-card__copy">
+                <strong>Xét nghiệm</strong>
+                <span>Xem danh mục và giá tham khảo</span>
+              </span>
+              <ArrowRight size={20} />
+            </Link>
             {STATS.map((item) => (
               <article className="hero-stat" key={item.label}>
                 <item.icon size={22} />

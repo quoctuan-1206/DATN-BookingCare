@@ -15,6 +15,7 @@ import {
     Settings,
     LogOut,
     Pill,
+    Activity,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 
@@ -52,6 +53,12 @@ function AdminSidebar({ collapsed, setCollapsed }) {
             title: "Thuốc",
             path: "/admin/medicines",
             icon: <Pill size={18} />,
+        },
+
+        {
+            title: "Cận lâm sàng",
+            path: "/admin/clinical-services",
+            icon: <Activity size={18} />,
         },
 
         {

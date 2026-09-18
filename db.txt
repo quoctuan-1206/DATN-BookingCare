@@ -12,6 +12,10 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 -- Xóa bảng theo thứ tự ngược dependency
 DROP TABLE IF EXISTS `articles`;
+DROP TABLE IF EXISTS `lab_results`;
+DROP TABLE IF EXISTS `lab_orders`;
+DROP TABLE IF EXISTS `lab_schedules`;
+DROP TABLE IF EXISTS `lab_tests`;
 DROP TABLE IF EXISTS `refresh_tokens`;
 DROP TABLE IF EXISTS `notifications`;
 DROP TABLE IF EXISTS `reviews`;
@@ -76,7 +80,10 @@ CREATE TABLE clinics (
     phone VARCHAR(20),
     email VARCHAR(100),
     description TEXT,
+    specialties_content TEXT,
+    equipment_content TEXT,
     image TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB COMMENT='Cơ sở y tế / Phòng khám';
@@ -327,10 +334,85 @@ CREATE TABLE articles (
 ) ENGINE=InnoDB COMMENT='Bài viết';
 
 -- ============================================================================
+-- 19. XÉT NGHIỆM
+-- ============================================================================
+CREATE TABLE lab_tests (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    price DECIMAL(10,2) NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    INDEX idx_lab_tests_active (is_active)
+) ENGINE=InnoDB COMMENT='Danh mục xét nghiệm';
+
+CREATE TABLE lab_schedules (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    clinic_id INT NOT NULL,
+    work_date DATE NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    max_orders INT NOT NULL DEFAULT 10,
+    booked_orders INT NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE CASCADE,
+    UNIQUE KEY uk_lab_schedule (clinic_id, work_date, start_time),
+    INDEX idx_lab_schedules_date (work_date),
+    INDEX idx_lab_schedules_active (is_active)
+) ENGINE=InnoDB COMMENT='Khung giờ xét nghiệm theo cơ sở';
+
+CREATE TABLE lab_orders (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    appointment_id INT,
+    lab_schedule_id INT,
+    patient_id INT NOT NULL,
+    doctor_id INT,
+    booking_code VARCHAR(50) UNIQUE,
+    patient_note TEXT,
+    result_file_name VARCHAR(255),
+    result_file_path VARCHAR(255),
+    result_file_type VARCHAR(100),
+    result_file_size INT,
+    result_uploaded_at DATETIME,
+    status ENUM('PENDING','IN_PROGRESS','COMPLETED','CANCELLED') NOT NULL DEFAULT 'PENDING',
+    ordered_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    completed_at DATETIME,
+    FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE SET NULL,
+    FOREIGN KEY (lab_schedule_id) REFERENCES lab_schedules(id) ON DELETE SET NULL,
+    FOREIGN KEY (patient_id) REFERENCES patient_profiles(id),
+    FOREIGN KEY (doctor_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_lab_orders_appointment (appointment_id),
+    INDEX idx_lab_orders_schedule (lab_schedule_id),
+    INDEX idx_lab_orders_patient (patient_id),
+    INDEX idx_lab_orders_doctor (doctor_id),
+    INDEX idx_lab_orders_status (status)
+) ENGINE=InnoDB COMMENT='Phiếu chỉ định xét nghiệm';
+
+CREATE TABLE lab_results (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    lab_order_id INT NOT NULL,
+    test_id INT NOT NULL,
+    result TEXT,
+    unit VARCHAR(50),
+    reference_range VARCHAR(255),
+    note TEXT,
+    created_by INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (lab_order_id) REFERENCES lab_orders(id) ON DELETE CASCADE,
+    FOREIGN KEY (test_id) REFERENCES lab_tests(id),
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+    UNIQUE KEY uk_lab_order_test (lab_order_id, test_id),
+    INDEX idx_lab_results_test (test_id),
+    INDEX idx_lab_results_creator (created_by)
+) ENGINE=InnoDB COMMENT='Kết quả xét nghiệm';
+
+-- ============================================================================
 -- SEED DATA: ROLES
 -- ============================================================================
 INSERT INTO roles (name, description) VALUES
 ('Admin', 'Quản trị viên tối cao hệ thống'),
 ('Doctor', 'Bác sĩ'),
 ('Patient', 'Bệnh nhân'),
-('Receptionist', 'Tiếp tân');
+('Receptionist', 'Tiếp tân'),
+('STAFF', 'Nhân viên xét nghiệm');

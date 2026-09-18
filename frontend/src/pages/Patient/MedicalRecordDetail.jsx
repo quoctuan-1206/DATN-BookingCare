@@ -4,7 +4,9 @@ import { ArrowLeft } from "lucide-react";
 import toast from "react-hot-toast";
 import PatientLayout from "../../components/patient/PatientLayout";
 import PatientPrescriptionView from "../../components/patient/PatientPrescriptionView";
+import ClinicalRecordSection from "../../components/clinical/ClinicalRecordSection";
 import medicalRecordService from "../../services/medical-record.service";
+import clinicalService from "../../services/clinical.service";
 import { getApiErrorMessage } from "../../api/axios";
 
 function DetailRow({ label, value }) {
@@ -55,6 +57,14 @@ function MedicalRecordDetail() {
     );
   }
 
+  const openClinicalAttachment = async (attachment) => {
+    try {
+      await clinicalService.openAttachment(attachment);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Không mở được tệp cận lâm sàng"));
+    }
+  };
+
   if (!record) {
     return (
       <PatientLayout>
@@ -102,6 +112,11 @@ function MedicalRecordDetail() {
           <DetailRow label="Kết luận" value={record.conclusion} />
           <DetailRow label="Ghi chú" value={record.note || "—"} />
         </div>
+
+        <ClinicalRecordSection
+          orders={record.clinical_services || []}
+          onOpenAttachment={openClinicalAttachment}
+        />
 
         <PatientPrescriptionView
           medicalRecordId={record.id}

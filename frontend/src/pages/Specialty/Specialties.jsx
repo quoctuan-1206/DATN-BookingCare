@@ -87,7 +87,7 @@ function Specialties() {
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
-                  setActiveId(null);
+                  setActiveId("");
                 }}
               />
               {search && (

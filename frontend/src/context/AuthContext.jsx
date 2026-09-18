@@ -10,6 +10,8 @@ function getRedirectPathByRole(roleName) {
       return "/admin";
     case "Doctor":
       return "/doctor";
+    case "STAFF":
+      return "/staff/clinical";
     case "Patient":
     default:
       return "/patient";
@@ -93,6 +95,16 @@ export function AuthProvider({ children }) {
       }
     }
 
+    function updateCurrentUser(updatedUser) {
+      setUser(updatedUser);
+      tokenStorage.setSession({ user: updatedUser });
+    }
+
+    function clearSession() {
+      tokenStorage.clear();
+      setUser(null);
+    }
+
     return {
       user,
       loading,
@@ -100,6 +112,8 @@ export function AuthProvider({ children }) {
       login,
       register,
       logout,
+      updateCurrentUser,
+      clearSession,
       getApiErrorMessage,
       getRedirectPathByRole,
     };

@@ -10,6 +10,8 @@ import {
   forgotPasswordSchema,
   verifyOTPSchema,
   resetPasswordSchema,
+  updateProfileSchema,
+  changePasswordSchema,
 } from "../validators/auth.validator.js";
 
 const router = Router();
@@ -60,5 +62,21 @@ router.post(
 
 // GET /api/auth/me - Lấy thông tin user hiện tại (cần JWT)
 router.get("/me", verifyAccessTokenMiddleware, authController.me);
+
+// PUT /api/auth/profile - Cập nhật tài khoản của chính người đăng nhập
+router.put(
+  "/profile",
+  verifyAccessTokenMiddleware,
+  validateBody(updateProfileSchema),
+  authController.updateProfile,
+);
+
+// PUT /api/auth/change-password - Đổi mật khẩu của chính người đăng nhập
+router.put(
+  "/change-password",
+  verifyAccessTokenMiddleware,
+  validateBody(changePasswordSchema),
+  authController.changePassword,
+);
 
 export default router;

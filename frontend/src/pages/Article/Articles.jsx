@@ -1,127 +1,160 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
+import { Home, Search, X, ChevronDown } from "lucide-react";
 import Header from "../../components/common/Header/Header";
 import Footer from "../../components/common/Footer/Footer";
-import PageBanner from "../../components/common/PageBanner/PageBanner";
+import ArticleCard from "../../components/article/ArticleCard";
 import articleService from "../../services/article.service";
 import { getApiErrorMessage } from "../../api/axios";
 
+const ARTICLE_TYPES = [
+  { value: "NEWS", label: "Tin tức" },
+  { value: "SPECIALTY", label: "Chuyên khoa" },
+  { value: "DOCTOR", label: "Bác sĩ" },
+  { value: "CLINIC", label: "Phòng khám" },
+];
+
 function Articles() {
   const [articles, setArticles] = useState([]);
-  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [keyword, setKeyword] = useState("");
-
-  const fetchArticles = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = { page: 1, limit: 50 };
-      if (keyword.trim()) params.search = keyword.trim();
-
-      const result = await articleService.getArticles(params);
-      setArticles(result.data);
-      setTotal(result.pagination?.total ?? result.data.length);
-    } catch (error) {
-      toast.error(
-        getApiErrorMessage(error, "Không tải được danh sách bài viết"),
-      );
-      setArticles([]);
-      setTotal(0);
-    } finally {
-      setLoading(false);
-    }
-  }, [keyword]);
+  const [articleType, setArticleType] = useState("");
 
   useEffect(() => {
-    fetchArticles();
-  }, [fetchArticles]);
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      try {
+        const result = await articleService.getArticles({
+          page: 1,
+          limit: 100,
+        });
+        if (!cancelled) setArticles(result.data || []);
+      } catch (error) {
+        if (!cancelled) {
+          setArticles([]);
+          toast.error(
+            getApiErrorMessage(error, "Không tải được danh sách bài viết"),
+          );
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const filtered = useMemo(() => {
+    let list = articles;
+
+    if (search.trim()) {
+      const kw = search.trim().toLowerCase();
+      list = list.filter(
+        (item) =>
+          item.title?.toLowerCase().includes(kw) ||
+          item.description?.toLowerCase().includes(kw) ||
+          item.category?.toLowerCase().includes(kw),
+      );
+    }
+
+    if (articleType) {
+      list = list.filter((item) => item.article_type === articleType);
+    }
+
+    return list;
+  }, [articles, search, articleType]);
+
+  const clearFilters = () => {
+    setSearch("");
+    setArticleType("");
+  };
+
+  const hasFilters = search.trim() || articleType;
 
   return (
     <>
       <Header />
+      <div className="specialty-list-page">
+        <div className="specialty-list-inner">
+          <nav className="specialty-breadcrumb specialty-breadcrumb--list">
+            <Link to="/">
+              <Home size={16} />
+            </Link>
+            <span>/ Bài viết</span>
+          </nav>
 
-      <div className="listing-page">
-        <PageBanner
-          variant="specialty"
-          title="Bài viết"
-          description="Tin tức và kiến thức sức khỏe từ hệ thống MediUTE."
-        />
-
-        <section className="listing-content">
-          <div className="container listing-body">
-            <div className="listing-toolbar">
-              <form
-                className="listing-filter"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  setKeyword(search);
-                }}
-              >
-                <div className="listing-filter__field">
-                  <input
-                    type="text"
-                    placeholder="Tìm kiếm bài viết..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
-                </div>
-                <div className="listing-filter__row">
-                  <button
-                    type="submit"
-                    className="btn btn-primary listing-filter__btn"
-                  >
-                    Tìm kiếm
-                  </button>
-                </div>
-              </form>
-
-              <div className="listing-meta">
-                <span>
-                  Tìm thấy <strong>{total}</strong> bài viết
-                </span>
-              </div>
-            </div>
-
-            <div className="listing-results">
-              {loading ? (
-                <p>Đang tải danh sách bài viết...</p>
-              ) : articles.length === 0 ? (
-                <p>Không tìm thấy bài viết phù hợp.</p>
-              ) : (
-                <div className="listing-grid">
-                  {articles.map((article) => (
-                    <article key={article.id} className="listing-card">
-                      <div className="listing-card__media">
-                        <img src={article.image} alt={article.title} />
-                        <span className="listing-card__badge">
-                          {article.category}
-                        </span>
-                      </div>
-                      <div className="listing-card__body">
-                        <h3 className="listing-card__title">{article.title}</h3>
-                        <p className="listing-card__desc">
-                          {article.description || "Xem chi tiết bài viết."}
-                        </p>
-                        <div className="listing-card__footer">
-                          <Link
-                            to={`/articles/${article.id}`}
-                            className="btn btn-primary"
-                          >
-                            Đọc bài
-                          </Link>
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
+          <div className="specialty-toolbar">
+            <div className="specialty-search-box">
+              <Search size={18} className="specialty-search-icon" />
+              <input
+                type="text"
+                className="specialty-search-input"
+                placeholder="Tìm bài viết..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              {search && (
+                <button
+                  type="button"
+                  className="specialty-search-clear"
+                  onClick={() => setSearch("")}
+                >
+                  <X size={16} />
+                </button>
               )}
             </div>
-          </div>
-        </section>
-      </div>
 
+            <div className="specialty-dropdown-wrap">
+              <ChevronDown size={16} className="specialty-dropdown-icon" />
+              <select
+                className="specialty-dropdown"
+                value={articleType}
+                onChange={(e) => setArticleType(e.target.value)}
+              >
+                <option value="">Tất cả loại bài</option>
+                {ARTICLE_TYPES.map((type) => (
+                  <option key={type.value} value={type.value}>
+                    {type.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {hasFilters && (
+            <div className="specialty-filter-info">
+              <span>
+                Tìm thấy <strong>{filtered.length}</strong> bài viết
+              </span>
+              <button
+                type="button"
+                className="specialty-clear-btn"
+                onClick={clearFilters}
+              >
+                Xóa bộ lọc
+              </button>
+            </div>
+          )}
+
+          {loading ? (
+            <p>Đang tải danh sách bài viết...</p>
+          ) : filtered.length === 0 ? (
+            <p className="specialty-empty">Không tìm thấy bài viết phù hợp.</p>
+          ) : (
+            <div className="specialty-grid">
+              {filtered.map((article) => (
+                <ArticleCard key={article.id} article={article} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
       <Footer />
     </>
   );

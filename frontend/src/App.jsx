@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Navigate, Routes, Route } from "react-router-dom";
 import ScrollToTop from "./components/common/ScrollToTop";
 
 import Home from "./pages/Home/Home";
@@ -21,6 +21,8 @@ import MedicalRecords from "./pages/Patient/MedicalRecords";
 import MedicalRecordDetail from "./pages/Patient/MedicalRecordDetail";
 import Notifications from "./pages/Patient/Notifications";
 import Profile from "./pages/Patient/Profile";
+import PatientLabOrders from "./pages/Patient/LabOrders";
+import PatientClinicalOrders from "./pages/Patient/ClinicalOrders";
 
 import Login from "./pages/Auth/Login";
 import Register from "./pages/Auth/Register";
@@ -53,6 +55,7 @@ import AdminPayments from "./pages/Admin/Payments";
 import AdminSettings from "./pages/Admin/Settings";
 import AdminProfile from "./pages/Admin/Profile";
 import AdminNotifications from "./pages/Admin/Notifications";
+import AdminClinicalServices from "./pages/Admin/ClinicalServices";
 
 import DoctorDashboard from "./pages/Doctor/Dashboard";
 import DoctorSchedule from "./pages/Doctor/Schedule";
@@ -64,6 +67,16 @@ import DoctorPrescriptions from "./pages/Doctor/Prescriptions";
 import DoctorReviews from "./pages/Doctor/Reviews";
 import DoctorProfile from "./pages/Doctor/Profile";
 import DoctorNotifications from "./pages/Doctor/Notifications";
+import DoctorLabOrders from "./pages/Doctor/LabOrders";
+import DoctorClinicalOrders from "./pages/Doctor/ClinicalOrders";
+import StaffClinical from "./pages/Staff/Clinical";
+import StaffClinicalSchedules from "./pages/Staff/ClinicalSchedules";
+import LabTests from "./pages/Lab/LabTests";
+import LabTestDetail from "./pages/Lab/LabTestDetail";
+import LabBooking from "./pages/Lab/LabBooking";
+import ClinicalServiceCatalog from "./pages/Clinical/ClinicalServiceCatalog";
+import ClinicalServiceDetail from "./pages/Clinical/ClinicalServiceDetail";
+import ClinicalBooking from "./pages/Clinical/ClinicalBooking";
 
 function App() {
     return (
@@ -83,6 +96,13 @@ function App() {
 
             <Route path="/articles" element={<Articles />} />
             <Route path="/articles/:id" element={<ArticleDetail />} />
+
+            <Route path="/lab-tests" element={<LabTests />} />
+            <Route path="/lab-tests/:id" element={<LabTestDetail />} />
+            <Route path="/lab-booking" element={<LabBooking />} />
+            <Route path="/clinical-services" element={<ClinicalServiceCatalog />} />
+            <Route path="/clinical-services/:id" element={<ClinicalServiceDetail />} />
+            <Route path="/clinical-booking" element={<ClinicalBooking />} />
 
             <Route path="/booking" element={<Booking />} />
             <Route path="/booking/success" element={<BookingSuccess />} />
@@ -105,6 +125,8 @@ function App() {
             <Route path="/patient/notifications" element={<Notifications />} />
             <Route path="/patient/profile/password" element={<Profile />} />
             <Route path="/patient/profile" element={<Profile />} />
+            <Route path="/patient/lab-orders" element={<PatientLabOrders />} />
+            <Route path="/patient/clinical" element={<PatientClinicalOrders />} />
 
             <Route path="/doctor" element={<DoctorDashboard />} />
             <Route path="/doctor/schedule" element={<DoctorSchedule />} />
@@ -128,6 +150,16 @@ function App() {
             <Route path="/doctor/reviews" element={<DoctorReviews />} />
             <Route path="/doctor/notifications" element={<DoctorNotifications />} />
             <Route path="/doctor/profile" element={<DoctorProfile />} />
+            <Route path="/doctor/labs" element={<DoctorLabOrders />} />
+            <Route path="/doctor/clinical" element={<DoctorClinicalOrders />} />
+
+            <Route path="/staff/clinical" element={<Navigate to="/staff/clinical/orders" replace />} />
+            <Route path="/staff/clinical/orders" element={<StaffClinical />} />
+            <Route path="/staff/clinical/schedules" element={<StaffClinicalSchedules />} />
+            <Route path="/staff/labs" element={<Navigate to="/staff/clinical/orders" replace />} />
+            <Route path="/staff/labs/orders" element={<Navigate to="/staff/clinical/orders" replace />} />
+            <Route path="/staff/labs/tests" element={<Navigate to="/staff/clinical/orders" replace />} />
+            <Route path="/staff/labs/schedules" element={<Navigate to="/staff/clinical/schedules" replace />} />
 
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/doctors" element={<AdminDoctors />} />
@@ -171,6 +203,7 @@ function App() {
             <Route path="/admin/notifications" element={<AdminNotifications />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="/admin/profile" element={<AdminProfile />} />
+            <Route path="/admin/clinical-services" element={<AdminClinicalServices />} />
 
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />

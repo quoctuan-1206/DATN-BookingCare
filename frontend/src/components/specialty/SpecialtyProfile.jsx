@@ -1,6 +1,5 @@
 import { useLayoutEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
-import { Home, ChevronRight } from "lucide-react";
+import { Hospital, Stethoscope } from "lucide-react";
 
 function SpecialtyProfile({ specialty }) {
   const [expanded, setExpanded] = useState(false);
@@ -17,38 +16,47 @@ function SpecialtyProfile({ specialty }) {
   }, [expanded]);
 
   return (
-    <section className="specialty-hero">
-      <nav className="specialty-breadcrumb">
-        <Link to="/">
-          <Home size={16} />
-        </Link>
-        <ChevronRight size={14} />
-        <Link to="/specialties">Khám chuyên khoa</Link>
-        <ChevronRight size={14} />
-        <span>{specialty.name}</span>
-      </nav>
+    <section className="doctor-profile specialty-profile">
+      <img
+        src={specialty.image}
+        alt={specialty.name}
+        className="doctor-profile__image"
+      />
 
-      <h1>{specialty.name}</h1>
-      <p className="specialty-hero-sub">Bác sĩ Chuyên khoa {specialty.name}</p>
+      <div className="doctor-profile__info">
+        <span className="doctor-profile__badge">Chuyên khoa</span>
+        <h1>{specialty.name}</h1>
 
-      {description ? (
-        <p className="specialty-hero-desc">
-          {shown}{" "}
-          {longText ? (
-            <button
-              type="button"
-              className="specialty-more-btn"
-              onClick={(e) => {
-                scrollYRef.current = window.scrollY;
-                e.currentTarget.blur();
-                setExpanded((v) => !v);
-              }}
-            >
-              {expanded ? "Thu gọn" : "Xem thêm"}
-            </button>
-          ) : null}
-        </p>
-      ) : null}
+        <ul className="doctor-profile__meta">
+          <li>
+            <Stethoscope size={16} />
+            <span>{specialty.doctor_count || 0} bác sĩ</span>
+          </li>
+          <li>
+            <Hospital size={16} />
+            <span>{specialty.clinic_count || 0} cơ sở y tế</span>
+          </li>
+        </ul>
+
+        {description ? (
+          <p className="specialty-hero-desc">
+            {shown}{" "}
+            {longText ? (
+              <button
+                type="button"
+                className="specialty-more-btn"
+                onClick={(e) => {
+                  scrollYRef.current = window.scrollY;
+                  e.currentTarget.blur();
+                  setExpanded((v) => !v);
+                }}
+              >
+                {expanded ? "Thu gọn" : "Xem thêm"}
+              </button>
+            ) : null}
+          </p>
+        ) : null}
+      </div>
     </section>
   );
 }

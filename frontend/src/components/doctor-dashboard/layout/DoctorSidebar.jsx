@@ -8,6 +8,7 @@ import {
     ClipboardPlus,
     Clock3,
     Pill,
+    FlaskConical,
     Star,
     UserRound,
     Bell,
@@ -49,6 +50,11 @@ function DoctorSidebar({ collapsed, setCollapsed }) {
             title: "Đơn thuốc",
             path: "/doctor/prescriptions",
             icon: <Pill size={18} />,
+        },
+        {
+            title: "Cận lâm sàng",
+            path: "/doctor/clinical",
+            icon: <FlaskConical size={18} />,
         },
         {
             title: "Đánh giá",

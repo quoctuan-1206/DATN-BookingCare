@@ -1,317 +1,172 @@
-import { useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { useLocation, useNavigate } from "react-router-dom";
 import PatientLayout from "../../components/patient/PatientLayout";
-import { GENDER_LABEL, db } from "../../data/patientMock";
+import { getApiErrorMessage } from "../../api/axios";
+import { useAuth } from "../../context/AuthContext";
+import authService from "../../services/auth.service";
 
-function parseBirthday(dateStr) {
-    if (!dateStr) return { day: "", month: "", year: "" };
-    const [year, month, day] = String(dateStr).split("-");
-    return {
-        day: day || "",
-        month: month || "",
-        year: year || "",
-    };
-}
+const EMPTY_PROFILE = {
+  first_name: "",
+  last_name: "",
+  phone: "",
+  gender: "",
+  date_of_birth: "",
+  address: "",
+};
 
 function Profile() {
-    const location = useLocation();
-    const isPasswordPage = location.pathname.endsWith("/password");
-    const account = db.account;
-    const initialBirthday = useMemo(
-        () => parseBirthday(account.date_of_birth),
-        [account.date_of_birth],
-    );
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user, updateCurrentUser, clearSession } = useAuth();
+  const isPasswordPage = location.pathname.endsWith("/password");
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState(EMPTY_PROFILE);
+  const [password, setPassword] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
 
-    const [user, setUser] = useState({
-        firstName: account.first_name,
-        lastName: account.last_name,
-        email: account.email || "",
-        phone: account.phone,
-        gender: GENDER_LABEL[account.gender] || "Nam",
-        birthDay: initialBirthday.day,
-        birthMonth: initialBirthday.month,
-        birthYear: initialBirthday.year,
+  useEffect(() => {
+    if (!user) return;
+    setFormData({
+      first_name: user.first_name || "",
+      last_name: user.last_name || "",
+      phone: user.phone || "",
+      gender: user.gender || "",
+      date_of_birth: user.date_of_birth ? String(user.date_of_birth).slice(0, 10) : "",
+      address: user.address || "",
     });
+  }, [user]);
 
-    const [password, setPassword] = useState({
-        current: "",
-        next: "",
-        confirm: "",
-    });
+  const handleChange = ({ target: { name, value } }) => {
+    setFormData((current) => ({ ...current, [name]: value }));
+  };
 
-    const hasEmail = Boolean(user.email?.trim());
+  const handleSave = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    try {
+      const response = await authService.updateProfile({
+        ...formData,
+        phone: formData.phone || null,
+        gender: formData.gender || null,
+        date_of_birth: formData.date_of_birth || null,
+        address: formData.address || null,
+      });
+      const updatedUser = response.data?.data;
+      if (updatedUser) updateCurrentUser(updatedUser);
+      toast.success("Đã cập nhật thông tin cá nhân");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Không cập nhật được thông tin"));
+    } finally {
+      setSaving(false);
+    }
+  };
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setUser((prev) => ({ ...prev, [name]: value }));
-    };
+  const handlePassword = async (event) => {
+    event.preventDefault();
+    if (password.newPassword !== password.confirmPassword) {
+      toast.error("Mật khẩu xác nhận không khớp");
+      return;
+    }
+    setSaving(true);
+    try {
+      await authService.changePassword(password);
+      clearSession();
+      toast.success("Đổi mật khẩu thành công. Vui lòng đăng nhập lại");
+      navigate("/login", { replace: true });
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Không đổi được mật khẩu"));
+    } finally {
+      setSaving(false);
+    }
+  };
 
-    const handleSave = () => {
-        alert(
-            `Đã lưu (fake):\n${user.lastName} ${user.firstName}\n${user.phone}`,
-        );
-    };
+  return (
+    <PatientLayout>
+      {isPasswordPage ? (
+        <div className="patient-password-card">
+          <h1 className="patient-password-title">Đổi mật khẩu</h1>
+          <form className="patient-password-form" onSubmit={handlePassword}>
+            <div className="patient-password-fields">
+              <PasswordField
+                id="currentPassword"
+                label="Mật khẩu hiện tại"
+                autoComplete="current-password"
+                value={password.currentPassword}
+                onChange={(value) => setPassword((current) => ({ ...current, currentPassword: value }))}
+              />
+              <PasswordField
+                id="newPassword"
+                label="Mật khẩu mới"
+                value={password.newPassword}
+                onChange={(value) => setPassword((current) => ({ ...current, newPassword: value }))}
+                minLength={6}
+              />
+              <PasswordField
+                id="confirmPassword"
+                label="Xác nhận mật khẩu mới"
+                value={password.confirmPassword}
+                onChange={(value) => setPassword((current) => ({ ...current, confirmPassword: value }))}
+                minLength={6}
+              />
+            </div>
+            <div className="patient-password-actions">
+              <button type="submit" className="patient-profile-save-btn" disabled={saving}>
+                {saving ? "Đang lưu..." : "Lưu thay đổi"}
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : (
+        <div className="patient-profile-info-card">
+          <h2 className="patient-profile-info-title">Hồ sơ cá nhân</h2>
+          <form className="patient-profile-info-form" onSubmit={handleSave}>
+            <ProfileField id="last_name" label="Họ" required value={formData.last_name} onChange={handleChange} />
+            <ProfileField id="first_name" label="Tên" required value={formData.first_name} onChange={handleChange} />
+            <ProfileField id="phone" label="Số điện thoại" value={formData.phone} onChange={handleChange} maxLength={20} />
+            <ProfileField id="email" label="Email" value={user?.email || ""} readOnly />
+            <div className="profile-field-row">
+              <label htmlFor="gender">Giới tính</label>
+              <select id="gender" name="gender" className="profile-field-input" value={formData.gender} onChange={handleChange}>
+                <option value="">Chưa chọn</option>
+                <option value="Male">Nam</option>
+                <option value="Female">Nữ</option>
+                <option value="Other">Khác</option>
+              </select>
+            </div>
+            <ProfileField id="date_of_birth" label="Ngày sinh" type="date" value={formData.date_of_birth} onChange={handleChange} max={new Date().toISOString().slice(0, 10)} />
+            <ProfileField id="address" label="Địa chỉ" value={formData.address} onChange={handleChange} maxLength={255} />
+            <button type="submit" className="patient-profile-save-btn" disabled={saving}>
+              {saving ? "Đang lưu..." : "Lưu thay đổi"}
+            </button>
+          </form>
+        </div>
+      )}
+    </PatientLayout>
+  );
+}
 
-    const handlePassword = () => {
-        if (!password.current || !password.next) {
-            alert("Vui lòng nhập đủ mật khẩu.");
-            return;
-        }
-        if (password.next !== password.confirm) {
-            alert("Mật khẩu xác nhận không khớp.");
-            return;
-        }
-        alert("Đã cập nhật mật khẩu (fake).");
-        setPassword({ current: "", next: "", confirm: "" });
-    };
+function ProfileField({ id, label, required = false, ...inputProps }) {
+  return (
+    <div className="profile-field-row">
+      <label htmlFor={id}>
+        {label}{required && <span className="profile-required">*</span>}
+      </label>
+      <input id={id} name={id} className="profile-field-input" required={required} {...inputProps} />
+    </div>
+  );
+}
 
-    return (
-        <PatientLayout>
-            {isPasswordPage && (
-                <div className="patient-password-card">
-                    <h1 className="patient-password-title">Đổi mật khẩu</h1>
-
-                    <form
-                        className="patient-password-form"
-                        autoComplete="off"
-                        onSubmit={(e) => e.preventDefault()}
-                    >
-                        <div className="patient-password-fields">
-                            <div className="profile-field-row">
-                                <label htmlFor="current_password">
-                                    Mật khẩu hiện tại
-                                    <span className="profile-required">*</span>
-                                </label>
-                                <input
-                                    id="current_password"
-                                    className="profile-field-input"
-                                    type="password"
-                                    placeholder="Mật khẩu hiện tại"
-                                    value={password.current}
-                                    maxLength={64}
-                                    onChange={(e) =>
-                                        setPassword((p) => ({
-                                            ...p,
-                                            current: e.target.value,
-                                        }))
-                                    }
-                                />
-                            </div>
-
-                            <div className="profile-field-row">
-                                <label htmlFor="password">
-                                    Mật khẩu mới
-                                    <span className="profile-required">*</span>
-                                </label>
-                                <input
-                                    id="password"
-                                    className="profile-field-input"
-                                    type="password"
-                                    placeholder="Mật khẩu mới"
-                                    value={password.next}
-                                    maxLength={64}
-                                    onChange={(e) =>
-                                        setPassword((p) => ({
-                                            ...p,
-                                            next: e.target.value,
-                                        }))
-                                    }
-                                />
-                            </div>
-
-                            <div className="profile-field-row">
-                                <label htmlFor="confirmation">
-                                    Nhập lại mật khẩu mới
-                                    <span className="profile-required">*</span>
-                                </label>
-                                <input
-                                    id="confirmation"
-                                    className="profile-field-input"
-                                    type="password"
-                                    placeholder="Nhập lại mật khẩu mới"
-                                    value={password.confirm}
-                                    maxLength={64}
-                                    onChange={(e) =>
-                                        setPassword((p) => ({
-                                            ...p,
-                                            confirm: e.target.value,
-                                        }))
-                                    }
-                                />
-                            </div>
-                        </div>
-
-                        <div className="patient-password-actions">
-                            <button
-                                type="button"
-                                className="patient-profile-save-btn"
-                                onClick={handlePassword}
-                            >
-                                Lưu thay đổi
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            )}
-
-            {!isPasswordPage && (
-                <div className="patient-profile-info-card">
-                    <h2 className="patient-profile-info-title">Hồ sơ cá nhân</h2>
-
-                    <div className="patient-profile-info-form">
-                        <div className="profile-field-row">
-                            <label htmlFor="lastName">
-                                Họ<span className="profile-required">*</span>
-                            </label>
-                            <input
-                                id="lastName"
-                                name="lastName"
-                                className="profile-field-input"
-                                value={user.lastName}
-                                onChange={handleChange}
-                            />
-                        </div>
-
-                        <div className="profile-field-row">
-                            <label htmlFor="firstName">
-                                Tên<span className="profile-required">*</span>
-                            </label>
-                            <input
-                                id="firstName"
-                                name="firstName"
-                                className="profile-field-input"
-                                value={user.firstName}
-                                onChange={handleChange}
-                            />
-                        </div>
-
-                        <div className="profile-field-row">
-                            <label htmlFor="phone">Số điện thoại</label>
-                            <div className="profile-input-with-action">
-                                <input
-                                    id="phone"
-                                    name="phone"
-                                    className="profile-field-input"
-                                    value={user.phone}
-                                    onChange={handleChange}
-                                />
-                                <button
-                                    type="button"
-                                    className="profile-input-link"
-                                    onClick={() =>
-                                        alert("Thay đổi số điện thoại (fake).")
-                                    }
-                                >
-                                    Thay đổi
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="profile-field-row">
-                            <label htmlFor="email">Email</label>
-                            <div className="profile-input-with-action">
-                                <input
-                                    id="email"
-                                    name="email"
-                                    className="profile-field-input"
-                                    value={hasEmail ? user.email : ""}
-                                    placeholder={
-                                        hasEmail ? "" : "Chưa có email"
-                                    }
-                                    readOnly={!hasEmail}
-                                    onChange={handleChange}
-                                />
-                                {!hasEmail && (
-                                    <button
-                                        type="button"
-                                        className="profile-input-link"
-                                        onClick={() =>
-                                            alert("Thêm email (fake).")
-                                        }
-                                    >
-                                        Thêm mới
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="profile-field-row">
-                            <span className="profile-field-label">
-                                Giới tính
-                                <span className="profile-required">*</span>
-                            </span>
-                            <div className="profile-gender-options">
-                                <label className="profile-gender-option">
-                                    <input
-                                        type="radio"
-                                        name="gender"
-                                        value="Nam"
-                                        checked={user.gender === "Nam"}
-                                        onChange={handleChange}
-                                    />
-                                    <span>Nam</span>
-                                </label>
-                                <label className="profile-gender-option">
-                                    <input
-                                        type="radio"
-                                        name="gender"
-                                        value="Nữ"
-                                        checked={user.gender === "Nữ"}
-                                        onChange={handleChange}
-                                    />
-                                    <span>Nữ</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div className="profile-field-row">
-                            <span className="profile-field-label">
-                                Birthday
-                                <span className="profile-required">*</span>
-                            </span>
-                            <div className="profile-birthday-inputs">
-                                <input
-                                    name="birthDay"
-                                    className="profile-field-input profile-birthday-input"
-                                    value={user.birthDay}
-                                    onChange={handleChange}
-                                    placeholder="Ngày"
-                                    inputMode="numeric"
-                                    maxLength={2}
-                                />
-                                <input
-                                    name="birthMonth"
-                                    className="profile-field-input profile-birthday-input"
-                                    value={user.birthMonth}
-                                    onChange={handleChange}
-                                    placeholder="Tháng"
-                                    inputMode="numeric"
-                                    maxLength={2}
-                                />
-                                <input
-                                    name="birthYear"
-                                    className="profile-field-input profile-birthday-input profile-birthday-input--year"
-                                    value={user.birthYear}
-                                    onChange={handleChange}
-                                    placeholder="Năm"
-                                    inputMode="numeric"
-                                    maxLength={4}
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    <button
-                        type="button"
-                        className="patient-profile-save-btn"
-                        onClick={handleSave}
-                    >
-                        Lưu thay đổi
-                    </button>
-                </div>
-            )}
-        </PatientLayout>
-    );
+function PasswordField({ id, label, value, onChange, autoComplete = "new-password", minLength }) {
+  return (
+    <div className="profile-field-row">
+      <label htmlFor={id}>{label}<span className="profile-required">*</span></label>
+      <input id={id} className="profile-field-input" type="password" autoComplete={autoComplete} value={value} onChange={(event) => onChange(event.target.value)} minLength={minLength} required />
+    </div>
+  );
 }
 
 export default Profile;

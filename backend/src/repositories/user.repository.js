@@ -1,6 +1,21 @@
 import prisma from "../config/prisma.js";
 
 class UserRepository {
+  async createStaff(data, roleId) {
+    return prisma.users.create({
+      data: { ...data, role_id: roleId, is_active: true },
+      include: { role: true },
+    });
+  }
+
+  findRoleByName(name) {
+    return prisma.roles.findUnique({ where: { name } });
+  }
+
+  findByEmail(email) {
+    return prisma.users.findUnique({ where: { email } });
+  }
+
   // Lấy danh sách người dùng (lọc + phân trang) — Admin
   async findAll({ search, role, is_active, page = 1, limit = 10 }) {
     const skip = (page - 1) * limit;

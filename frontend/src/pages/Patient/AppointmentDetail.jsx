@@ -162,7 +162,11 @@ function AppointmentDetail() {
 
   const clinicInvoice = appointment?.clinic_fee_invoice;
   const [retryingPayment, setRetryingPayment] = useState(false);
-  const [remainingSeconds, setRemainingSeconds] = useState(0);
+  const [remainingSeconds, setRemainingSeconds] = useState(() =>
+    clinicInvoice
+      ? computeRemainingSeconds(clinicInvoice.payment_expires_at)
+      : 0,
+  );
 
   useEffect(() => {
     if (

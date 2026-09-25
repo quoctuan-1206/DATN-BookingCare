@@ -137,6 +137,15 @@ test("getPaymentStatus returns can_retry correctly for live vs expired invoice",
     new Date("2026-09-25T03:15:00.000Z"),
   );
   assert.equal(expired.can_retry, false);
+
+  const doctor = { id: 1, role: { name: "Doctor" } };
+  await assert.rejects(
+    () => service.getPaymentStatus(doctor, 42),
+    (err) => {
+      assert.equal(err.statusCode, 403);
+      return true;
+    },
+  );
 });
 
 test("handleIpn confirms valid IPN with RspCode 00", async () => {

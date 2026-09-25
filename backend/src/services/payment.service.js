@@ -110,11 +110,9 @@ class PaymentService {
     const roleName = user.role?.name;
     const patientAccountId =
       invoice.appointments?.patient_profiles?.account_id;
+    const isOwner = Number(patientAccountId) === Number(user.id);
 
-    if (
-      roleName === "Patient" &&
-      Number(patientAccountId) !== Number(user.id)
-    ) {
+    if (roleName !== "Admin" && !(roleName === "Patient" && isOwner)) {
       const error = new Error("Bạn không có quyền xem thông tin thanh toán này");
       error.statusCode = 403;
       throw error;

@@ -49,7 +49,7 @@ class MedicalRecordService {
     };
   }
 
-  formatPrescriptionSummary(prescription, workDate = null) {
+  formatPrescriptionSummary(prescription) {
     if (!prescription?.id) return null;
 
     const items = (prescription.prescription_details || []).map((detail) => ({
@@ -64,25 +64,9 @@ class MedicalRecordService {
       instruction: detail.instruction || null,
     }));
 
-    const followUpDays =
-      prescription.follow_up_days != null
-        ? Number(prescription.follow_up_days)
-        : null;
-    let followUpDate = null;
-    if (workDate && followUpDays != null) {
-      const d = new Date(`${workDate}T00:00:00.000Z`);
-      if (!Number.isNaN(d.getTime())) {
-        d.setUTCDate(d.getUTCDate() + followUpDays);
-        followUpDate = d.toISOString().slice(0, 10);
-      }
-    }
-
     return {
       id: prescription.id,
       note: prescription.note || null,
-      follow_up_days: followUpDays,
-      follow_up_date: followUpDate,
-      follow_up_date_display: formatDateDisplay(followUpDate),
       items,
       total_amount: items.reduce((sum, item) => sum + item.line_total, 0),
       created_at: prescription.created_at || null,
@@ -158,13 +142,11 @@ class MedicalRecordService {
       : null;
 
     const workDate = formatDateOnly(schedule?.work_date);
+    const followUpDate = formatDateOnly(record.follow_up_date);
     const startTime = formatTimeOnly(schedule?.start_time);
     const endTime = formatTimeOnly(schedule?.end_time);
     const patient = appointment?.patient_profiles;
-    const prescription = this.formatPrescriptionSummary(
-      record.prescriptions,
-      workDate,
-    );
+    const prescription = this.formatPrescriptionSummary(record.prescriptions);
     const clinicalServices = this.formatClinicalServices(
       appointment?.lab_orders,
       viewerRole === "Patient",
@@ -174,7 +156,21 @@ class MedicalRecordService {
       id: record.id,
       appointment_id: record.appointment_id,
       symptoms: record.symptoms || null,
+      blood_pressure: record.blood_pressure || null,
+      heart_rate: record.heart_rate ?? null,
+      temperature:
+        record.temperature != null ? Number(record.temperature) : null,
+      spo2: record.spo2 ?? null,
+      respiratory_rate: record.respiratory_rate ?? null,
+      weight: record.weight != null ? Number(record.weight) : null,
+      height: record.height != null ? Number(record.height) : null,
+      clinical_examination: record.clinical_examination || null,
       diagnosis: record.diagnosis || null,
+      icd10_code: record.icd10_code || null,
+      secondary_diagnosis: record.secondary_diagnosis || null,
+      assessment: record.assessment || record.conclusion || null,
+      follow_up_date: followUpDate,
+      follow_up_date_display: formatDateDisplay(followUpDate),
       conclusion: record.conclusion || null,
       note: record.note || null,
       booking_code: appointment?.booking_code || null,

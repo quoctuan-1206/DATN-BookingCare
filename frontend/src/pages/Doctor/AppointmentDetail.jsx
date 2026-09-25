@@ -12,6 +12,7 @@ import toast from "react-hot-toast";
 import DoctorLayout from "../../components/doctor-dashboard/layout/DoctorLayout";
 import DoctorPatientInfo from "../../components/doctor-dashboard/DoctorPatientInfo";
 import MedicalRecordForm from "../../components/doctor-dashboard/MedicalRecordForm";
+import FollowUpCard from "../../components/doctor-dashboard/FollowUpCard";
 import PrescriptionForm from "../../components/doctor-dashboard/PrescriptionForm";
 import AppointmentClinicalOrders from "../../components/doctor-dashboard/AppointmentClinicalOrders";
 import CollapseToggle from "../../components/doctor-dashboard/CollapseToggle";
@@ -24,6 +25,7 @@ import prescriptionService from "../../services/prescription.service";
 import { getApiErrorMessage } from "../../api/axios";
 import { isExamDay } from "../../utils/booking";
 import { mapMedicalRecord } from "../../services/medical-record.service";
+import "../../styles/appointment-detail-buttons.css";
 
 function splitAppointmentReason(value, fallbackNote) {
   const rawReason = String(value || "").trim();
@@ -194,6 +196,10 @@ function AppointmentDetail() {
     await loadAppointment();
   };
 
+  const handleFollowUpSaved = (record) => {
+    if (record) setMedicalRecord(mapMedicalRecord(record));
+  };
+
   const handleSkipPrescription = () => {
     setPrescriptionSkipped(true);
     setPrescriptionStep(false);
@@ -262,7 +268,6 @@ function AppointmentDetail() {
                 {STATUS_LABEL[appointment.status]}
               </span>
             </div>
-            <p>Xác nhận lịch → khám bệnh → ghi bệnh án → kê đơn thuốc.</p>
           </div>
           <Link
             to="/doctor/appointments"
@@ -495,6 +500,15 @@ function AppointmentDetail() {
               readOnly={appointment.status === "CANCELLED"}
             />
           </div>
+        )}
+
+        {medicalRecord && (
+          <FollowUpCard
+            key={`${medicalRecord.id}-${medicalRecord.follow_up_date || "none"}`}
+            medicalRecord={medicalRecord}
+            onSaved={handleFollowUpSaved}
+            readOnly={appointment.status === "CANCELLED"}
+          />
         )}
       </div>
     </DoctorLayout>

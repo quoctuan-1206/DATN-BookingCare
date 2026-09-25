@@ -1,0 +1,89 @@
+.doctor-appointment-detail-page {
+  --appointment-button-primary: #00695c;
+  --appointment-button-primary-hover: #00574d;
+  --appointment-button-primary-soft: #eaf7f4;
+  --appointment-button-primary-soft-hover: #d8f0eb;
+  --appointment-button-border: #9fcfc7;
+  --appointment-button-danger: #b42318;
+  --appointment-button-danger-hover: #921f16;
+  --appointment-button-danger-soft: #fff4f2;
+}
+
+.doctor-appointment-detail-page .admin-btn-primary,
+.doctor-appointment-detail-page .clinical-button--primary,
+.doctor-appointment-detail-page .medical-record-form-save,
+.doctor-appointment-detail-page .doctor-prescription-save-btn,
+.doctor-appointment-detail-page .doctor-follow-up-card__save {
+  color: #fff;
+  border-color: var(--appointment-button-primary);
+  background: var(--appointment-button-primary);
+  box-shadow: 0 5px 13px rgba(0, 105, 92, 0.16);
+}
+
+.doctor-appointment-detail-page .admin-btn-primary:hover:not(:disabled),
+.doctor-appointment-detail-page .clinical-button--primary:hover:not(:disabled),
+.doctor-appointment-detail-page .medical-record-form-save:hover:not(:disabled),
+.doctor-appointment-detail-page .doctor-prescription-save-btn:hover:not(:disabled),
+.doctor-appointment-detail-page .doctor-follow-up-card__save:hover:not(:disabled) {
+  color: #fff;
+  border-color: var(--appointment-button-primary-hover);
+  background: var(--appointment-button-primary-hover);
+}
+
+.doctor-appointment-detail-page .admin-btn-secondary,
+.doctor-appointment-detail-page .medical-record-form-cancel,
+.doctor-appointment-detail-page .doctor-prescription-cancel-btn,
+.doctor-appointment-detail-page .doctor-prescription-skip-btn,
+.doctor-appointment-detail-page .doctor-prescription-header-action,
+.doctor-appointment-detail-page .doctor-prescription-add-btn,
+.doctor-appointment-detail-page .doctor-collapse-toggle,
+.doctor-appointment-detail-page .doctor-clinical-orders__state button {
+  color: var(--appointment-button-primary);
+  border-color: var(--appointment-button-border);
+  background: var(--appointment-button-primary-soft);
+}
+
+.doctor-appointment-detail-page .admin-btn-secondary {
+  border: 1px solid var(--appointment-button-border);
+}
+
+.doctor-appointment-detail-page .admin-btn-secondary:hover:not(:disabled),
+.doctor-appointment-detail-page .medical-record-form-cancel:hover:not(:disabled),
+.doctor-appointment-detail-page .doctor-prescription-cancel-btn:hover:not(:disabled),
+.doctor-appointment-detail-page .doctor-prescription-skip-btn:hover:not(:disabled),
+.doctor-appointment-detail-page .doctor-prescription-header-action:hover:not(:disabled),
+.doctor-appointment-detail-page .doctor-prescription-add-btn:hover:not(:disabled),
+.doctor-appointment-detail-page .doctor-collapse-toggle:hover:not(:disabled),
+.doctor-appointment-detail-page .doctor-clinical-orders__state button:hover:not(:disabled) {
+  color: var(--appointment-button-primary-hover);
+  border-color: var(--appointment-button-primary);
+  background: var(--appointment-button-primary-soft-hover);
+}
+
+.doctor-appointment-detail-page .admin-btn-danger {
+  color: #fff;
+  background: var(--appointment-button-danger);
+}
+
+.doctor-appointment-detail-page .admin-btn-danger:hover:not(:disabled) {
+  color: #fff;
+  background: var(--appointment-button-danger-hover);
+}
+
+.doctor-appointment-detail-page .prescription-remove-btn {
+  color: var(--appointment-button-danger);
+  border-color: #efc2bd;
+  background: var(--appointment-button-danger-soft);
+}
+
+.doctor-appointment-detail-page .prescription-remove-btn:hover:not(:disabled) {
+  color: var(--appointment-button-danger-hover);
+  border-color: #dc9d96;
+  background: #fee9e6;
+}
+
+.doctor-appointment-detail-page button:focus-visible,
+.doctor-appointment-detail-page a.admin-btn:focus-visible {
+  outline: 3px solid rgba(0, 105, 92, 0.22);
+  outline-offset: 2px;
+}

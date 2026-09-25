@@ -124,15 +124,27 @@ model invoices {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model medical_records {
-  id             Int            @id @default(autoincrement())
-  appointment_id Int            @unique(map: "appointment_id")
-  symptoms       String?        @db.Text
-  diagnosis      String?        @db.Text
-  conclusion     String?        @db.Text
-  note           String?        @db.Text
-  created_at     DateTime?      @default(now()) @db.Timestamp(0)
-  appointments   appointments   @relation(fields: [appointment_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "medical_records_ibfk_1")
-  prescriptions  prescriptions?
+  id                   Int            @id @default(autoincrement())
+  appointment_id       Int            @unique(map: "appointment_id")
+  symptoms             String?        @db.Text
+  blood_pressure       String?        @db.VarChar(20)
+  heart_rate           Int?
+  temperature          Decimal?       @db.Decimal(4, 1)
+  spo2                 Int?
+  respiratory_rate     Int?
+  weight               Decimal?       @db.Decimal(5, 2)
+  height               Decimal?       @db.Decimal(5, 2)
+  clinical_examination String?        @db.Text
+  diagnosis            String?        @db.Text
+  icd10_code           String?        @db.VarChar(20)
+  secondary_diagnosis  String?        @db.Text
+  assessment           String?        @db.Text
+  follow_up_date       DateTime?      @db.Date
+  conclusion           String?        @db.Text
+  note                 String?        @db.Text
+  created_at           DateTime?      @default(now()) @db.Timestamp(0)
+  appointments         appointments   @relation(fields: [appointment_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "medical_records_ibfk_1")
+  prescriptions        prescriptions?
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -206,7 +218,6 @@ model prescriptions {
   id                   Int                    @id @default(autoincrement())
   medical_record_id    Int                    @unique(map: "medical_record_id")
   note                 String?                @db.Text
-  follow_up_days       Int?
   created_at           DateTime?              @default(now()) @db.Timestamp(0)
   prescription_details prescription_details[]
   medical_records      medical_records        @relation(fields: [medical_record_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "prescriptions_ibfk_1")

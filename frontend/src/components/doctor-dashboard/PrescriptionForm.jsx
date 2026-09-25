@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, Pill, Plus, Trash2 } from "lucide-react";
+import { Pill, Plus, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import medicineService from "../../services/medicine.service";
 import prescriptionService from "../../services/prescription.service";
@@ -13,26 +13,6 @@ const emptyItem = () => ({
   dosage: "",
   instruction: "",
 });
-
-const DAY_IN_MS = 24 * 60 * 60 * 1000;
-
-function dateAfterDays(days = 7) {
-  const date = new Date();
-  date.setHours(12, 0, 0, 0);
-  date.setDate(date.getDate() + Number(days || 7));
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function daysUntilDate(value) {
-  if (!value) return null;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const target = new Date(`${value}T00:00:00`);
-  return Math.ceil((target.getTime() - today.getTime()) / DAY_IN_MS);
-}
 
 function PrescriptionForm({
   medicalRecordId,
@@ -48,12 +28,6 @@ function PrescriptionForm({
   const [saving, setSaving] = useState(false);
   const [expanded, setExpanded] = useState(true);
   const [note, setNote] = useState(initialPrescription?.note || "");
-  const [needFollowUp, setNeedFollowUp] = useState(
-    initialPrescription?.follow_up_days != null,
-  );
-  const [followUpDate, setFollowUpDate] = useState(
-    dateAfterDays(initialPrescription?.follow_up_days ?? 7),
-  );
   const [items, setItems] = useState(() => {
     if (initialPrescription?.items?.length) {
       return initialPrescription.items.map((item) => ({
@@ -121,8 +95,6 @@ function PrescriptionForm({
 
   const resetFromInitial = () => {
     setNote(initialPrescription?.note || "");
-    setNeedFollowUp(initialPrescription?.follow_up_days != null);
-    setFollowUpDate(dateAfterDays(initialPrescription?.follow_up_days ?? 7));
     setItems(
       initialPrescription?.items?.length
         ? initialPrescription.items.map((item) => ({
@@ -157,21 +129,10 @@ function PrescriptionForm({
       return;
     }
 
-    let resolvedFollowUpDays = null;
-    if (needFollowUp) {
-      const days = daysUntilDate(followUpDate);
-      if (!Number.isInteger(days) || days < 1 || days > 365) {
-        toast.error("Ngày tái khám phải trong vòng 365 ngày tới");
-        return;
-      }
-      resolvedFollowUpDays = days;
-    }
-
     setSaving(true);
     try {
       const payload = {
         note: note.trim() || null,
-        follow_up_days: resolvedFollowUpDays,
         items: payloadItems,
       };
 
@@ -419,31 +380,6 @@ function PrescriptionForm({
                   placeholder="VD: Uống đủ liệu trình 5 ngày"
                 />
 
-                <div className="doctor-prescription-follow-up-row">
-                  <label className="doctor-follow-up-toggle">
-                    <input
-                      type="checkbox"
-                      checked={needFollowUp}
-                      onChange={(e) => setNeedFollowUp(e.target.checked)}
-                    />
-                    <span>Hẹn tái khám</span>
-                  </label>
-
-                  {needFollowUp && (
-                    <label className="doctor-follow-up-date" htmlFor="follow_up_date">
-                      <span><CalendarDays size={15} /> Ngày tái khám</span>
-                      <input
-                        id="follow_up_date"
-                        type="date"
-                        min={dateAfterDays(1)}
-                        max={dateAfterDays(365)}
-                        value={followUpDate}
-                        onChange={(e) => setFollowUpDate(e.target.value)}
-                        required
-                      />
-                    </label>
-                  )}
-                </div>
               </section>
 
               <aside className="doctor-prescription-total-card" aria-live="polite">

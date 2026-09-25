@@ -55,8 +55,6 @@ class PrescriptionRepository {
         data: {
           medical_record_id: Number(data.medical_record_id),
           note: data.note || null,
-          follow_up_days:
-            data.follow_up_days != null ? Number(data.follow_up_days) : null,
         },
       });
 
@@ -86,8 +84,6 @@ class PrescriptionRepository {
         where: { id: Number(id) },
         data: {
           note: data.note ?? null,
-          follow_up_days:
-            data.follow_up_days != null ? Number(data.follow_up_days) : null,
         },
       });
 

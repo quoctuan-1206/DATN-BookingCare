@@ -1291,34 +1291,6 @@
     color: #475569;
 }
 
-.doctor-prescription-follow-up {
-    margin: 10px 0 0;
-    color: #0f766e;
-    font-size: 14px;
-}
-
-.doctor-follow-up-box {
-    margin: 0 0 16px;
-    padding: 14px 16px;
-    border: 1px solid #d7e0e6;
-    border-radius: 10px;
-    background: #f8fafc;
-}
-
-.doctor-follow-up-toggle {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0 0 12px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.doctor-follow-up-toggle input {
-    width: 16px;
-    height: 16px;
-}
-
 .doctor-prescription-total {
     margin: 12px 0 0;
     font-weight: 600;
@@ -1907,69 +1879,9 @@
     transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
-.doctor-prescription-note-panel textarea:focus,
-.doctor-follow-up-date input:focus {
+.doctor-prescription-note-panel textarea:focus {
     border-color: #65a99f;
     box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
-}
-
-.doctor-prescription-follow-up-row {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 16px;
-    min-height: 47px;
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid #edf3f1;
-}
-
-.doctor-prescription-follow-up-row .doctor-follow-up-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 40px;
-    margin: 0;
-    color: #355650;
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-}
-
-.doctor-prescription-follow-up-row .doctor-follow-up-toggle input {
-    width: 17px;
-    height: 17px;
-    margin: 0;
-    accent-color: #0f766e;
-}
-
-.doctor-follow-up-date {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-}
-
-.doctor-follow-up-date > span {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    color: #60736f;
-    font-size: 12px;
-    font-weight: 650;
-    white-space: nowrap;
-}
-
-.doctor-follow-up-date input {
-    width: 168px;
-    height: 40px;
-    padding: 0 10px;
-    color: #263c3a;
-    border: 1px solid #d9e5e3;
-    border-radius: 8px;
-    outline: none;
-    background: #fff;
-    font: inherit;
-    font-size: 12px;
 }
 
 .doctor-prescription-total-card {
@@ -2101,16 +2013,6 @@
     .doctor-prescription-form__body,
     .doctor-prescription-view__body {
         padding: 14px;
-    }
-
-    .doctor-prescription-follow-up-row,
-    .doctor-follow-up-date {
-        align-items: stretch;
-        flex-direction: column;
-    }
-
-    .doctor-follow-up-date input {
-        width: 100%;
     }
 
     .doctor-prescription-form__footer {

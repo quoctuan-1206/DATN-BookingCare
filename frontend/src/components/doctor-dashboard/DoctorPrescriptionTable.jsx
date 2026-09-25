@@ -43,15 +43,6 @@ function DoctorPrescriptionTable({ prescription, emptyText = "Chưa kê thuốc.
         </p>
       ) : null}
 
-      {prescription.follow_up_days != null ? (
-        <p className="doctor-prescription-follow-up">
-          <strong>Tái khám:</strong> sau {prescription.follow_up_days} ngày
-          {prescription.follow_up_date_display
-            ? ` (dự kiến ${prescription.follow_up_date_display})`
-            : ""}
-        </p>
-      ) : null}
-
       <p className="doctor-prescription-total">
         Tổng tiền thuốc:{" "}
         <strong>

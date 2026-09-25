@@ -9,7 +9,7 @@
     "start": "node src/server.js",
     "seed": "node src/seed.js",
     "check:clinical-permissions": "node scripts/check-clinical-permissions.js",
-    "db:migrate": "node scripts/ensure-clinic-content-columns.js && node scripts/ensure-lab-schema.js",
+    "db:migrate": "node scripts/ensure-clinic-content-columns.js && node scripts/ensure-medical-record-columns.js && node scripts/ensure-lab-schema.js",
     "db:generate": "prisma generate",
     "db:prepare": "npm run db:migrate && npm run db:generate"
   },

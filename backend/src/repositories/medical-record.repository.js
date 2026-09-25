@@ -131,7 +131,21 @@ class MedicalRecordRepository {
         data: {
           appointment_id: Number(data.appointment_id),
           symptoms: data.symptoms || null,
+          blood_pressure: data.blood_pressure || null,
+          heart_rate: data.heart_rate ?? null,
+          temperature: data.temperature ?? null,
+          spo2: data.spo2 ?? null,
+          respiratory_rate: data.respiratory_rate ?? null,
+          weight: data.weight ?? null,
+          height: data.height ?? null,
+          clinical_examination: data.clinical_examination || null,
           diagnosis: data.diagnosis,
+          icd10_code: data.icd10_code || null,
+          secondary_diagnosis: data.secondary_diagnosis || null,
+          assessment: data.assessment || null,
+          follow_up_date: data.follow_up_date
+            ? new Date(`${data.follow_up_date}T00:00:00.000Z`)
+            : null,
           conclusion: data.conclusion || null,
           note: data.note || null,
         },
@@ -165,7 +179,23 @@ class MedicalRecordRepository {
   async update(id, data) {
     const payload = {};
     if (data.symptoms !== undefined) payload.symptoms = data.symptoms;
+    if (data.blood_pressure !== undefined) payload.blood_pressure = data.blood_pressure;
+    if (data.heart_rate !== undefined) payload.heart_rate = data.heart_rate;
+    if (data.temperature !== undefined) payload.temperature = data.temperature;
+    if (data.spo2 !== undefined) payload.spo2 = data.spo2;
+    if (data.respiratory_rate !== undefined) payload.respiratory_rate = data.respiratory_rate;
+    if (data.weight !== undefined) payload.weight = data.weight;
+    if (data.height !== undefined) payload.height = data.height;
+    if (data.clinical_examination !== undefined) payload.clinical_examination = data.clinical_examination;
     if (data.diagnosis !== undefined) payload.diagnosis = data.diagnosis;
+    if (data.icd10_code !== undefined) payload.icd10_code = data.icd10_code;
+    if (data.secondary_diagnosis !== undefined) payload.secondary_diagnosis = data.secondary_diagnosis;
+    if (data.assessment !== undefined) payload.assessment = data.assessment;
+    if (data.follow_up_date !== undefined) {
+      payload.follow_up_date = data.follow_up_date
+        ? new Date(`${data.follow_up_date}T00:00:00.000Z`)
+        : null;
+    }
     if (data.conclusion !== undefined) payload.conclusion = data.conclusion;
     if (data.note !== undefined) payload.note = data.note;
 

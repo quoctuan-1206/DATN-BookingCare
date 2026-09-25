@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CalendarDays } from "lucide-react";
 import toast from "react-hot-toast";
 import PatientLayout from "../../components/patient/PatientLayout";
 import PatientPrescriptionView from "../../components/patient/PatientPrescriptionView";
@@ -112,6 +112,19 @@ function MedicalRecordDetail() {
           <DetailRow label="Kết luận" value={record.conclusion} />
           <DetailRow label="Ghi chú" value={record.note || "—"} />
         </div>
+
+        {record.follow_up_date && (
+          <div className="detail-card">
+            <h2>
+              <CalendarDays size={20} style={{ verticalAlign: "middle", marginRight: 8 }} />
+              Hẹn tái khám
+            </h2>
+            <DetailRow
+              label="Ngày tái khám"
+              value={record.follow_up_date_display || record.follow_up_date}
+            />
+          </div>
+        )}
 
         <ClinicalRecordSection
           orders={record.clinical_services || []}

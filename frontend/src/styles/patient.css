@@ -2243,3 +2243,42 @@ select.profile-field-input {
     margin: 0;
     font-size: 15px;
 }
+
+/* ===================================================
+   VNPAY PAYMENT DETAIL & COUNTDOWN STYLES
+=================================================== */
+
+.payment-detail-card {
+    border-left: 4px solid var(--primary-color, #0f766e);
+}
+
+.payment-status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.payment-status-badge--paid {
+    background-color: #dcfce7;
+    color: #15803d;
+}
+
+.payment-status-badge--unpaid {
+    background-color: #fef3c7;
+    color: #b45309;
+}
+
+.payment-status-badge--expired {
+    background-color: #fee2e2;
+    color: #b91c1c;
+}
+
+.payment-countdown-text {
+    font-size: 15px;
+    font-weight: 700;
+    color: #d97706;
+    letter-spacing: 0.5px;
+}
+

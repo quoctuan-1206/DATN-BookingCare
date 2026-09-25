@@ -10,6 +10,13 @@ import appointmentService, {
   STATUS_LABEL,
 } from "../../services/appointment.service";
 import reviewService from "../../services/review.service";
+import paymentService from "../../services/payment.service";
+import {
+  computeRemainingSeconds,
+  formatCountdown,
+  canRetryPayment,
+  getPaymentBadge,
+} from "../../utils/payment";
 import { getApiErrorMessage } from "../../api/axios";
 
 function StarRating({ value, onChange, disabled }) {
@@ -153,6 +160,54 @@ function AppointmentDetail() {
     }
   };
 
+  const clinicInvoice = appointment?.clinic_fee_invoice;
+  const [retryingPayment, setRetryingPayment] = useState(false);
+  const [remainingSeconds, setRemainingSeconds] = useState(0);
+
+  useEffect(() => {
+    if (
+      !clinicInvoice ||
+      clinicInvoice.payment_status !== "UNPAID" ||
+      appointment?.status !== "PENDING"
+    ) {
+      setRemainingSeconds(0);
+      return;
+    }
+
+    setRemainingSeconds(
+      computeRemainingSeconds(clinicInvoice.payment_expires_at),
+    );
+
+    const interval = setInterval(() => {
+      const sec = computeRemainingSeconds(clinicInvoice.payment_expires_at);
+      setRemainingSeconds(sec);
+      if (sec <= 0) {
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [clinicInvoice, appointment?.status]);
+
+  const handleRetryPayment = async () => {
+    if (!clinicInvoice?.id) return;
+    setRetryingPayment(true);
+    try {
+      const res = await paymentService.createPaymentUrl(clinicInvoice.id);
+      if (res?.payment_url) {
+        window.location.assign(res.payment_url);
+      } else {
+        toast.error("Không nhận được link thanh toán");
+      }
+    } catch (error) {
+      toast.error(
+        getApiErrorMessage(error, "Không thể tạo lại link thanh toán"),
+      );
+    } finally {
+      setRetryingPayment(false);
+    }
+  };
+
   const handleSubmitReview = async () => {
     if (rating === 0) {
       toast.error("Vui lòng chọn số sao");
@@ -215,6 +270,8 @@ function AppointmentDetail() {
     appointment.status === "PENDING" || appointment.status === "CONFIRMED";
   const isCompleted = appointment.status === "COMPLETED";
   const statusClass = STATUS_CLASS[appointment.status] || "pending";
+  const canRetry = canRetryPayment(clinicInvoice, appointment.status);
+  const paymentBadge = getPaymentBadge(clinicInvoice, appointment.status);
 
   return (
     <PatientLayout>
@@ -252,6 +309,53 @@ function AppointmentDetail() {
             value={`${Number(appointment.consultation_fee || 0).toLocaleString("vi-VN")} đ`}
           />
         </div>
+
+        {clinicInvoice && (
+          <div className="detail-card payment-detail-card">
+            <h2>Thông tin thanh toán phí khám</h2>
+            <DetailRow
+              label="Số tiền"
+              value={`${Number(clinicInvoice.amount || 0).toLocaleString("vi-VN")} đ`}
+            />
+            <DetailRow
+              label="Trạng thái thanh toán"
+              value={
+                paymentBadge && (
+                  <span
+                    className={`payment-status-badge payment-status-badge--${paymentBadge.className}`}
+                  >
+                    {paymentBadge.label}
+                  </span>
+                )
+              }
+            />
+            {canRetry && (
+              <DetailRow
+                label="Thời gian thanh toán còn lại"
+                value={
+                  <span className="payment-countdown-text">
+                    ⏱ {formatCountdown(remainingSeconds)}
+                  </span>
+                }
+              />
+            )}
+            {canRetry && (
+              <div
+                className="patient-detail-actions"
+                style={{ marginTop: "16px" }}
+              >
+                <button
+                  type="button"
+                  className="patient-profile-primary-btn"
+                  disabled={retryingPayment}
+                  onClick={handleRetryPayment}
+                >
+                  {retryingPayment ? "Đang chuyển tiếp..." : "Thanh toán lại"}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {canCancel && (
           <div className="patient-detail-actions">

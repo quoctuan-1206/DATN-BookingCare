@@ -13,9 +13,29 @@ function PaymentResult() {
   const [loading, setLoading] = useState(true);
   const [paymentData, setPaymentData] = useState(null);
   const [retrying, setRetrying] = useState(false);
-  const [pollCount, setPollCount] = useState(0);
+  const [fetchError, setFetchError] = useState(null);
 
   const pollIntervalRef = useRef(null);
+
+  const checkStatus = async () => {
+    try {
+      const res = await paymentService.getStatus(invoiceId);
+      setPaymentData(res);
+      setFetchError(null);
+      setLoading(false);
+
+      // Dừng polling khi đã thanh toán thành công hoặc không thể thử lại
+      if (res.payment_status === "PAID" || !res.can_retry) {
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
+      }
+    } catch (error) {
+      setFetchError(error);
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!invoiceId || statusParam === "invalid" || statusParam === "not_found") {
@@ -23,30 +43,7 @@ function PaymentResult() {
       return;
     }
 
-    let isMounted = true;
     let elapsedSeconds = 0;
-
-    const checkStatus = async () => {
-      try {
-        const res = await paymentService.getStatus(invoiceId);
-        if (!isMounted) return;
-
-        setPaymentData(res);
-        setLoading(false);
-        setPollCount((prev) => prev + 1);
-
-        // Dừng polling khi đã thanh toán thành công hoặc không thể thử lại
-        if (res.payment_status === "PAID" || !res.can_retry) {
-          if (pollIntervalRef.current) {
-            clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = null;
-          }
-        }
-      } catch (error) {
-        if (!isMounted) return;
-        setLoading(false);
-      }
-    };
 
     // Gọi ngay khi mount
     checkStatus();
@@ -64,7 +61,6 @@ function PaymentResult() {
     }, 2000);
 
     return () => {
-      isMounted = false;
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
       }
@@ -89,8 +85,14 @@ function PaymentResult() {
     }
   };
 
-  // 1. Trạng thái không hợp lệ hoặc lỗi tham số
-  if (statusParam === "invalid" || statusParam === "not_found" || (!loading && !invoiceId)) {
+  // 1. Trạng thái không hợp lệ, lỗi tham số hoặc lỗi mạng khi tải trạng thái
+  if (
+    statusParam === "invalid" ||
+    statusParam === "not_found" ||
+    (!loading && !invoiceId) ||
+    (!loading && fetchError && !paymentData)
+  ) {
+    const isFetchError = Boolean(fetchError && !paymentData);
     return (
       <>
         <Header />
@@ -105,17 +107,37 @@ function PaymentResult() {
                 ✕
               </div>
               <p className="booking-eyebrow">Cổng thanh toán VNPAY</p>
-              <h1>Thông tin thanh toán không hợp lệ</h1>
+              <h1>
+                {isFetchError
+                  ? "Không thể tải thông tin thanh toán"
+                  : "Thông tin thanh toán không hợp lệ"}
+              </h1>
               <p className="success-message">
-                Không thể xác thực thông tin giao dịch thanh toán hoặc mã hóa đơn không tồn tại.
+                {isFetchError
+                  ? "Đã xảy ra lỗi khi kiểm tra trạng thái thanh toán từ máy chủ. Vui lòng tải lại trang hoặc kiểm tra danh sách lịch hẹn của bạn."
+                  : "Không thể xác thực thông tin giao dịch thanh toán hoặc mã hóa đơn không tồn tại."}
               </p>
               <div className="success-actions">
                 <Link to="/" className="btn btn-outline">
                   Về trang chủ
                 </Link>
-                <Link to="/patient/appointments" className="btn btn-primary">
-                  Xem lịch hẹn của tôi
-                </Link>
+                {isFetchError ? (
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => {
+                      setLoading(true);
+                      setFetchError(null);
+                      checkStatus();
+                    }}
+                  >
+                    Thử lại
+                  </button>
+                ) : (
+                  <Link to="/patient/appointments" className="btn btn-primary">
+                    Xem lịch hẹn của tôi
+                  </Link>
+                )}
               </div>
             </div>
           </div>

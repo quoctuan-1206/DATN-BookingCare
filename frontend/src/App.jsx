@@ -12,6 +12,7 @@ import Articles from "./pages/Article/Articles";
 import ArticleDetail from "./pages/Article/ArticleDetail";
 import Booking from "./pages/Booking/Booking";
 import BookingSuccess from "./pages/Booking/BookingSuccess";
+import PaymentResult from "./pages/Booking/PaymentResult";
 
 import Dashboard from "./pages/Patient/Dashboard";
 import PatientProfiles from "./pages/Patient/PatientProfiles";
@@ -106,6 +107,7 @@ function App() {
 
             <Route path="/booking" element={<Booking />} />
             <Route path="/booking/success" element={<BookingSuccess />} />
+            <Route path="/payment/result" element={<PaymentResult />} />
 
             <Route path="/patient" element={<Dashboard />} />
             <Route path="/patient/profiles" element={<PatientProfiles />} />

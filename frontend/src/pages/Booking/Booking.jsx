@@ -22,6 +22,7 @@ import PatientSelector from "../../components/booking/PatientSelector";
 import { useAuth } from "../../context/AuthContext";
 import patientProfileService from "../../services/patient-profile.service";
 import appointmentService from "../../services/appointment.service";
+import paymentService from "../../services/payment.service";
 import { getApiErrorMessage } from "../../api/axios";
 import { isBookableDate } from "../../utils/booking";
 
@@ -139,12 +140,29 @@ function Booking() {
       });
 
       const a = res.data?.data;
+      const invoiceId = a?.clinic_fee_invoice?.id;
+
+      if (invoiceId) {
+        try {
+          const paymentData = await paymentService.createPaymentUrl(invoiceId);
+          if (paymentData?.payment_url) {
+            window.location.assign(paymentData.payment_url);
+            return;
+          }
+        } catch (paymentErr) {
+          toast.error(
+            "Không thể tạo link thanh toán tự động, vui lòng thanh toán trong chi tiết lịch hẹn",
+          );
+        }
+      }
+
       navigate("/booking/success", {
         replace: true,
         state: {
           booking: {
             bookingCode: a?.booking_code,
             appointmentId: a?.id,
+            invoiceId,
             doctorName: a?.doctor_name || doctor.name,
             specialty: a?.specialty || doctor.specialty,
             clinic: a?.clinic || doctor.clinic,

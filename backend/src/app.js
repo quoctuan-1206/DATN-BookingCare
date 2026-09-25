@@ -21,6 +21,7 @@ import medicineRoutes from "./routes/medicine.routes.js";
 import prescriptionRoutes from "./routes/prescription.routes.js";
 import labRoutes from "./routes/lab.routes.js";
 import clinicalRoutes from "./routes/clinical.routes.js";
+import paymentRoutes from "./routes/payment.routes.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -88,6 +89,9 @@ app.use("/api/labs", labRoutes);
 
 // Cận lâm sàng dùng chung lõi dữ liệu với Xét nghiệm.
 app.use("/api/clinical", clinicalRoutes);
+
+// Thanh toán VNPAY (Khám bệnh)
+app.use("/api/payments", paymentRoutes);
 
 // Middleware bắt lỗi chung toàn hệ thống
 app.use((err, req, res, next) => {

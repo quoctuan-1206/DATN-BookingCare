@@ -29,6 +29,18 @@ class PaymentRepository {
     });
   }
 
+  // Lấy hóa đơn phí khám theo mã giao dịch vnp_txn_ref
+  async findClinicInvoiceByTxnRef(txnRef) {
+    if (!txnRef) return null;
+    return this.prisma.invoices.findFirst({
+      where: {
+        vnp_txn_ref: txnRef,
+        invoice_type: "CLINIC_FEE",
+      },
+      include: clinicInvoiceInclude,
+    });
+  }
+
   // Cập nhật mã tham chiếu thanh toán VNPAY (vnp_txn_ref)
   async setInvoiceTxnRef(invoiceId, txnRef) {
     return this.prisma.invoices.update({
@@ -95,7 +107,7 @@ class PaymentRepository {
         data: {
           payment_status: "PAID",
           payment_method: "VNPAY",
-          transaction_id: String(transactionNo),
+          transaction_id: transactionNo != null ? String(transactionNo) : null,
           payment_date: paidAt,
           updated_at: now,
         },

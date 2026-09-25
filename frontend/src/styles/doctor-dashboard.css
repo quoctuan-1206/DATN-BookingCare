@@ -1067,6 +1067,81 @@
     margin-bottom: 7px;
 }
 
+.doctor-appointment-panel-title .doctor-collapse-toggle {
+    margin-left: auto;
+}
+
+.doctor-collapse-toggle {
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    padding: 0;
+    color: #0f766e;
+    background: #f0fdfa;
+    border: 1px solid #ccfbf1;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.doctor-collapse-toggle:hover {
+    color: #115e59;
+    background: #ccfbf1;
+    border-color: #99f6e4;
+}
+
+.doctor-collapse-toggle:focus-visible {
+    outline: 3px solid rgba(20, 184, 166, 0.25);
+    outline-offset: 2px;
+}
+
+.doctor-collapse-toggle svg {
+    transform: rotate(-90deg);
+    transition: transform 0.2s ease;
+}
+
+.doctor-collapse-toggle.is-expanded svg {
+    transform: rotate(0deg);
+}
+
+.doctor-section-heading,
+.doctor-section-heading__actions,
+.doctor-clinical-orders__actions {
+    display: flex;
+    align-items: center;
+}
+
+.doctor-section-heading {
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.doctor-section-heading__actions,
+.doctor-clinical-orders__actions {
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.doctor-collapsible-content[hidden],
+.doctor-exam-info-content[hidden],
+.doctor-compact-info-list[hidden],
+.doctor-detail-grid[hidden],
+.doctor-prescription-view__body[hidden],
+.doctor-prescription-form__body[hidden] {
+    display: none;
+}
+
+.doctor-exam-info-content {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+}
+
 .doctor-appointment-panel-title h4 {
     margin: 0;
     color: #134e4a;

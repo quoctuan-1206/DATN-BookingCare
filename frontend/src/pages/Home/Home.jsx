@@ -1,7 +1,7 @@
 import Header from "../../components/common/Header/Header";
 import Hero from "../../components/home/Hero/Hero";
-import QuickServices from "../../components/home/QuickServices/QuickServices";
 import SpecialtySection from "../../components/home/SpecialtySection/SpecialtySection";
+import ClinicalSection from "../../components/home/ClinicalSection/ClinicalSection";
 import DoctorSection from "../../components/home/DoctorSection/DoctorSection";
 import ClinicSection from "../../components/home/ClinicSection/ClinicSection";
 import ArticleSection from "../../components/home/ArticleSection/ArticleSection";
@@ -15,13 +15,13 @@ function Home() {
       <Hero />
       <div className="home-layout">
         <div className="home-layout-main">
-          <QuickServices />
           <SpecialtySection />
+          <ClinicalSection />
           <DoctorSection />
           <ClinicSection />
           <ArticleSection />
+          <LatestComments />
         </div>
-        <LatestComments />
       </div>
       <Footer />
     </>

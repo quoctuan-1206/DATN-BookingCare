@@ -7,6 +7,7 @@ import clinicalService from "../../services/clinical.service";
 import ClinicalOrderFormModal from "../clinical/ClinicalOrderFormModal";
 import ClinicalStatusBadge from "../clinical/ClinicalStatusBadge";
 import { ClinicalTypeIcon } from "../clinical/ClinicalOrderWorkspace";
+import CollapseToggle from "./CollapseToggle";
 import {
   CLINICAL_TYPE_LABEL,
   formatClinicalDate,
@@ -27,6 +28,7 @@ function AppointmentClinicalOrders({ appointment, onOrdersChange }) {
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   const loadData = useCallback(async () => {
     if (!appointmentId) return;
@@ -85,17 +87,27 @@ function AppointmentClinicalOrders({ appointment, onOrdersChange }) {
             <h3>Chỉ định cận lâm sàng</h3>
             <p>Chỉ định xét nghiệm, X-quang, siêu âm, nội soi hoặc điện tim cho buổi khám này.</p>
           </div>
-          <button
-            type="button"
-            className="clinical-button clinical-button--primary"
-            disabled={loading || !canCreate}
-            onClick={() => setShowForm(true)}
-          >
-            <Plus size={17} /> Thêm chỉ định
-          </button>
+          <div className="doctor-clinical-orders__actions">
+            {expanded && (
+              <button
+                type="button"
+                className="clinical-button clinical-button--primary"
+                disabled={loading || !canCreate}
+                onClick={() => setShowForm(true)}
+              >
+                <Plus size={17} /> Thêm chỉ định
+              </button>
+            )}
+            <CollapseToggle
+              expanded={expanded}
+              label="chỉ định cận lâm sàng"
+              onToggle={() => setExpanded((value) => !value)}
+            />
+          </div>
         </div>
 
-        {loading ? (
+        <div className="doctor-collapsible-content" hidden={!expanded}>
+          {loading ? (
           <div className="doctor-clinical-orders__state">Đang tải chỉ định...</div>
         ) : error ? (
           <div className="doctor-clinical-orders__state doctor-clinical-orders__state--error">
@@ -148,7 +160,8 @@ function AppointmentClinicalOrders({ appointment, onOrdersChange }) {
           <Link className="doctor-clinical-orders__link" to="/doctor/clinical">
             Quản lý tất cả phiếu <ExternalLink size={15} />
           </Link>
-        )}
+          )}
+        </div>
       </section>
 
       {showForm && (

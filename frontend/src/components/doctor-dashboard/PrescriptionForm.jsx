@@ -5,6 +5,7 @@ import medicineService from "../../services/medicine.service";
 import prescriptionService from "../../services/prescription.service";
 import { getApiErrorMessage } from "../../api/axios";
 import DoctorPrescriptionTable from "./DoctorPrescriptionTable";
+import CollapseToggle from "./CollapseToggle";
 
 const emptyItem = () => ({
   medicine_id: "",
@@ -45,6 +46,7 @@ function PrescriptionForm({
   const [loadingMedicines, setLoadingMedicines] = useState(true);
   const [editing, setEditing] = useState(!readOnly && !hasPrescription);
   const [saving, setSaving] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const [note, setNote] = useState(initialPrescription?.note || "");
   const [needFollowUp, setNeedFollowUp] = useState(
     initialPrescription?.follow_up_days != null,
@@ -218,18 +220,25 @@ function PrescriptionForm({
             </span>
             <h3>Kê đơn thuốc</h3>
           </div>
-          {!readOnly && (
-            <button
-              type="button"
-              className="doctor-prescription-header-action"
-              onClick={() => setEditing(true)}
-            >
-              Chỉnh sửa đơn
-            </button>
-          )}
+          <div className="doctor-section-heading__actions">
+            {!readOnly && expanded && (
+              <button
+                type="button"
+                className="doctor-prescription-header-action"
+                onClick={() => setEditing(true)}
+              >
+                Chỉnh sửa đơn
+              </button>
+            )}
+            <CollapseToggle
+              expanded={expanded}
+              label="kê đơn thuốc"
+              onToggle={() => setExpanded((value) => !value)}
+            />
+          </div>
         </header>
 
-        <div className="doctor-prescription-view__body">
+        <div className="doctor-prescription-view__body" hidden={!expanded}>
           <DoctorPrescriptionTable
             prescription={initialPrescription}
             emptyText="Chưa kê thuốc."
@@ -248,18 +257,25 @@ function PrescriptionForm({
           </span>
           <h3>Kê đơn thuốc</h3>
         </div>
-        {!hasPrescription && onSkip && (
-          <button
-            type="button"
-            className="doctor-prescription-skip-btn"
-            onClick={onSkip}
-          >
-            Không kê thuốc
-          </button>
-        )}
+        <div className="doctor-section-heading__actions">
+          {!hasPrescription && onSkip && expanded && (
+            <button
+              type="button"
+              className="doctor-prescription-skip-btn"
+              onClick={onSkip}
+            >
+              Không kê thuốc
+            </button>
+          )}
+          <CollapseToggle
+            expanded={expanded}
+            label="kê đơn thuốc"
+            onToggle={() => setExpanded((value) => !value)}
+          />
+        </div>
       </header>
 
-      <div className="doctor-prescription-form__body">
+      <div className="doctor-prescription-form__body" hidden={!expanded}>
         {loadingMedicines ? (
           <p className="doctor-prescription-form__state">Đang tải danh sách thuốc...</p>
         ) : medicines.length === 0 ? (

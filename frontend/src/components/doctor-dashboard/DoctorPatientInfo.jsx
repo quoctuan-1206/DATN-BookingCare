@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { UserRound } from "lucide-react";
+import CollapseToggle from "./CollapseToggle";
 
 function dash(value) {
   if (value == null || value === "") return "—";
@@ -6,6 +8,8 @@ function dash(value) {
 }
 
 function DoctorPatientInfo({ data, title = "Thông tin bệnh nhân" }) {
+  const [expanded, setExpanded] = useState(true);
+
   if (!data) return null;
 
   const name = data.patient_name || data.full_name || data.fullName;
@@ -54,8 +58,13 @@ function DoctorPatientInfo({ data, title = "Thông tin bệnh nhân" }) {
           <UserRound size={18} />
         </span>
         <h4>{title}</h4>
+        <CollapseToggle
+          expanded={expanded}
+          label={title}
+          onToggle={() => setExpanded((value) => !value)}
+        />
       </div>
-      <div className="doctor-compact-info-list">
+      <div className="doctor-compact-info-list" hidden={!expanded}>
         {rows.map((row) => (
           <div className="doctor-compact-info-row" key={row.label}>
             <span>{row.label}</span>

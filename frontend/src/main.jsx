@@ -8,6 +8,7 @@ import "./styles/variables.css";
 import "./styles/global.css";
 import "./styles/layout.css";
 import "./styles/section.css";
+import "./styles/home.css";
 import "./styles/card.css";
 import "./styles/button.css";
 import "./styles/form.css";

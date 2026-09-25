@@ -14,6 +14,7 @@ import DoctorPatientInfo from "../../components/doctor-dashboard/DoctorPatientIn
 import MedicalRecordForm from "../../components/doctor-dashboard/MedicalRecordForm";
 import PrescriptionForm from "../../components/doctor-dashboard/PrescriptionForm";
 import AppointmentClinicalOrders from "../../components/doctor-dashboard/AppointmentClinicalOrders";
+import CollapseToggle from "../../components/doctor-dashboard/CollapseToggle";
 import appointmentService, {
   STATUS_CLASS,
   STATUS_LABEL,
@@ -56,6 +57,7 @@ function AppointmentDetail() {
   const [prescriptionStep, setPrescriptionStep] = useState(false);
   const [prescriptionSkipped, setPrescriptionSkipped] = useState(false);
   const [clinicalOrderSummary, setClinicalOrderSummary] = useState(null);
+  const [examInfoExpanded, setExamInfoExpanded] = useState(true);
 
   const canStartExam = useMemo(() => {
     if (!appointment) return false;
@@ -322,29 +324,38 @@ function AppointmentDetail() {
                 <ClipboardPlus size={18} />
               </span>
               <h4>Thông tin khám</h4>
+              <CollapseToggle
+                expanded={examInfoExpanded}
+                label="thông tin khám"
+                onToggle={() => setExamInfoExpanded((value) => !value)}
+              />
             </div>
 
-            <div className="doctor-compact-info-list doctor-exam-info-list">
-              <div className="doctor-compact-info-row doctor-compact-info-row--stacked">
-                <span>Lý do khám</span>
-                <strong>{examInformation.reason}</strong>
+            <div
+              className="doctor-exam-info-content"
+              hidden={!examInfoExpanded}
+            >
+              <div className="doctor-compact-info-list doctor-exam-info-list">
+                <div className="doctor-compact-info-row doctor-compact-info-row--stacked">
+                  <span>Lý do khám</span>
+                  <strong>{examInformation.reason}</strong>
+                </div>
+                <div className="doctor-compact-info-row">
+                  <span>Phí khám</span>
+                  <strong className="doctor-appointment-fee">
+                    {Number(appointment.consultation_fee || 0).toLocaleString(
+                      "vi-VN",
+                    )}{" "}
+                    đ
+                  </strong>
+                </div>
+                <div className="doctor-compact-info-row doctor-compact-info-row--stacked">
+                  <span>Ghi chú</span>
+                  <strong>{examInformation.note}</strong>
+                </div>
               </div>
-              <div className="doctor-compact-info-row">
-                <span>Phí khám</span>
-                <strong className="doctor-appointment-fee">
-                  {Number(appointment.consultation_fee || 0).toLocaleString(
-                    "vi-VN",
-                  )}{" "}
-                  đ
-                </strong>
-              </div>
-              <div className="doctor-compact-info-row doctor-compact-info-row--stacked">
-                <span>Ghi chú</span>
-                <strong>{examInformation.note}</strong>
-              </div>
-            </div>
 
-            <div className="doctor-appointment-actions">
+              <div className="doctor-appointment-actions">
               {appointment.status === "PENDING" && (
                 <>
                   <button
@@ -447,6 +458,7 @@ function AppointmentDetail() {
                   )}
                 </>
               )}
+              </div>
             </div>
           </section>
         </div>

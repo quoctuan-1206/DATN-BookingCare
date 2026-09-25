@@ -2,6 +2,7 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import medicalRecordService from "../../services/medical-record.service";
 import { getApiErrorMessage } from "../../api/axios";
+import CollapseToggle from "./CollapseToggle";
 
 function normalizeField(value) {
   return value === "—" ? "" : value || "";
@@ -16,6 +17,7 @@ export default function MedicalRecordForm({
   const hasRecord = Boolean(initialRecord?.id);
   const [editing, setEditing] = useState(!readOnly && !hasRecord);
   const [saving, setSaving] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const [formData, setFormData] = useState({
     symptoms: normalizeField(initialRecord?.symptoms),
     diagnosis: normalizeField(initialRecord?.diagnosis),
@@ -68,29 +70,27 @@ export default function MedicalRecordForm({
   if (readOnly || (hasRecord && !editing)) {
     return (
       <div className="doctor-medical-record-view">
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            marginBottom: 16,
-            flexWrap: "wrap",
-            alignItems: "center",
-          }}
-        >
+        <div className="doctor-section-heading">
           <h4 style={{ margin: 0 }}>Hồ sơ bệnh án</h4>
-          {!readOnly && (
-            <button
-              type="button"
-              className="admin-btn admin-btn-secondary"
-              onClick={() => setEditing(true)}
-            >
-              Chỉnh sửa
-            </button>
-          )}
+          <div className="doctor-section-heading__actions">
+            {!readOnly && expanded && (
+              <button
+                type="button"
+                className="admin-btn admin-btn-secondary"
+                onClick={() => setEditing(true)}
+              >
+                Chỉnh sửa
+              </button>
+            )}
+            <CollapseToggle
+              expanded={expanded}
+              label="hồ sơ bệnh án"
+              onToggle={() => setExpanded((value) => !value)}
+            />
+          </div>
         </div>
 
-        <div className="doctor-detail-grid">
+        <div className="doctor-detail-grid" hidden={!expanded}>
           <div className="doctor-detail-grid--full">
             <span>Triệu chứng</span>
             <strong>{formData.symptoms || "—"}</strong>
@@ -114,11 +114,19 @@ export default function MedicalRecordForm({
 
   return (
     <form className="admin-form doctor-medical-record-form" onSubmit={handleSubmit}>
-      <h4 style={{ margin: "0 0 16px" }}>
-        {hasRecord ? "Cập nhật hồ sơ bệnh án" : "Hồ sơ bệnh án"}
-      </h4>
+      <div className="doctor-section-heading">
+        <h4 style={{ margin: 0 }}>
+          {hasRecord ? "Cập nhật hồ sơ bệnh án" : "Hồ sơ bệnh án"}
+        </h4>
+        <CollapseToggle
+          expanded={expanded}
+          label="hồ sơ bệnh án"
+          onToggle={() => setExpanded((value) => !value)}
+        />
+      </div>
 
-      <div className="admin-form-group">
+      <div className="doctor-collapsible-content" hidden={!expanded}>
+        <div className="admin-form-group">
         <label htmlFor="symptoms">Triệu chứng</label>
         <textarea
           id="symptoms"
@@ -193,6 +201,7 @@ export default function MedicalRecordForm({
             Hủy
           </button>
         )}
+        </div>
       </div>
     </form>
   );

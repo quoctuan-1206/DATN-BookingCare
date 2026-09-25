@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Activity, ImageOff } from "lucide-react";
 import toast from "react-hot-toast";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import Header from "../../components/common/Header/Header";
 import Footer from "../../components/common/Footer/Footer";
 import { getApiErrorMessage } from "../../api/axios";
@@ -13,6 +13,8 @@ function formatPrice(value) {
 }
 
 function ClinicalServiceCatalog() {
+  const [searchParams] = useSearchParams();
+  const serviceType = searchParams.get("service_type") || "";
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -26,6 +28,7 @@ function ClinicalServiceCatalog() {
       try {
         const data = await clinicalService.getPublicServices({
           booking_mode: "SELF_BOOKING",
+          ...(serviceType ? { service_type: serviceType } : {}),
         });
         if (!cancelled) setServices(data);
       } catch (loadError) {
@@ -46,7 +49,7 @@ function ClinicalServiceCatalog() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [serviceType]);
 
   return (
     <>

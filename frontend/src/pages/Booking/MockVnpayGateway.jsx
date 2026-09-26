@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import paymentService from "../../services/payment.service";
+import "../../styles/mock-vnpay.css";
 
 function formatMoney(amount) {
   return `${Number(amount || 0).toLocaleString("vi-VN")} VND`;
@@ -29,7 +30,7 @@ export default function MockVnpayGateway() {
 
   const [method, setMethod] = useState("qr"); // 'qr' | 'bank'
   const [submitting, setSubmitting] = useState(false);
-  const [countdown, setCountdown] = useState(600); // 10 minutes demo
+  const [countdown, setCountdown] = useState(600); // 10 minutes
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -67,103 +68,95 @@ export default function MockVnpayGateway() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col justify-between font-sans">
+    <div className="mock-vnpay-page">
       {/* Header phong cách VNPAY */}
-      <header className="bg-white border-b border-slate-200 px-6 py-4 shadow-sm">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-10 px-3 bg-blue-700 text-white font-black text-xl italic flex items-center rounded tracking-wider shadow">
-              VN<span className="text-red-500">PAY</span>
+      <header className="mock-vnpay-header">
+        <div className="mock-vnpay-header-inner">
+          <div className="mock-vnpay-brand">
+            <div className="mock-vnpay-logo-badge">
+              VN<span>PAY</span>
             </div>
-            <div className="border-l border-slate-300 pl-3">
-              <span className="text-xs uppercase tracking-wider text-slate-500 font-semibold block">
-                Cổng thanh toán điện tử
-              </span>
-              <span className="text-xs bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full inline-block">
-                Mô phỏng Sandbox
-              </span>
+            <div className="mock-vnpay-brand-sub">
+              <span className="mock-vnpay-brand-title">Cổng thanh toán điện tử</span>
+              <span className="mock-vnpay-badge-sandbox">Mô phỏng Sandbox</span>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-sm text-slate-600 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
-            <Clock size={16} className="text-amber-600 animate-pulse" />
+          <div className="mock-vnpay-timer">
+            <Clock size={16} color="#d97706" />
             <span>Thời gian còn lại:</span>
-            <strong className="text-amber-700 font-mono text-base">{timeFormatted}</strong>
+            <strong>{timeFormatted}</strong>
           </div>
         </div>
       </header>
 
       {/* Main Container */}
-      <main className="max-w-4xl mx-auto w-full my-6 px-4">
+      <main className="mock-vnpay-main">
         {/* Banner thông báo chế độ Mock */}
-        <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-3.5 flex items-start gap-3 text-amber-900 text-sm">
-          <AlertTriangle className="text-amber-600 shrink-0 mt-0.5" size={18} />
+        <div className="mock-vnpay-alert">
+          <AlertTriangle color="#d97706" size={20} style={{ flexShrink: 0, marginTop: 2 }} />
           <div>
             <strong>Chế độ Mock Gateway (Dành cho kiểm thử Đồ án):</strong>
-            <p className="text-xs text-amber-800 mt-0.5">
+            <div style={{ fontSize: 12, marginTop: 4 }}>
               Trang này mô phỏng toàn bộ trải nghiệm thanh toán của VNPAY Sandbox để bạn test và demo chức năng trơn tru mà không cần tài khoản thật.
-            </p>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="mock-vnpay-grid">
           {/* Thông tin đơn hàng */}
-          <div className="md:col-span-1 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div className="mock-vnpay-card">
             <div>
-              <h2 className="text-base font-bold text-slate-800 pb-3 border-b border-slate-100 flex items-center gap-2">
-                <FileText size={18} className="text-blue-600" />
+              <h2 className="mock-vnpay-card-title">
+                <FileText size={18} color="#005baa" />
                 Thông tin đơn hàng
               </h2>
 
-              <div className="space-y-3.5 mt-4 text-sm">
+              <div className="mock-vnpay-info-list">
                 <div>
-                  <span className="text-slate-500 text-xs block">Đơn vị thụ hưởng</span>
-                  <strong className="text-slate-700 font-medium">Bệnh viện / Phòng khám MediUTE</strong>
+                  <span className="mock-vnpay-info-label">Đơn vị thụ hưởng</span>
+                  <span className="mock-vnpay-info-val">Bệnh viện / Phòng khám MediUTE</span>
                 </div>
 
                 <div>
-                  <span className="text-slate-500 text-xs block">Mã đặt khám</span>
-                  <code className="text-blue-700 font-mono font-semibold bg-blue-50 px-1.5 py-0.5 rounded text-xs">
+                  <span className="mock-vnpay-info-label">Mã đặt khám</span>
+                  <code style={{ color: "#005baa", background: "#eff6ff", padding: "2px 6px", borderRadius: 4, fontSize: 12, fontWeight: 700 }}>
                     {bookingCode}
                   </code>
                 </div>
 
                 <div>
-                  <span className="text-slate-500 text-xs block">Mã giao dịch (TxnRef)</span>
-                  <span className="text-slate-600 font-mono text-xs break-all">{txnRef}</span>
+                  <span className="mock-vnpay-info-label">Mã giao dịch (TxnRef)</span>
+                  <span style={{ fontSize: 12, fontFamily: "monospace", color: "#64748b", wordBreak: "break-all" }}>
+                    {txnRef}
+                  </span>
                 </div>
 
-                <div className="pt-3 border-t border-slate-100">
-                  <span className="text-slate-500 text-xs block">Số tiền cần thanh toán</span>
-                  <strong className="text-2xl font-black text-blue-700 mt-1 block">
-                    {formatMoney(amount)}
-                  </strong>
+                <div className="mock-vnpay-amount-box">
+                  <span className="mock-vnpay-info-label">Số tiền cần thanh toán</span>
+                  <span className="mock-vnpay-amount">{formatMoney(amount)}</span>
                 </div>
               </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-slate-100 text-xs text-slate-400 flex items-center gap-1.5 justify-center">
-              <ShieldCheck size={14} className="text-emerald-600" />
+            <div className="mock-vnpay-ssl-note">
+              <ShieldCheck size={16} color="#16a34a" />
               <span>Giao dịch an toàn 256-bit SSL</span>
             </div>
           </div>
 
           {/* Vùng chọn phương thức & Thao tác thanh toán */}
-          <div className="md:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div className="mock-vnpay-card">
             <div>
-              <h2 className="text-base font-bold text-slate-800 pb-3 border-b border-slate-100">
+              <h2 className="mock-vnpay-card-title">
                 Chọn phương thức thanh toán
               </h2>
 
               {/* Tabs chọn phương thức */}
-              <div className="grid grid-cols-2 gap-3 mt-4">
+              <div className="mock-vnpay-tabs">
                 <button
                   type="button"
                   onClick={() => setMethod("qr")}
-                  className={`p-3 rounded-xl border text-sm font-semibold flex items-center justify-center gap-2 transition cursor-pointer ${
-                    method === "qr"
-                      ? "border-blue-600 bg-blue-50/50 text-blue-700 shadow-sm"
-                      : "border-slate-200 text-slate-600 hover:bg-slate-50"
-                  }`}
+                  className={`mock-vnpay-tab-btn ${method === "qr" ? "active" : ""}`}
                 >
                   <QrCode size={18} />
                   VNPAY-QR
@@ -172,11 +165,7 @@ export default function MockVnpayGateway() {
                 <button
                   type="button"
                   onClick={() => setMethod("bank")}
-                  className={`p-3 rounded-xl border text-sm font-semibold flex items-center justify-center gap-2 transition cursor-pointer ${
-                    method === "bank"
-                      ? "border-blue-600 bg-blue-50/50 text-blue-700 shadow-sm"
-                      : "border-slate-200 text-slate-600 hover:bg-slate-50"
-                  }`}
+                  className={`mock-vnpay-tab-btn ${method === "bank" ? "active" : ""}`}
                 >
                   <CreditCard size={18} />
                   Thẻ ATM / NCB Test
@@ -184,44 +173,44 @@ export default function MockVnpayGateway() {
               </div>
 
               {/* Nội dung theo Tab */}
-              <div className="mt-5 p-5 bg-slate-50 rounded-xl border border-slate-200/80">
+              <div className="mock-vnpay-method-body">
                 {method === "qr" ? (
-                  <div className="text-center py-2">
-                    <p className="text-xs text-slate-600 mb-3 font-medium">
+                  <div className="mock-vnpay-qr-container">
+                    <p style={{ fontSize: 13, color: "#475569", marginBottom: 12, fontWeight: 600 }}>
                       Mở ứng dụng Ngân hàng hoặc Ví VNPAY quét mã QR bên dưới
                     </p>
-                    <div className="inline-block p-3 bg-white rounded-xl shadow-sm border border-slate-200">
-                      {/* Giả lập hình ảnh mã QR */}
+                    <div className="mock-vnpay-qr-box">
                       <img
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=VNPAY-MOCK-${invoiceId}-${amount}`}
                         alt="QR Code"
-                        className="w-44 h-44 mx-auto rounded"
                       />
                     </div>
-                    <p className="text-xs text-slate-400 mt-2">Mã QR có giá trị trong 10 phút</p>
+                    <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 8 }}>
+                      Mã QR có giá trị trong 10 phút
+                    </p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 pb-2 border-b border-slate-200">
-                      <Building2 size={16} className="text-blue-600" />
+                  <div>
+                    <div className="mock-vnpay-bank-header">
+                      <Building2 size={16} color="#005baa" />
                       Ngân hàng Quốc dân (NCB) — Môi trường thử nghiệm
                     </div>
-                    <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="mock-vnpay-bank-grid">
                       <div>
-                        <span className="text-slate-500 block">Số thẻ:</span>
-                        <strong className="font-mono text-slate-800">9704198526191432198</strong>
+                        <span style={{ color: "#64748b", display: "block" }}>Số thẻ:</span>
+                        <strong style={{ fontFamily: "monospace", fontSize: 14 }}>9704198526191432198</strong>
                       </div>
                       <div>
-                        <span className="text-slate-500 block">Tên chủ thẻ:</span>
-                        <strong className="font-mono text-slate-800">NGUYEN VAN A</strong>
+                        <span style={{ color: "#64748b", display: "block" }}>Tên chủ thẻ:</span>
+                        <strong style={{ fontFamily: "monospace", fontSize: 14 }}>NGUYEN VAN A</strong>
                       </div>
                       <div>
-                        <span className="text-slate-500 block">Ngày phát hành:</span>
-                        <strong className="font-mono text-slate-800">07/15</strong>
+                        <span style={{ color: "#64748b", display: "block" }}>Ngày phát hành:</span>
+                        <strong style={{ fontFamily: "monospace", fontSize: 14 }}>07/15</strong>
                       </div>
                       <div>
-                        <span className="text-slate-500 block">Mã OTP:</span>
-                        <strong className="font-mono text-slate-800">123456</strong>
+                        <span style={{ color: "#64748b", display: "block" }}>Mã OTP:</span>
+                        <strong style={{ fontFamily: "monospace", fontSize: 14 }}>123456</strong>
                       </div>
                     </div>
                   </div>
@@ -230,12 +219,12 @@ export default function MockVnpayGateway() {
             </div>
 
             {/* Các nút bấm mô phỏng */}
-            <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col sm:flex-row gap-3">
+            <div className="mock-vnpay-btn-group">
               <button
                 type="button"
                 disabled={submitting}
                 onClick={handlePaySuccess}
-                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-sm transition disabled:opacity-50 cursor-pointer text-sm"
+                className="mock-btn-success"
               >
                 <CheckCircle2 size={18} />
                 {submitting ? "Đang xử lý..." : "Xác nhận thanh toán (Mô phỏng thành công)"}
@@ -245,7 +234,7 @@ export default function MockVnpayGateway() {
                 type="button"
                 disabled={submitting}
                 onClick={handleCancel}
-                className="bg-white hover:bg-red-50 text-red-600 border border-red-200 font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition cursor-pointer text-sm"
+                className="mock-btn-cancel"
               >
                 <XCircle size={18} />
                 Hủy / Đóng
@@ -256,7 +245,7 @@ export default function MockVnpayGateway() {
       </main>
 
       {/* Footer */}
-      <footer className="text-center py-4 text-xs text-slate-400 border-t border-slate-200 bg-white">
+      <footer className="mock-vnpay-footer">
         © 2026 VNPAY Sandbox Simulator — Phục vụ mục đích kiểm thử và demo Đồ án tốt nghiệp
       </footer>
     </div>

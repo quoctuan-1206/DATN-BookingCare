@@ -23,6 +23,7 @@ import "./styles/admin.css";
 import "./styles/doctor-dashboard.css";
 import "./styles/lab.css";
 import "./styles/clinical.css";
+import "./styles/mock-vnpay.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

@@ -205,7 +205,7 @@ export default function MockVnpayGateway() {
                       </div>
                       <div>
                         <span style={{ color: "#64748b", display: "block" }}>Tên chủ thẻ:</span>
-                        <strong style={{ fontFamily: "monospace", fontSize: 14 }}>NGUYEN VAN A</strong>
+                        <strong style={{ fontFamily: "monospace", fontSize: 14 }}>Nguyễn Quốc Tuất</strong>
                       </div>
                       <div>
                         <span style={{ color: "#64748b", display: "block" }}>Ngày phát hành:</span>
@@ -213,7 +213,7 @@ export default function MockVnpayGateway() {
                       </div>
                       <div>
                         <span style={{ color: "#64748b", display: "block" }}>Mã OTP:</span>
-                        <strong style={{ fontFamily: "monospace", fontSize: 14 }}>123456</strong>
+                        <strong style={{ fontFamily: "monospace", fontSize: 14 }}>696969</strong>
                       </div>
                     </div>
                   </div>

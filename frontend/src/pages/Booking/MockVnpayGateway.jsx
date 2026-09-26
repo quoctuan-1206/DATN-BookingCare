@@ -27,6 +27,7 @@ export default function MockVnpayGateway() {
   const amount = searchParams.get("amount") || "200000";
   const txnRef = searchParams.get("txnRef") || `INV${Date.now()}`;
   const bookingCode = searchParams.get("bookingCode") || "BK-TEST";
+  const patientName = searchParams.get("patientName") || "";
 
   const [method, setMethod] = useState("qr"); // 'qr' | 'bank'
   const [submitting, setSubmitting] = useState(false);
@@ -117,6 +118,13 @@ export default function MockVnpayGateway() {
                   <code style={{ color: "#005baa", background: "#eff6ff", padding: "2px 6px", borderRadius: 4, fontSize: 12, fontWeight: 700 }}>
                     {bookingCode}
                   </code>
+                </div>
+
+                <div>
+                  <span className="mock-vnpay-info-label">Nội dung thanh toán</span>
+                  <span className="mock-vnpay-info-val" style={{ color: "#0369a1" }}>
+                    {patientName ? `${patientName} đặt lịch khám` : `Thanh toán đặt lịch khám ${bookingCode}`}
+                  </span>
                 </div>
 
                 <div>

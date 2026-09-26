@@ -82,11 +82,17 @@ class PaymentService {
 
     let paymentUrl;
     if (config.isMock) {
+      const patientName =
+        invoice.appointments?.patient_profiles?.full_name ||
+        user.name ||
+        user.first_name ||
+        "";
       const params = new URLSearchParams({
         invoiceId: String(invoice.id),
         amount: String(invoice.amount),
         txnRef,
         bookingCode: invoice.appointments?.booking_code || "",
+        patientName,
         expiresAt: invoice.payment_expires_at ? invoice.payment_expires_at.toISOString() : "",
       });
       paymentUrl = `${config.frontendUrl}/payment/mock-gateway?${params.toString()}`;

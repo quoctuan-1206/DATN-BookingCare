@@ -23,6 +23,7 @@ import { useAuth } from "../../context/AuthContext";
 import patientProfileService from "../../services/patient-profile.service";
 import appointmentService from "../../services/appointment.service";
 import paymentService from "../../services/payment.service";
+import { doctorService } from "../../services/doctor.service";
 import { getApiErrorMessage } from "../../api/axios";
 import { isBookableDate } from "../../utils/booking";
 
@@ -39,8 +40,30 @@ function Booking() {
   const { user, loading: authLoading } = useAuth();
 
   const incoming = location.state;
-  const doctor = incoming?.doctor;
+  const initialDoctor = incoming?.doctor;
   const schedule = incoming?.schedule;
+  const [doctor, setDoctor] = useState(initialDoctor);
+
+  useEffect(() => {
+    setDoctor(incoming?.doctor);
+  }, [incoming?.doctor]);
+
+  useEffect(() => {
+    const docId = initialDoctor?.id || initialDoctor?.doctor_id;
+    if (!docId) return;
+    let cancelled = false;
+    doctorService.getDoctorById(docId).then((fresh) => {
+      if (cancelled || !fresh) return;
+      setDoctor((prev) => ({
+        ...prev,
+        ...fresh,
+        consultationFee: fresh.consultation_fee ?? fresh.consultationFee ?? prev?.consultationFee,
+      }));
+    }).catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [initialDoctor?.id, initialDoctor?.doctor_id]);
 
   const [patients, setPatients] = useState([]);
   const [loadingPatients, setLoadingPatients] = useState(true);
@@ -202,7 +225,7 @@ function Booking() {
 
   const dv = {
     ...doctor,
-    consultationFee: doctor.consultationFee ?? doctor.consultation_fee ?? 0,
+    consultationFee: doctor?.consultationFee ?? doctor?.consultation_fee ?? 0,
   };
 
   const patientName =

@@ -70,6 +70,7 @@ test("getVnpayConfig parses valid config and trims trailing slash from frontendU
     returnUrl: "https://backend.example/api/payments/vnpay/return",
     ipnUrl: "https://backend.example/api/payments/vnpay/ipn",
     frontendUrl: "http://localhost:5173",
+    isMock: false,
   });
 });
 
@@ -84,4 +85,17 @@ test("getVnpayConfig uses custom paymentUrl if provided", () => {
   });
 
   assert.equal(config.paymentUrl, "https://custom.vnpay.vn/vpcpay.html");
+});
+
+test("getVnpayConfig sets isMock true when VNPAY_MOCK is true", () => {
+  const config = getVnpayConfig({
+    VNPAY_TMN_CODE: "DEMOV210",
+    VNPAY_HASH_SECRET: "secret123",
+    VNPAY_RETURN_URL: "https://backend.example/api/payments/vnpay/return",
+    VNPAY_IPN_URL: "https://backend.example/api/payments/vnpay/ipn",
+    FRONTEND_URL: "http://localhost:5173",
+    VNPAY_MOCK: "true",
+  });
+
+  assert.equal(config.isMock, true);
 });

@@ -66,6 +66,24 @@ class PaymentController {
       return res.redirect(`${frontendUrl}/payment/result?status=error`);
     }
   }
+
+  // Giả lập hoàn tất thanh toán (POST /api/payments/mock-complete/:invoiceId)
+  async mockCompletePayment(req, res, next) {
+    try {
+      const data = await paymentService.mockCompletePayment(
+        req.user,
+        req.params.invoiceId,
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Xác nhận thanh toán giả lập thành công",
+        data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default new PaymentController();

@@ -12,6 +12,12 @@ export const paymentService = {
     const res = await axiosClient.get(`/payments/${invoiceId}/status`);
     return res.data?.data;
   },
+
+  // Giả lập hoàn tất thanh toán (Mock mode)
+  async mockComplete(invoiceId) {
+    const res = await axiosClient.post(`/payments/mock-complete/${invoiceId}`);
+    return res.data?.data;
+  },
 };
 
 export default paymentService;

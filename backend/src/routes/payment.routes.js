@@ -26,4 +26,12 @@ router.get(
   paymentController.getPaymentStatus,
 );
 
+// POST /api/payments/mock-complete/:invoiceId - Xác nhận thanh toán giả lập (Mock mode)
+router.post(
+  "/mock-complete/:invoiceId",
+  verifyAccessTokenMiddleware,
+  authorize("Patient", "Admin"),
+  paymentController.mockCompletePayment,
+);
+
 export default router;

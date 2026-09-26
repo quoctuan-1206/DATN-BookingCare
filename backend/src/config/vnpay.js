@@ -11,5 +11,6 @@ export function getVnpayConfig(env = process.env) {
     returnUrl: env.VNPAY_RETURN_URL,
     ipnUrl: env.VNPAY_IPN_URL,
     frontendUrl: env.FRONTEND_URL.replace(/\/$/, ""),
+    isMock: env.VNPAY_MOCK === "true",
   };
 }

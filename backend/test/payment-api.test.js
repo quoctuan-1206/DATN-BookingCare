@@ -407,3 +407,35 @@ test("PaymentController.getPaymentStatus sends status 200 and data", async () =>
   }
 });
 
+test("createPaymentUrl generates mock gateway URL when isMock is true", async () => {
+  const repo = createMockRepo();
+  const mockConfig = { ...config, isMock: true };
+  const service = new PaymentService({ config: mockConfig, repository: repo });
+  const patient = { id: 1, role: { name: "Patient" } };
+
+  const result = await service.createPaymentUrl(
+    patient,
+    42,
+    "127.0.0.1",
+    new Date("2026-09-25T03:00:00.000Z"),
+  );
+
+  assert.ok(result.payment_url.includes("/payment/mock-gateway?"));
+  assert.ok(result.payment_url.includes("invoiceId=42"));
+});
+
+test("mockCompletePayment marks invoice paid and returns success", async () => {
+  const repo = createMockRepo();
+  const service = new PaymentService({ config, repository: repo });
+  const patient = { id: 1, role: { name: "Patient" } };
+
+  const result = await service.mockCompletePayment(
+    patient,
+    42,
+    new Date("2026-09-25T03:00:00.000Z"),
+  );
+
+  assert.equal(result.success, true);
+  assert.equal(repo.currentInvoice.payment_status, "PAID");
+});
+

@@ -93,13 +93,8 @@ export default function MockVnpayGateway() {
       <main className="mock-vnpay-main">
         {/* Banner thông báo chế độ Mock */}
         <div className="mock-vnpay-alert">
-          <AlertTriangle color="#d97706" size={20} style={{ flexShrink: 0, marginTop: 2 }} />
-          <div>
-            <strong>Chế độ Mock Gateway (Dành cho kiểm thử Đồ án):</strong>
-            <div style={{ fontSize: 12, marginTop: 4 }}>
-              Trang này mô phỏng toàn bộ trải nghiệm thanh toán của VNPAY Sandbox để bạn test và demo chức năng trơn tru mà không cần tài khoản thật.
-            </div>
-          </div>
+          <AlertTriangle color="#d97706" size={18} style={{ flexShrink: 0 }} />
+          <strong>Chế độ Mock Gateway</strong>
         </div>
 
         <div className="mock-vnpay-grid">

@@ -55,7 +55,9 @@ export default function MockVnpayGateway() {
       toast.success("Giả lập thanh toán thành công!");
       navigate(`/payment/result?invoiceId=${invoiceId}`);
     } catch (error) {
-      toast.error(error.response?.data?.message || "Lỗi xử lý thanh toán giả lập");
+      toast.error(
+        error.response?.data?.message || "Lỗi xử lý thanh toán giả lập",
+      );
       setSubmitting(false);
     }
   };
@@ -78,7 +80,9 @@ export default function MockVnpayGateway() {
               VN<span>PAY</span>
             </div>
             <div className="mock-vnpay-brand-sub">
-              <span className="mock-vnpay-brand-title">Cổng thanh toán điện tử</span>
+              <span className="mock-vnpay-brand-title">
+                Cổng thanh toán điện tử
+              </span>
               <span className="mock-vnpay-badge-sandbox">Mô phỏng Sandbox</span>
             </div>
           </div>
@@ -109,34 +113,67 @@ export default function MockVnpayGateway() {
 
               <div className="mock-vnpay-info-list">
                 <div>
-                  <span className="mock-vnpay-info-label">Đơn vị thụ hưởng</span>
-                  <span className="mock-vnpay-info-val">Bệnh viện / Phòng khám MediUTE</span>
+                  <span className="mock-vnpay-info-label">
+                    Đơn vị thụ hưởng
+                  </span>
+                  <span className="mock-vnpay-info-val">
+                    Bệnh viện / Phòng khám MediUTE
+                  </span>
                 </div>
 
                 <div>
                   <span className="mock-vnpay-info-label">Mã đặt khám</span>
-                  <code style={{ color: "#005baa", background: "#eff6ff", padding: "2px 6px", borderRadius: 4, fontSize: 12, fontWeight: 700 }}>
+                  <code
+                    style={{
+                      color: "#005baa",
+                      background: "#eff6ff",
+                      padding: "2px 6px",
+                      borderRadius: 4,
+                      fontSize: 12,
+                      fontWeight: 700,
+                    }}
+                  >
                     {bookingCode}
                   </code>
                 </div>
 
                 <div>
-                  <span className="mock-vnpay-info-label">Nội dung thanh toán</span>
-                  <span className="mock-vnpay-info-val" style={{ color: "#0369a1" }}>
-                    {patientName ? `${patientName} đặt lịch khám` : `Thanh toán đặt lịch khám ${bookingCode}`}
+                  <span className="mock-vnpay-info-label">
+                    Nội dung thanh toán
+                  </span>
+                  <span
+                    className="mock-vnpay-info-val"
+                    style={{ color: "#0369a1" }}
+                  >
+                    {patientName
+                      ? `${patientName} đặt lịch khám`
+                      : `Thanh toán đặt lịch khám ${bookingCode}`}
                   </span>
                 </div>
 
                 <div>
-                  <span className="mock-vnpay-info-label">Mã giao dịch (TxnRef)</span>
-                  <span style={{ fontSize: 12, fontFamily: "monospace", color: "#64748b", wordBreak: "break-all" }}>
+                  <span className="mock-vnpay-info-label">
+                    Mã giao dịch (TxnRef)
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 12,
+                      fontFamily: "monospace",
+                      color: "#64748b",
+                      wordBreak: "break-all",
+                    }}
+                  >
                     {txnRef}
                   </span>
                 </div>
 
                 <div className="mock-vnpay-amount-box">
-                  <span className="mock-vnpay-info-label">Số tiền cần thanh toán</span>
-                  <span className="mock-vnpay-amount">{formatMoney(amount)}</span>
+                  <span className="mock-vnpay-info-label">
+                    Số tiền cần thanh toán
+                  </span>
+                  <span className="mock-vnpay-amount">
+                    {formatMoney(amount)}
+                  </span>
                 </div>
               </div>
             </div>
@@ -179,7 +216,14 @@ export default function MockVnpayGateway() {
               <div className="mock-vnpay-method-body">
                 {method === "qr" ? (
                   <div className="mock-vnpay-qr-container">
-                    <p style={{ fontSize: 13, color: "#475569", marginBottom: 12, fontWeight: 600 }}>
+                    <p
+                      style={{
+                        fontSize: 13,
+                        color: "#475569",
+                        marginBottom: 12,
+                        fontWeight: 600,
+                      }}
+                    >
                       Mở ứng dụng Ngân hàng hoặc Ví VNPAY quét mã QR bên dưới
                     </p>
                     <div className="mock-vnpay-qr-box">
@@ -200,20 +244,44 @@ export default function MockVnpayGateway() {
                     </div>
                     <div className="mock-vnpay-bank-grid">
                       <div>
-                        <span style={{ color: "#64748b", display: "block" }}>Số thẻ:</span>
-                        <strong style={{ fontFamily: "monospace", fontSize: 14 }}>9704198526191432198</strong>
+                        <span style={{ color: "#64748b", display: "block" }}>
+                          Số thẻ:
+                        </span>
+                        <strong
+                          style={{ fontFamily: "monospace", fontSize: 14 }}
+                        >
+                          9704198526191432198
+                        </strong>
                       </div>
                       <div>
-                        <span style={{ color: "#64748b", display: "block" }}>Tên chủ thẻ:</span>
-                        <strong style={{ fontFamily: "monospace", fontSize: 14 }}>Nguyễn Quốc Tuất</strong>
+                        <span style={{ color: "#64748b", display: "block" }}>
+                          Tên chủ thẻ:
+                        </span>
+                        <strong
+                          style={{ fontFamily: "monospace", fontSize: 14 }}
+                        >
+                          Nguyễn Quốc Tuấn
+                        </strong>
                       </div>
                       <div>
-                        <span style={{ color: "#64748b", display: "block" }}>Ngày phát hành:</span>
-                        <strong style={{ fontFamily: "monospace", fontSize: 14 }}>07/15</strong>
+                        <span style={{ color: "#64748b", display: "block" }}>
+                          Ngày phát hành:
+                        </span>
+                        <strong
+                          style={{ fontFamily: "monospace", fontSize: 14 }}
+                        >
+                          07/15
+                        </strong>
                       </div>
                       <div>
-                        <span style={{ color: "#64748b", display: "block" }}>Mã OTP:</span>
-                        <strong style={{ fontFamily: "monospace", fontSize: 14 }}>696969</strong>
+                        <span style={{ color: "#64748b", display: "block" }}>
+                          Mã OTP:
+                        </span>
+                        <strong
+                          style={{ fontFamily: "monospace", fontSize: 14 }}
+                        >
+                          696969
+                        </strong>
                       </div>
                     </div>
                   </div>
@@ -230,7 +298,9 @@ export default function MockVnpayGateway() {
                 className="mock-btn-success"
               >
                 <CheckCircle2 size={18} />
-                {submitting ? "Đang xử lý..." : "Xác nhận thanh toán (Mô phỏng thành công)"}
+                {submitting
+                  ? "Đang xử lý..."
+                  : "Xác nhận thanh toán (Mô phỏng thành công)"}
               </button>
 
               <button
@@ -249,7 +319,8 @@ export default function MockVnpayGateway() {
 
       {/* Footer */}
       <footer className="mock-vnpay-footer">
-        © 2026 VNPAY Sandbox Simulator — Phục vụ mục đích kiểm thử và demo Đồ án tốt nghiệp
+        © 2026 VNPAY Sandbox Simulator — Phục vụ mục đích kiểm thử và demo Đồ án
+        tốt nghiệp
       </footer>
     </div>
   );

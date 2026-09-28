@@ -1,14 +1,37 @@
+import { useState } from "react";
 import { Link, useLocation, Navigate } from "react-router-dom";
 import Header from "../../components/common/Header/Header";
 import Footer from "../../components/common/Footer/Footer";
+import paymentService from "../../services/payment.service";
+import toast from "react-hot-toast";
 
 function BookingSuccess() {
     const location = useLocation();
     const booking = location.state?.booking;
+    const [retrying, setRetrying] = useState(false);
+
+    const handlePayNow = async () => {
+        if (!booking?.invoiceId) return;
+        setRetrying(true);
+        try {
+            const res = await paymentService.createPaymentUrl(booking.invoiceId);
+            if (res?.payment_url) {
+                window.location.assign(res.payment_url);
+            } else {
+                toast.error("Không nhận được link thanh toán từ hệ thống");
+            }
+        } catch (error) {
+            toast.error("Không thể tạo link thanh toán, vui lòng thanh toán trong chi tiết lịch hẹn");
+        } finally {
+            setRetrying(false);
+        }
+    };
 
     if (!booking) {
         return <Navigate to="/booking" replace />;
     }
+
+    const hasInvoice = Boolean(booking.invoiceId);
 
     return (
         <>
@@ -25,9 +48,9 @@ function BookingSuccess() {
                         <h1>Đặt lịch thành công</h1>
 
                         <p className="success-message">
-                            Lịch khám đã được tạo thành công. Vui lòng đến đúng
-                            giờ hoặc theo dõi trạng thái lịch hẹn trong tài
-                            khoản.
+                            {hasInvoice
+                                ? "Lịch khám đã được tạo thành công nhưng chưa hoàn tất thanh toán. Vui lòng thanh toán phí khám trong vòng 10 phút để giữ chỗ."
+                                : "Lịch khám đã được tạo thành công. Vui lòng đến đúng giờ hoặc theo dõi trạng thái lịch hẹn trong tài khoản."}
                         </p>
 
                         <div className="success-info">
@@ -82,12 +105,25 @@ function BookingSuccess() {
                                 Về trang chủ
                             </Link>
 
-                            <Link
-                                to="/patient/appointments"
-                                className="btn btn-primary"
-                            >
-                                Xem lịch hẹn
-                            </Link>
+                            {hasInvoice ? (
+                                <button
+                                    type="button"
+                                    className="btn btn-primary"
+                                    disabled={retrying}
+                                    onClick={handlePayNow}
+                                >
+                                    {retrying
+                                        ? "Đang chuyển tiếp..."
+                                        : "Thanh toán ngay"}
+                                </button>
+                            ) : (
+                                <Link
+                                    to="/patient/appointments"
+                                    className="btn btn-primary"
+                                >
+                                    Xem lịch hẹn
+                                </Link>
+                            )}
                         </div>
                     </div>
                 </div>

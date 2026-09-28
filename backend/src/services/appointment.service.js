@@ -60,9 +60,16 @@ class AppointmentService {
     }
 
     if (patientAccountId) {
+      const hasUnpaidClinicFee = appointment.invoices?.some(
+        (inv) => inv.invoice_type === "CLINIC_FEE" && inv.payment_status === "UNPAID",
+      );
+      const content = hasUnpaidClinicFee
+        ? `Bạn đã đặt lịch ${bookingCode}${when ? ` vào ${when}` : ""}. Vui lòng hoàn tất thanh toán phí khám trong vòng 10 phút.`
+        : `Bạn đã đặt lịch ${bookingCode}${when ? ` vào ${when}` : ""}. Vui lòng chờ xác nhận.`;
+
       await notificationService.notify(patientAccountId, {
         title: "Đặt lịch thành công",
-        content: `Bạn đã đặt lịch ${bookingCode}${when ? ` vào ${when}` : ""}. Vui lòng chờ xác nhận.`,
+        content,
         link: `/patient/appointments/${appointment.id}`,
         type: "APPOINTMENT",
       });
@@ -181,6 +188,10 @@ class AppointmentService {
       (order) => order.status === "PENDING" || order.status === "IN_PROGRESS",
     ).length;
 
+    const clinicInvoice = (appointment.invoices || []).find(
+      (inv) => inv.invoice_type === "CLINIC_FEE",
+    );
+
     return {
       id: appointment.id,
       booking_code: appointment.booking_code,
@@ -232,6 +243,15 @@ class AppointmentService {
       can_complete_exam:
         Boolean(appointment.medical_records?.id) &&
         incompleteClinicalOrderCount === 0,
+      clinic_fee_invoice: clinicInvoice
+        ? {
+            id: clinicInvoice.id,
+            amount: Number(clinicInvoice.amount),
+            payment_status: clinicInvoice.payment_status,
+            payment_expires_at: clinicInvoice.payment_expires_at,
+            vnp_txn_ref: clinicInvoice.vnp_txn_ref || null,
+          }
+        : null,
       created_at: appointment.created_at,
       updated_at: appointment.updated_at,
     };

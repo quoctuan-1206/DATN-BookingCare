@@ -52,16 +52,33 @@ const appointmentInclude = {
   lab_orders: {
     select: { id: true, status: true },
   },
+  invoices: {
+    select: {
+      id: true,
+      invoice_type: true,
+      amount: true,
+      payment_method: true,
+      payment_status: true,
+      payment_expires_at: true,
+      vnp_txn_ref: true,
+      transaction_id: true,
+      payment_date: true,
+    },
+  },
 };
 
 class AppointmentRepository {
+  constructor(prismaClient = prisma) {
+    this.prisma = prismaClient;
+  }
+
   // Lấy danh sách lịch hẹn kèm lọc và phân trang
   async findAll(where, { page = 1, limit = 20 }) {
     const skip = (page - 1) * limit;
 
-    const [total, appointments] = await prisma.$transaction([
-      prisma.appointments.count({ where }),
-      prisma.appointments.findMany({
+    const [total, appointments] = await this.prisma.$transaction([
+      this.prisma.appointments.count({ where }),
+      this.prisma.appointments.findMany({
         where,
         skip,
         take: limit,
@@ -75,7 +92,7 @@ class AppointmentRepository {
 
   // Lấy chi tiết 1 lịch hẹn theo ID
   async findById(id) {
-    return prisma.appointments.findFirst({
+    return this.prisma.appointments.findFirst({
       where: { id: Number(id) },
       include: appointmentInclude,
     });
@@ -83,7 +100,7 @@ class AppointmentRepository {
 
   // Tìm lịch hẹn đang hiệu lực theo khung giờ và hồ sơ bệnh nhân
   async findActiveByScheduleAndProfile(scheduleId, profileId) {
-    return prisma.appointments.findFirst({
+    return this.prisma.appointments.findFirst({
       where: {
         schedule_id: Number(scheduleId),
         patient_profile_id: Number(profileId),
@@ -93,12 +110,16 @@ class AppointmentRepository {
   }
 
   // Tạo lịch hẹn mới và tăng số chỗ đã đặt trên khung giờ
-  async createWithBooking(data) {
-    return prisma.$transaction(async (tx) => {
+  async createWithBooking(data, now = new Date()) {
+    return this.prisma.$transaction(async (tx) => {
       const schedule = await tx.schedules.findFirst({
         where: { id: Number(data.schedule_id) },
         include: {
-          doctor_workplaces: true,
+          doctor_workplaces: {
+            include: {
+              doctor_profiles: true,
+            },
+          },
         },
       });
 
@@ -116,24 +137,6 @@ class AppointmentRepository {
         error.statusCode = 400;
         throw error;
       }
-
-      // TODO: bật lại sau khi test khám bệnh xong
-      // if (!data.skipAdvanceCheck) {
-      //   const workDate = new Date(schedule.work_date);
-      //   workDate.setUTCHours(0, 0, 0, 0);
-      //
-      //   const minDate = new Date();
-      //   minDate.setUTCHours(0, 0, 0, 0);
-      //   minDate.setUTCDate(minDate.getUTCDate() + 3);
-      //
-      //   if (workDate < minDate) {
-      //     const error = new Error(
-      //       "Phải đặt lịch trước ít nhất 3 ngày",
-      //     );
-      //     error.statusCode = 400;
-      //     throw error;
-      //   }
-      // }
 
       const duplicate = await tx.appointments.findFirst({
         where: {
@@ -161,6 +164,22 @@ class AppointmentRepository {
         },
       });
 
+      const amount =
+        schedule.doctor_workplaces?.consultation_fee ??
+        schedule.doctor_workplaces?.doctor_profiles?.consultation_fee ??
+        0;
+
+      await tx.invoices.create({
+        data: {
+          appointment_id: appointment.id,
+          invoice_type: "CLINIC_FEE",
+          amount,
+          payment_method: "VNPAY",
+          payment_status: "UNPAID",
+          payment_expires_at: new Date(now.getTime() + 10 * 60 * 1000),
+        },
+      });
+
       await tx.schedules.update({
         where: { id: schedule.id },
         data: {
@@ -178,7 +197,7 @@ class AppointmentRepository {
 
   // Cập nhật trạng thái lịch hẹn (có thể hoàn chỗ khi hủy)
   async updateStatus(id, status, { shouldReleaseSlot = false } = {}) {
-    return prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx) => {
       const existing = await tx.appointments.findFirst({
         where: { id: Number(id) },
       });
@@ -220,7 +239,7 @@ class AppointmentRepository {
 
   // Lưu thời điểm bác sĩ bắt đầu khám
   async markExamStarted(id, examStartedAt = new Date()) {
-    return prisma.appointments.update({
+    return this.prisma.appointments.update({
       where: { id: Number(id) },
       data: {
         exam_started_at: examStartedAt,
@@ -231,4 +250,5 @@ class AppointmentRepository {
   }
 }
 
+export { AppointmentRepository };
 export default new AppointmentRepository();

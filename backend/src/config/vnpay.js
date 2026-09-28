@@ -1,3 +1,15 @@
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Load the backend environment explicitly so payment configuration works
+// regardless of the directory or entry point used to start the application.
+dotenv.config({
+  path: path.resolve(__dirname, "../../.env"),
+});
+
 const REQUIRED_KEYS = ["VNPAY_TMN_CODE", "VNPAY_HASH_SECRET", "VNPAY_RETURN_URL", "VNPAY_IPN_URL", "FRONTEND_URL"];
 
 export function getVnpayConfig(env = process.env) {

@@ -50,6 +50,16 @@ function Appointments() {
     }
   };
 
+  const handleWorkflow = async (item, action) => {
+    try {
+      await appointmentService.performAction(item.id, action);
+      toast.success("Đã cập nhật lượt khám");
+      fetchAppointments();
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Không cập nhật được"));
+    }
+  };
+
   return (
     <AdminLayout title="Lịch hẹn">
       <div className="admin-page">
@@ -83,8 +93,13 @@ function Appointments() {
               <option value="">Tất cả trạng thái</option>
               <option value="PENDING">Đang chờ</option>
               <option value="CONFIRMED">Đã xác nhận</option>
+              <option value="CHECKED_IN">Đã check-in</option>
+              <option value="WAITING">Đang chờ khám</option>
+              <option value="CALLED">Đã gọi</option>
+              <option value="IN_PROGRESS">Đang khám</option>
               <option value="COMPLETED">Hoàn thành</option>
               <option value="CANCELLED">Đã hủy</option>
+              <option value="NO_SHOW">Không đến</option>
             </select>
             <button
               type="button"
@@ -151,13 +166,22 @@ function Appointments() {
                           </button>
                         )}
                         {item.status === "CONFIRMED" && (
-                          <button
-                            type="button"
-                            className="admin-btn admin-btn-secondary"
-                            onClick={() => handleStatus(item, "COMPLETED")}
-                          >
-                            Hoàn thành
-                          </button>
+                          <>
+                            <button type="button" className="admin-btn admin-btn-primary" onClick={() => handleWorkflow(item, "check-in")}>Check-in & cấp số</button>
+                            <button type="button" className="admin-btn admin-btn-secondary" onClick={() => handleWorkflow(item, "no-show")}>Không đến</button>
+                          </>
+                        )}
+                        {item.status === "CHECKED_IN" && (
+                          <button type="button" className="admin-btn admin-btn-primary" onClick={() => handleWorkflow(item, "enqueue")}>Cấp số</button>
+                        )}
+                        {item.status === "WAITING" && (
+                          <button type="button" className="admin-btn admin-btn-primary" onClick={() => handleWorkflow(item, "call")}>Gọi</button>
+                        )}
+                        {item.status === "CALLED" && (
+                          <button type="button" className="admin-btn admin-btn-primary" onClick={() => handleWorkflow(item, "start")}>Bắt đầu khám</button>
+                        )}
+                        {item.status === "IN_PROGRESS" && item.can_complete_exam && (
+                          <button type="button" className="admin-btn admin-btn-primary" onClick={() => handleWorkflow(item, "complete")}>Hoàn thành</button>
                         )}
                       </td>
                     </tr>

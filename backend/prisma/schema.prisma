@@ -16,6 +16,13 @@ model appointments {
   status             appointments_status? @default(PENDING)
   booking_code       String?              @unique(map: "booking_code") @db.VarChar(50)
   exam_started_at    DateTime?            @db.DateTime(0)
+  queue_number       Int?
+  queue_key          String?              @db.VarChar(100)
+  check_in_at        DateTime?            @db.DateTime(0)
+  called_at          DateTime?            @db.DateTime(0)
+  started_at         DateTime?            @db.DateTime(0)
+  completed_at       DateTime?            @db.DateTime(0)
+  no_show_at         DateTime?            @db.DateTime(0)
   created_at         DateTime?            @default(now()) @db.Timestamp(0)
   updated_at         DateTime?            @default(now()) @db.Timestamp(0)
   schedules          schedules            @relation(fields: [schedule_id], references: [id], onUpdate: NoAction, map: "appointments_ibfk_1")
@@ -27,6 +34,9 @@ model appointments {
 
   @@index([patient_profile_id], map: "patient_profile_id")
   @@index([schedule_id], map: "schedule_id")
+  @@index([status], map: "idx_appointments_status")
+  @@index([check_in_at], map: "idx_appointments_check_in_at")
+  @@unique([queue_key, queue_number], map: "uk_appointments_queue_number")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -486,8 +496,13 @@ enum invoices_invoice_type {
 enum appointments_status {
   PENDING
   CONFIRMED
+  CHECKED_IN
+  WAITING
+  CALLED
+  IN_PROGRESS
   COMPLETED
   CANCELLED
+  NO_SHOW
 }
 
 enum invoices_payment_method {

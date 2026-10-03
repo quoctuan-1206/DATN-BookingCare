@@ -104,7 +104,9 @@ class AppointmentRepository {
       where: {
         schedule_id: Number(scheduleId),
         patient_profile_id: Number(profileId),
-        status: { in: ["PENDING", "CONFIRMED"] },
+        status: {
+          in: ["PENDING", "CONFIRMED", "CHECKED_IN", "WAITING", "CALLED", "IN_PROGRESS"],
+        },
       },
     });
   }
@@ -142,7 +144,9 @@ class AppointmentRepository {
         where: {
           schedule_id: Number(data.schedule_id),
           patient_profile_id: Number(data.patient_profile_id),
-          status: { in: ["PENDING", "CONFIRMED"] },
+          status: {
+            in: ["PENDING", "CONFIRMED", "CHECKED_IN", "WAITING", "CALLED", "IN_PROGRESS"],
+          },
         },
       });
 
@@ -237,12 +241,143 @@ class AppointmentRepository {
     });
   }
 
+  // Chuyển trạng thái có điều kiện để hai thao tác đồng thời không thể cùng thắng.
+  async transitionStatus(id, fromStatus, toStatus, data = {}) {
+    return this.prisma.$transaction(async (tx) => {
+      const result = await tx.appointments.updateMany({
+        where: { id: Number(id), status: fromStatus },
+        data: { status: toStatus, ...data, updated_at: new Date() },
+      });
+
+      if (result.count !== 1) {
+        const error = new Error("Lịch hẹn đã được cập nhật bởi một thao tác khác");
+        error.statusCode = 409;
+        throw error;
+      }
+
+      return tx.appointments.findUnique({
+        where: { id: Number(id) },
+        include: appointmentInclude,
+      });
+    });
+  }
+
+  // Check-in và cấp số trong cùng transaction để không tạo trạng thái dở dang.
+  async checkInAndEnqueue(id, queueKey, checkedInAt = new Date()) {
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const last = await tx.appointments.findFirst({
+          where: { queue_key: queueKey, queue_number: { not: null } },
+          orderBy: { queue_number: "desc" },
+          select: { queue_number: true },
+        });
+        const queueNumber = (last?.queue_number || 0) + 1;
+        const result = await tx.appointments.updateMany({
+          where: { id: Number(id), status: "CONFIRMED" },
+          data: {
+            status: "WAITING",
+            check_in_at: checkedInAt,
+            queue_key: queueKey,
+            queue_number: queueNumber,
+            updated_at: new Date(),
+          },
+        });
+
+        if (result.count !== 1) {
+          const error = new Error("Lịch hẹn không còn ở trạng thái đã xác nhận");
+          error.statusCode = 409;
+          throw error;
+        }
+
+        return tx.appointments.findUnique({
+          where: { id: Number(id) },
+          include: appointmentInclude,
+        });
+      });
+    } catch (error) {
+      if (error?.code === "P2002") {
+        const conflict = new Error("Số thứ tự vừa được cấp, vui lòng thử lại");
+        conflict.statusCode = 409;
+        throw conflict;
+      }
+      throw error;
+    }
+  }
+
+  // Cấp số trong đúng hàng đợi (ngày + bác sĩ + cơ sở).
+  async enqueue(id, queueKey) {
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const last = await tx.appointments.findFirst({
+          where: { queue_key: queueKey, queue_number: { not: null } },
+          orderBy: { queue_number: "desc" },
+          select: { queue_number: true },
+        });
+        const queueNumber = (last?.queue_number || 0) + 1;
+        const result = await tx.appointments.updateMany({
+          where: { id: Number(id), status: "CHECKED_IN" },
+          data: {
+            status: "WAITING",
+            queue_key: queueKey,
+            queue_number: queueNumber,
+            updated_at: new Date(),
+          },
+        });
+
+        if (result.count !== 1) {
+          const error = new Error("Lịch hẹn không còn ở trạng thái đã check-in");
+          error.statusCode = 409;
+          throw error;
+        }
+
+        return tx.appointments.findUnique({
+          where: { id: Number(id) },
+          include: appointmentInclude,
+        });
+      });
+    } catch (error) {
+      if (error?.code === "P2002") {
+        const conflict = new Error("Số thứ tự vừa được cấp, vui lòng thử lại");
+        conflict.statusCode = 409;
+        throw conflict;
+      }
+      throw error;
+    }
+  }
+
+  async getQueuePosition(queueKey, queueNumber) {
+    const activeStatuses = ["WAITING", "CALLED", "IN_PROGRESS"];
+    const [peopleAhead, current] = await this.prisma.$transaction([
+      this.prisma.appointments.count({
+        where: {
+          queue_key: queueKey,
+          queue_number: { lt: queueNumber },
+          status: { in: activeStatuses },
+        },
+      }),
+      this.prisma.appointments.findFirst({
+        where: {
+          queue_key: queueKey,
+          status: { in: ["CALLED", "IN_PROGRESS"] },
+        },
+        orderBy: { queue_number: "asc" },
+        select: { queue_number: true },
+      }),
+    ]);
+    return {
+      queue_number: queueNumber,
+      current_queue_number: current?.queue_number || null,
+      people_ahead: peopleAhead,
+    };
+  }
+
   // Lưu thời điểm bác sĩ bắt đầu khám
   async markExamStarted(id, examStartedAt = new Date()) {
     return this.prisma.appointments.update({
       where: { id: Number(id) },
       data: {
         exam_started_at: examStartedAt,
+        started_at: examStartedAt,
         updated_at: new Date(),
       },
       include: appointmentInclude,

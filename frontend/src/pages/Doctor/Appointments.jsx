@@ -72,8 +72,13 @@ function Appointments() {
               <option value="">Tất cả trạng thái</option>
               <option value="PENDING">Đang chờ</option>
               <option value="CONFIRMED">Đã xác nhận</option>
+              <option value="CHECKED_IN">Đã check-in</option>
+              <option value="WAITING">Đang chờ khám</option>
+              <option value="CALLED">Đã gọi</option>
+              <option value="IN_PROGRESS">Đang khám</option>
               <option value="COMPLETED">Hoàn thành</option>
               <option value="CANCELLED">Đã hủy</option>
+              <option value="NO_SHOW">Không đến</option>
             </select>
           </div>
 
@@ -137,14 +142,6 @@ function Appointments() {
                         )}
                         {item.status === "CONFIRMED" && (
                           <>
-                            {isExamDay(item.work_date) && (
-                              <Link
-                                to={`/doctor/appointments/${item.id}?exam=1`}
-                                className="admin-btn admin-btn-primary"
-                              >
-                                Bắt đầu khám
-                              </Link>
-                            )}
                             <button
                               type="button"
                               className="admin-btn admin-btn-danger"
@@ -153,6 +150,25 @@ function Appointments() {
                               Hủy
                             </button>
                           </>
+                        )}
+                        {item.status === "WAITING" && (
+                          <button
+                            type="button"
+                            className="admin-btn admin-btn-primary"
+                            onClick={() => appointmentService.performAction(item.id, "call").then(fetchAppointments).catch((error) => toast.error(getApiErrorMessage(error)))}
+                          >
+                            Gọi bệnh nhân
+                          </button>
+                        )}
+                        {item.status === "CALLED" && isExamDay(item.work_date) && (
+                          <Link to={`/doctor/appointments/${item.id}?exam=1`} className="admin-btn admin-btn-primary">
+                            Bắt đầu khám
+                          </Link>
+                        )}
+                        {item.status === "IN_PROGRESS" && (
+                          <Link to={`/doctor/appointments/${item.id}`} className="admin-btn admin-btn-primary">
+                            Tiếp tục khám
+                          </Link>
                         )}
                       </td>
                     </tr>

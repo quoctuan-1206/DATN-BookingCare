@@ -914,6 +914,27 @@
   color: #dc2626;
 }
 
+.status.checked-in,
+.status.waiting {
+  background: #fff7e6;
+  color: #b7791f;
+}
+
+.status.called {
+  background: #f3e8ff;
+  color: #7e22ce;
+}
+
+.status.in-progress {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.status.no-show {
+  background: #f1f5f9;
+  color: #475569;
+}
+
 /*==================================================
                     ROLE BADGE
 ==================================================*/

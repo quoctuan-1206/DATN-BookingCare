@@ -28,6 +28,56 @@ class AppointmentController {
     }
   }
 
+  async getTodayAppointments(req, res, next) {
+    try {
+      const query = queryAppointmentSchema.parse({ ...req.query, today: "true" });
+      const result = await appointmentService.getAppointments(req.user, query);
+      return res.status(200).json({
+        success: true,
+        message: "Lấy lịch khám hôm nay thành công",
+        pagination: {
+          total: result.total,
+          page: result.page,
+          limit: result.limit,
+          total_pages: result.total_pages,
+        },
+        data: result.data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async workflowAction(req, res, next, actionOverride) {
+    try {
+      const data = await appointmentService.performWorkflowAction(
+        req.user,
+        req.params.id,
+        actionOverride || req.params.action,
+      );
+      return res.status(200).json({
+        success: true,
+        message: "Cập nhật quy trình khám thành công",
+        data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getQueuePosition(req, res, next) {
+    try {
+      const data = await appointmentService.getQueuePosition(req.user, req.params.id);
+      return res.status(200).json({
+        success: true,
+        message: "Lấy vị trí hàng đợi thành công",
+        data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Lấy chi tiết lịch hẹn (GET /api/appointments/:id)
   async getAppointmentById(req, res, next) {
     try {

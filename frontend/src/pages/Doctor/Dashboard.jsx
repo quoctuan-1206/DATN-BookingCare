@@ -123,7 +123,7 @@ function Dashboard() {
   );
 
   const waitingToday = todayAppointments.filter(
-    (a) => a.status === "PENDING" || a.status === "CONFIRMED",
+    (a) => ["CHECKED_IN", "WAITING", "CALLED", "IN_PROGRESS"].includes(a.status),
   );
 
   const recordedAppointmentIds = useMemo(
@@ -133,7 +133,7 @@ function Dashboard() {
 
   const recordsNeeded = todayAppointments.filter(
     (a) =>
-      (a.status === "CONFIRMED" || a.status === "COMPLETED") &&
+      (a.status === "IN_PROGRESS" || a.status === "COMPLETED") &&
       !recordedAppointmentIds.has(Number(a.id)),
   ).length;
 

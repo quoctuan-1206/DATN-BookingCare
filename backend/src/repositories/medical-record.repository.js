@@ -124,7 +124,7 @@ class MedicalRecordRepository {
     });
   }
 
-  // Tạo bệnh án mới; chỉ hoàn thành lịch khi không còn chỉ định cận lâm sàng đang xử lý.
+  // Tạo bệnh án mới. Việc hoàn thành lịch là một state transition riêng.
   async create(data) {
     return prisma.$transaction(async (tx) => {
       const record = await tx.medical_records.create({
@@ -150,23 +150,6 @@ class MedicalRecordRepository {
           note: data.note || null,
         },
       });
-
-      const incompleteClinicalOrderCount = await tx.lab_orders.count({
-        where: {
-          appointment_id: Number(data.appointment_id),
-          status: { in: ["PENDING", "IN_PROGRESS"] },
-        },
-      });
-
-      if (incompleteClinicalOrderCount === 0) {
-        await tx.appointments.update({
-          where: { id: Number(data.appointment_id) },
-          data: {
-            status: "COMPLETED",
-            updated_at: new Date(),
-          },
-        });
-      }
 
       return tx.medical_records.findFirst({
         where: { id: record.id },

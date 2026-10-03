@@ -25,6 +25,24 @@ const relationshipLabel = {
   Other: "Khác",
 };
 
+const operationalStatuses = [
+  "CHECKED_IN",
+  "WAITING",
+  "CALLED",
+  "IN_PROGRESS",
+];
+
+function getVietnamDate() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
 class AppointmentService {
   // Lấy các bên liên quan của lịch hẹn (bác sĩ, bệnh nhân, mã đặt)
   getParties(appointment) {
@@ -136,6 +154,38 @@ class AppointmentService {
       return;
     }
 
+    if (status === "WAITING" && patientAccountId) {
+      const queueNumber = appointment.queue_number;
+      await notificationService.notify(patientAccountId, {
+        title: "Check-in thành công",
+        content: `Bạn đã check-in lịch ${bookingCode}${queueNumber ? ` và nhận STT #${String(queueNumber).padStart(2, "0")}` : ""}. Vui lòng theo dõi hàng đợi.`,
+        link: `/patient/appointments/${appointment.id}`,
+        type: "APPOINTMENT",
+      });
+      return;
+    }
+
+    if (status === "CALLED" && patientAccountId) {
+      const room = appointment.schedules?.doctor_workplaces?.room;
+      await notificationService.notify(patientAccountId, {
+        title: "Đến lượt khám của bạn",
+        content: `Mời ${patientName} đến ${room ? `phòng khám ${room}` : "phòng khám"}.`,
+        link: `/patient/appointments/${appointment.id}`,
+        type: "APPOINTMENT",
+      });
+      return;
+    }
+
+    if (status === "NO_SHOW" && patientAccountId) {
+      await notificationService.notify(patientAccountId, {
+        title: "Lịch khám được ghi nhận vắng mặt",
+        content: `Lịch ${bookingCode} đã được ghi nhận không đến khám.`,
+        link: `/patient/appointments/${appointment.id}`,
+        type: "APPOINTMENT",
+      });
+      return;
+    }
+
     if (status === "COMPLETED" && patientAccountId) {
       await notificationService.notify(patientAccountId, {
         title: "Lịch khám đã hoàn thành",
@@ -237,6 +287,13 @@ class AppointmentService {
         appointment.exam_started_at,
       ),
       exam_started_time: formatClockTime(appointment.exam_started_at),
+      room: workplace?.room || null,
+      queue_number: appointment.queue_number ?? null,
+      check_in_at: appointment.check_in_at || null,
+      called_at: appointment.called_at || null,
+      started_at: appointment.started_at || appointment.exam_started_at || null,
+      completed_at: appointment.completed_at || null,
+      no_show_at: appointment.no_show_at || null,
       has_medical_record: Boolean(appointment.medical_records?.id),
       clinical_order_count: clinicalOrders.length,
       incomplete_clinical_order_count: incompleteClinicalOrderCount,
@@ -284,22 +341,38 @@ class AppointmentService {
             full_name: { contains: query.search },
           },
         },
+        {
+          patient_profiles: {
+            phone: { contains: query.search },
+          },
+        },
       ];
     }
 
-    if (role === "Admin") {
-      if (query.doctor_id) {
-        where.schedules = {
-          doctor_workplaces: { doctor_id: query.doctor_id },
-        };
+    if (query.queue_only) where.status = { in: operationalStatuses };
+
+    const scheduleWhere = {};
+    const selectedDate = query.today ? getVietnamDate() : query.date;
+    if (selectedDate) scheduleWhere.work_date = new Date(`${selectedDate}T00:00:00.000Z`);
+
+    const workplaceWhere = {};
+    if (query.doctor_id) workplaceWhere.doctor_id = query.doctor_id;
+    if (query.clinic_id) workplaceWhere.clinic_id = query.clinic_id;
+
+    if (role === "Admin" || role === "STAFF") {
+      if (Object.keys(workplaceWhere).length) {
+        scheduleWhere.doctor_workplaces = workplaceWhere;
       }
+      if (Object.keys(scheduleWhere).length) where.schedules = scheduleWhere;
       return where;
     }
 
     if (role === "Doctor") {
-      where.schedules = {
-        doctor_workplaces: { doctor_id: user.id },
+      scheduleWhere.doctor_workplaces = {
+        ...workplaceWhere,
+        doctor_id: user.id,
       };
+      where.schedules = scheduleWhere;
       return where;
     }
 
@@ -341,7 +414,7 @@ class AppointmentService {
   // Kiểm tra quyền xem lịch hẹn
   assertCanView(user, appointment) {
     const role = user.role?.name;
-    if (role === "Admin") return;
+    if (role === "Admin" || role === "STAFF") return;
 
     if (role === "Doctor") {
       const doctorId =
@@ -470,11 +543,34 @@ class AppointmentService {
     return this.formatAppointment(updated);
   }
 
-  // Bác sĩ bắt đầu khám — lưu thời điểm hiện tại
-  async startExam(user, id) {
+  assertOperationalDate(appointment) {
+    const appointmentDate = formatDateOnly(appointment.schedules?.work_date);
+    if (appointmentDate !== getVietnamDate()) {
+      const error = new Error("Chỉ có thể thực hiện thao tác vào đúng ngày khám");
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+
+  assertWorkflowPermission(role, action) {
+    const permissions = {
+      "check-in": ["STAFF", "Admin"],
+      enqueue: ["STAFF", "Admin"],
+      call: ["STAFF", "Doctor", "Admin"],
+      start: ["Doctor", "Admin"],
+      complete: ["Doctor", "Admin"],
+      "no-show": ["STAFF", "Admin"],
+    };
+    if (!permissions[action]?.includes(role)) {
+      const error = new Error("Bạn không có quyền thực hiện thao tác này");
+      error.statusCode = 403;
+      throw error;
+    }
+  }
+
+  async performWorkflowAction(user, id, action) {
     const appointmentId = this.parseId(id);
     const existing = await appointmentRepository.findById(appointmentId);
-
     if (!existing) {
       const error = new Error("Không tìm thấy lịch hẹn");
       error.statusCode = 404;
@@ -482,39 +578,123 @@ class AppointmentService {
     }
 
     this.assertCanView(user, existing);
-
     const role = user.role?.name;
-    if (role !== "Doctor" && role !== "Admin") {
-      const error = new Error("Chỉ bác sĩ được bắt đầu khám");
-      error.statusCode = 403;
-      throw error;
+    this.assertWorkflowPermission(role, action);
+    this.assertOperationalDate(existing);
+
+    const now = new Date();
+    const workflow = {
+      call: { from: "WAITING", to: "CALLED", data: { called_at: now } },
+      start: {
+        from: "CALLED",
+        to: "IN_PROGRESS",
+        data: { started_at: now, exam_started_at: now },
+      },
+      complete: { from: "IN_PROGRESS", to: "COMPLETED", data: { completed_at: now } },
+      "no-show": { from: "CONFIRMED", to: "NO_SHOW", data: { no_show_at: now } },
+    };
+
+    let updated;
+    if (action === "check-in") {
+      if (existing.status !== "CONFIRMED") {
+        const error = new Error("Chỉ lịch đã xác nhận mới được check-in");
+        error.statusCode = 400;
+        throw error;
+      }
+      const workplace = existing.schedules?.doctor_workplaces;
+      const workDate = formatDateOnly(existing.schedules?.work_date);
+      const queueKey = `${workDate}:${workplace?.doctor_id}:${workplace?.clinic_id}`;
+      updated = await appointmentRepository.checkInAndEnqueue(
+        appointmentId,
+        queueKey,
+        now,
+      );
+    } else if (action === "enqueue") {
+      if (existing.status !== "CHECKED_IN") {
+        const error = new Error("Chỉ lịch đã check-in mới được đưa vào hàng đợi");
+        error.statusCode = 400;
+        throw error;
+      }
+      const workplace = existing.schedules?.doctor_workplaces;
+      const workDate = formatDateOnly(existing.schedules?.work_date);
+      const queueKey = `${workDate}:${workplace?.doctor_id}:${workplace?.clinic_id}`;
+      updated = await appointmentRepository.enqueue(appointmentId, queueKey);
+    } else {
+      const transition = workflow[action];
+      if (existing.status !== transition.from) {
+        const error = new Error(
+          `Không thể chuyển trạng thái từ ${existing.status} sang ${transition.to}`,
+        );
+        error.statusCode = 400;
+        throw error;
+      }
+
+      if (action === "complete") {
+        if (!existing.medical_records?.id) {
+          const error = new Error("Cần lưu hồ sơ bệnh án trước khi hoàn thành buổi khám");
+          error.statusCode = 400;
+          throw error;
+        }
+        const incomplete = (existing.lab_orders || []).filter((order) =>
+          ["PENDING", "IN_PROGRESS"].includes(order.status),
+        );
+        if (incomplete.length) {
+          const error = new Error(`Còn ${incomplete.length} chỉ định cận lâm sàng chưa hoàn tất`);
+          error.statusCode = 409;
+          throw error;
+        }
+      }
+
+      updated = await appointmentRepository.transitionStatus(
+        appointmentId,
+        transition.from,
+        transition.to,
+        transition.data,
+      );
     }
 
-    if (existing.status !== "CONFIRMED") {
-      const error = new Error("Chỉ bắt đầu khám khi lịch đã được xác nhận");
-      error.statusCode = 400;
-      throw error;
+    try {
+      await this.notifyStatusChange(updated, updated.status, role);
+    } catch {
+      // Không chặn workflow nếu notification lỗi.
     }
-
-    if (existing.exam_started_at) {
-      return this.formatAppointment(existing);
-    }
-
-    const updated = await appointmentRepository.markExamStarted(appointmentId);
     return this.formatAppointment(updated);
+  }
+
+  async getQueuePosition(user, id) {
+    const appointmentId = this.parseId(id);
+    const appointment = await appointmentRepository.findById(appointmentId);
+    if (!appointment) {
+      const error = new Error("Không tìm thấy lịch hẹn");
+      error.statusCode = 404;
+      throw error;
+    }
+    this.assertCanView(user, appointment);
+    if (!appointment.queue_key || !appointment.queue_number) {
+      return { queue_number: null, current_queue_number: null, people_ahead: null };
+    }
+    return appointmentRepository.getQueuePosition(
+      appointment.queue_key,
+      appointment.queue_number,
+    );
+  }
+
+  // Bác sĩ bắt đầu khám — lưu thời điểm hiện tại
+  async startExam(user, id) {
+    return this.performWorkflowAction(user, id, "start");
   }
 
   // Lấy các trạng thái được phép chuyển theo vai trò
   getAllowedTransitions(role, current) {
     if (role === "Admin") {
       if (current === "PENDING") return ["CONFIRMED", "CANCELLED"];
-      if (current === "CONFIRMED") return ["COMPLETED", "CANCELLED"];
+      if (current === "CONFIRMED") return ["CANCELLED"];
       return [];
     }
 
     if (role === "Doctor") {
       if (current === "PENDING") return ["CONFIRMED", "CANCELLED"];
-      if (current === "CONFIRMED") return ["COMPLETED", "CANCELLED"];
+      if (current === "CONFIRMED") return ["CANCELLED"];
       return [];
     }
 

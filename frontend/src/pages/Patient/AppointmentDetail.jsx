@@ -60,6 +60,7 @@ function AppointmentDetail() {
   const [medicalRecord, setMedicalRecord] = useState(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
+  const [queuePosition, setQueuePosition] = useState(null);
 
   const [review, setReview] = useState(null);
   const [reviewLoading, setReviewLoading] = useState(false);
@@ -91,6 +92,18 @@ function AppointmentDetail() {
       cancelled = true;
     };
   }, [id]);
+
+  useEffect(() => {
+    if (!appointment?.queue_number) {
+      setQueuePosition(null);
+      return;
+    }
+    let cancelled = false;
+    appointmentService.getQueuePosition(appointment.id)
+      .then((data) => !cancelled && setQueuePosition(data))
+      .catch(() => !cancelled && setQueuePosition(null));
+    return () => { cancelled = true; };
+  }, [appointment?.id, appointment?.status, appointment?.queue_number]);
 
   useEffect(() => {
     if (!appointment || appointment.status !== "COMPLETED") {
@@ -276,6 +289,15 @@ function AppointmentDetail() {
   const statusClass = STATUS_CLASS[appointment.status] || "pending";
   const canRetry = canRetryPayment(clinicInvoice, appointment.status);
   const paymentBadge = getPaymentBadge(clinicInvoice, appointment.status);
+  const statusMessage = {
+    CONFIRMED: "Lịch khám đã được xác nhận. Vui lòng đến đúng giờ để nhân viên check-in.",
+    CHECKED_IN: "Bạn đã check-in và đang chờ được cấp số.",
+    WAITING: "Bạn đang chờ khám.",
+    CALLED: `Đến lượt bạn. Vui lòng đến ${appointment.room ? `phòng ${appointment.room}` : "phòng khám"}.`,
+    IN_PROGRESS: "Bác sĩ đang thực hiện lượt khám của bạn.",
+    COMPLETED: "Lượt khám đã hoàn thành.",
+    NO_SHOW: "Lịch khám được ghi nhận là không đến.",
+  }[appointment.status];
 
   return (
     <PatientLayout>
@@ -313,6 +335,23 @@ function AppointmentDetail() {
             value={`${Number(appointment.consultation_fee || 0).toLocaleString("vi-VN")} đ`}
           />
         </div>
+
+        {statusMessage && (
+          <div className="detail-card" aria-live="polite">
+            <h2>Tiến trình khám</h2>
+            <p>{statusMessage}</p>
+            {queuePosition?.queue_number && (
+              <div className="queue-position-summary">
+                <DetailRow label="STT của bạn" value={`#${String(queuePosition.queue_number).padStart(2, "0")}`} />
+                <DetailRow
+                  label="Đang khám / đã gọi"
+                  value={queuePosition.current_queue_number ? `#${String(queuePosition.current_queue_number).padStart(2, "0")}` : "Chưa có"}
+                />
+                <DetailRow label="Còn trước bạn" value={`${queuePosition.people_ahead} người`} />
+              </div>
+            )}
+          </div>
+        )}
 
         {clinicInvoice && (
           <div className="detail-card payment-detail-card">

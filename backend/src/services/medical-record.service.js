@@ -346,11 +346,11 @@ class MedicalRecordService {
     }
 
     if (
-      appointment.status !== "CONFIRMED" &&
+      appointment.status !== "IN_PROGRESS" &&
       appointment.status !== "COMPLETED"
     ) {
       const error = new Error(
-        "Chỉ tạo bệnh án cho lịch đã xác nhận hoặc hoàn thành",
+        "Chỉ tạo bệnh án khi lượt khám đang diễn ra hoặc đã hoàn thành",
       );
       error.statusCode = 400;
       throw error;

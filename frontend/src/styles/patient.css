@@ -2275,3 +2275,24 @@ select.profile-field-input {
     color: #d97706;
     letter-spacing: 0.5px;
 }
+
+.appointment-status.checked-in,
+.appointment-status.waiting {
+    background: rgba(245, 158, 11, 0.16);
+    color: #9a6700;
+}
+
+.appointment-status.called {
+    background: rgba(126, 34, 206, 0.12);
+    color: #7e22ce;
+}
+
+.appointment-status.in-progress {
+    background: rgba(3, 105, 161, 0.12);
+    color: #0369a1;
+}
+
+.appointment-status.no-show {
+    background: #f1f5f9;
+    color: #475569;
+}

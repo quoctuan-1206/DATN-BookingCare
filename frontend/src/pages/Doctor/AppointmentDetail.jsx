@@ -64,14 +64,14 @@ function AppointmentDetail() {
   const canStartExam = useMemo(() => {
     if (!appointment) return false;
     return (
-      appointment.status === "CONFIRMED" && isExamDay(appointment.work_date)
+      appointment.status === "CALLED" && isExamDay(appointment.work_date)
     );
   }, [appointment]);
 
   const showMedicalForm = useMemo(() => {
     if (!appointment) return false;
     if (medicalRecord) return true;
-    return examStarted && appointment.status === "CONFIRMED";
+    return examStarted && appointment.status === "IN_PROGRESS";
   }, [appointment, medicalRecord, examStarted]);
 
   const showPrescriptionForm = useMemo(() => {
@@ -106,7 +106,7 @@ function AppointmentDetail() {
         }
         setMedicalRecord(null);
         setPrescription(null);
-        if (data?.exam_started_at && data.status === "CONFIRMED") {
+        if (data?.exam_started_at && data.status === "IN_PROGRESS") {
           setExamStarted(true);
         }
       }
@@ -173,7 +173,11 @@ function AppointmentDetail() {
 
     setUpdating(true);
     try {
-      await appointmentService.updateStatus(appointment.id, nextStatus);
+      if (nextStatus === "COMPLETED") {
+        await appointmentService.performAction(appointment.id, "complete");
+      } else {
+        await appointmentService.updateStatus(appointment.id, nextStatus);
+      }
       toast.success("Đã cập nhật trạng thái");
       await loadAppointment();
     } catch (error) {
@@ -386,29 +390,9 @@ function AppointmentDetail() {
                 !medicalRecord &&
                 !examStarted && (
                   <>
-                    {appointment.exam_started_at ? (
-                      <button
-                        type="button"
-                        className="admin-btn admin-btn-primary"
-                        onClick={() => setExamStarted(true)}
-                      >
-                        Tiếp tục khám
-                      </button>
-                    ) : canStartExam ? (
-                      <button
-                        type="button"
-                        className="admin-btn admin-btn-primary"
-                        disabled={updating}
-                        onClick={handleStartExam}
-                      >
-                        {updating ? "Đang lưu..." : "Bắt đầu khám"}
-                      </button>
-                    ) : (
-                      <p className="doctor-appointment-action-note">
-                        Lịch khám vào {appointment.date_display}. Bạn có thể bắt
-                        đầu khám vào ngày hẹn.
-                      </p>
-                    )}
+                    <p className="doctor-appointment-action-note">
+                      Chờ nhân viên check-in và đưa bệnh nhân vào hàng đợi.
+                    </p>
                     <button
                       type="button"
                       className="admin-btn admin-btn-danger"
@@ -420,7 +404,39 @@ function AppointmentDetail() {
                   </>
                 )}
 
-              {appointment.status === "CONFIRMED" &&
+              {appointment.status === "WAITING" && (
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-primary"
+                  disabled={updating}
+                  onClick={async () => {
+                    setUpdating(true);
+                    try {
+                      await appointmentService.performAction(appointment.id, "call");
+                      await loadAppointment();
+                    } catch (error) {
+                      toast.error(getApiErrorMessage(error, "Không gọi được bệnh nhân"));
+                    } finally {
+                      setUpdating(false);
+                    }
+                  }}
+                >
+                  Gọi bệnh nhân #{appointment.queue_number}
+                </button>
+              )}
+
+              {appointment.status === "CALLED" && canStartExam && (
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-primary"
+                  disabled={updating}
+                  onClick={handleStartExam}
+                >
+                  {updating ? "Đang lưu..." : "Bắt đầu khám"}
+                </button>
+              )}
+
+              {appointment.status === "IN_PROGRESS" &&
                 examStarted &&
                 !medicalRecord && (
                   <button
@@ -445,7 +461,7 @@ function AppointmentDetail() {
                   </button>
                 )}
 
-              {medicalRecord && appointment.status === "CONFIRMED" && (
+              {medicalRecord && appointment.status === "IN_PROGRESS" && (
                 <>
                   <button
                     type="button"

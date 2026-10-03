@@ -11,7 +11,7 @@ function getRedirectPathByRole(roleName) {
     case "Doctor":
       return "/doctor";
     case "STAFF":
-      return "/staff/clinical";
+      return "/staff/appointments";
     case "Patient":
     default:
       return "/patient";

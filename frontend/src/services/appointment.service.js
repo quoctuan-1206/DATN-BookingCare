@@ -3,15 +3,25 @@ import axiosClient from "../api/axios";
 export const STATUS_LABEL = {
   PENDING: "Đang chờ",
   CONFIRMED: "Đã xác nhận",
+  CHECKED_IN: "Đã check-in",
+  WAITING: "Đang chờ khám",
+  CALLED: "Đã gọi",
+  IN_PROGRESS: "Đang khám",
   COMPLETED: "Hoàn thành",
   CANCELLED: "Đã hủy",
+  NO_SHOW: "Không đến",
 };
 
 export const STATUS_CLASS = {
   PENDING: "pending",
   CONFIRMED: "confirmed",
+  CHECKED_IN: "checked-in",
+  WAITING: "waiting",
+  CALLED: "called",
+  IN_PROGRESS: "in-progress",
   COMPLETED: "completed",
   CANCELLED: "cancelled",
+  NO_SHOW: "no-show",
 };
 
 export function mapAppointmentFromApi(appointment) {
@@ -59,8 +69,27 @@ export const appointmentService = {
     axiosClient.patch(`/appointments/${id}/status`, { status }),
 
   startExam: async (id) => {
-    const res = await axiosClient.patch(`/appointments/${id}/start-exam`);
+    const res = await axiosClient.post(`/appointments/${id}/start`);
     return mapAppointmentFromApi(res.data?.data);
+  },
+
+  getToday: async (params = {}) => {
+    const res = await axiosClient.get("/appointments/today", { params });
+    const payload = res.data || {};
+    return {
+      ...payload,
+      data: (Array.isArray(payload.data) ? payload.data : []).map(mapAppointmentFromApi),
+    };
+  },
+
+  performAction: async (id, action) => {
+    const res = await axiosClient.post(`/appointments/${id}/${action}`);
+    return mapAppointmentFromApi(res.data?.data);
+  },
+
+  getQueuePosition: async (id) => {
+    const res = await axiosClient.get(`/appointments/${id}/queue-position`);
+    return res.data?.data;
   },
 };
 

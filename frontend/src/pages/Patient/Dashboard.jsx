@@ -24,7 +24,9 @@ const DEFAULT_AVATAR =
 
 function sortUpcoming(appointments) {
   return [...appointments]
-    .filter((a) => a.status === "PENDING" || a.status === "CONFIRMED")
+    .filter((a) =>
+      ["PENDING", "CONFIRMED", "CHECKED_IN", "WAITING", "CALLED", "IN_PROGRESS"].includes(a.status),
+    )
     .sort((a, b) => {
       const left = `${a.work_date || ""}T${a.start_time || "00:00"}`;
       const right = `${b.work_date || ""}T${b.start_time || "00:00"}`;

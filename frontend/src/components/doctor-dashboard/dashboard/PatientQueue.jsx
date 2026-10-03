@@ -2,9 +2,9 @@ import { UserRound, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
 function PatientQueue({ appointments = [], loading = false }) {
-  const queue = appointments.filter(
-    (a) => a.status === "PENDING" || a.status === "CONFIRMED",
-  );
+  const queue = appointments
+    .filter((a) => ["WAITING", "CALLED", "IN_PROGRESS"].includes(a.status))
+    .sort((a, b) => (a.queue_number || Number.MAX_SAFE_INTEGER) - (b.queue_number || Number.MAX_SAFE_INTEGER));
 
   const clinic =
     queue[0]?.clinic ||
@@ -30,17 +30,16 @@ function PatientQueue({ appointments = [], loading = false }) {
         ) : queue.length === 0 ? (
           <p>Không có bệnh nhân đang chờ hôm nay.</p>
         ) : (
-          queue.map((patient, index) => {
-            const status =
-              index === 0
-                ? "examining"
-                : index === 1
-                  ? "next"
-                  : "waiting";
+          queue.map((patient) => {
+            const status = patient.status === "IN_PROGRESS"
+              ? "examining"
+              : patient.status === "CALLED"
+                ? "next"
+                : "waiting";
             const statusLabel = {
-              examining: "Ưu tiên",
+              examining: "Đang khám",
               waiting: "Đang chờ",
-              next: "Tiếp theo",
+              next: "Đã gọi",
             };
 
             return (
@@ -49,7 +48,7 @@ function PatientQueue({ appointments = [], loading = false }) {
                 to={`/doctor/appointments/${patient.id}`}
                 className={`doctor-queue-item ${status}`}
               >
-                <div className="doctor-queue-order">{index + 1}</div>
+                <div className="doctor-queue-order">{patient.queue_number || "—"}</div>
 
                 <div className="doctor-queue-avatar">
                   <UserRound size={18} />

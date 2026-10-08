@@ -34,4 +34,11 @@ router.post(
   paymentController.mockCompletePayment,
 );
 
+router.post(
+  "/mock-fail/:invoiceId",
+  verifyAccessTokenMiddleware,
+  authorize("Patient", "Admin"),
+  paymentController.mockFailPayment,
+);
+
 export default router;

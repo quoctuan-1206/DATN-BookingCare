@@ -13,6 +13,7 @@ router.use(
 
 // GET /api/notifications - Danh sách thông báo
 router.get("/", notificationController.getMyNotifications);
+router.get("/stream", notificationController.stream);
 // GET /api/notifications/unread-count - Số chưa đọc
 router.get("/unread-count", notificationController.getUnreadCount);
 // PATCH /api/notifications/read-all - Đánh dấu tất cả đã đọc

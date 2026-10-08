@@ -1,6 +1,7 @@
 import medicalRecordRepository from "../repositories/medical-record.repository.js";
 import appointmentRepository from "../repositories/appointment.repository.js";
 import notificationService from "./notification.service.js";
+import auditLogService from "./audit-log.service.js";
 import { CLINICAL_SERVICE_LABELS } from "./lab.service.js";
 import {
   formatDateOnly,
@@ -22,6 +23,36 @@ const relationshipLabel = {
   Sibling: "Anh/Chị/Em",
   Other: "Khác",
 };
+
+const medicalRecordAuditFields = [
+  "appointment_id",
+  "symptoms",
+  "blood_pressure",
+  "heart_rate",
+  "temperature",
+  "spo2",
+  "respiratory_rate",
+  "weight",
+  "height",
+  "clinical_examination",
+  "diagnosis",
+  "icd10_code",
+  "secondary_diagnosis",
+  "assessment",
+  "follow_up_date",
+  "conclusion",
+  "note",
+];
+
+function medicalRecordAuditSnapshot(record, fields = medicalRecordAuditFields) {
+  if (!record) return null;
+
+  return Object.fromEntries(
+    fields
+      .filter((field) => Object.prototype.hasOwnProperty.call(record, field))
+      .map((field) => [field, record[field]]),
+  );
+}
 
 class MedicalRecordService {
   formatPatient(patient) {
@@ -280,13 +311,27 @@ class MedicalRecordService {
     const { total, records, page, limit } =
       await medicalRecordRepository.findAll(where, query);
 
-    return {
+    const response = {
       total,
       page,
       limit,
       total_pages: Math.ceil(total / limit) || 0,
       data: records.map((r) => this.formatRecord(r, user.role?.name)),
     };
+
+    await auditLogService.record({
+      userId: user.id,
+      action: "VIEW",
+      resource: "MEDICAL_RECORD",
+      metadata: {
+        scope: "LIST",
+        page,
+        limit,
+        resultCount: records.length,
+      },
+    });
+
+    return response;
   }
 
   // Lấy chi tiết bệnh án theo ID
@@ -298,7 +343,15 @@ class MedicalRecordService {
       throw error;
     }
     this.assertCanView(user, record);
-    return this.formatRecord(record, user.role?.name);
+    const response = this.formatRecord(record, user.role?.name);
+    await auditLogService.record({
+      userId: user.id,
+      action: "VIEW",
+      resource: "MEDICAL_RECORD",
+      resourceId: record.id,
+      metadata: { appointmentId: record.appointment_id },
+    });
+    return response;
   }
 
   // Lấy bệnh án theo ID lịch hẹn
@@ -312,7 +365,15 @@ class MedicalRecordService {
       throw error;
     }
     this.assertCanView(user, record);
-    return this.formatRecord(record, user.role?.name);
+    const response = this.formatRecord(record, user.role?.name);
+    await auditLogService.record({
+      userId: user.id,
+      action: "VIEW",
+      resource: "MEDICAL_RECORD",
+      resourceId: record.id,
+      metadata: { appointmentId: record.appointment_id },
+    });
+    return response;
   }
 
   // Tạo bệnh án mới
@@ -382,7 +443,16 @@ class MedicalRecordService {
         }
       }
 
-      return this.formatRecord(record, user.role?.name);
+      const response = this.formatRecord(record, user.role?.name);
+      await auditLogService.record({
+        userId: user.id,
+        action: "CREATE_MEDICAL_RECORD",
+        resource: "MEDICAL_RECORD",
+        resourceId: record.id,
+        newValue: medicalRecordAuditSnapshot(record),
+        metadata: { appointmentId: record.appointment_id },
+      });
+      return response;
     } catch (error) {
       if (error.code === "P2002") {
         const err = new Error("Lịch hẹn này đã có bệnh án");
@@ -425,7 +495,23 @@ class MedicalRecordService {
     }
 
     const updated = await medicalRecordRepository.update(recordId, data);
-    return this.formatRecord(updated, user.role?.name);
+    const changedFields = Object.keys(data);
+    const response = this.formatRecord(updated, user.role?.name);
+
+    await auditLogService.record({
+      userId: user.id,
+      action: "UPDATE_MEDICAL_RECORD",
+      resource: "MEDICAL_RECORD",
+      resourceId: recordId,
+      oldValue: medicalRecordAuditSnapshot(existing, changedFields),
+      newValue: medicalRecordAuditSnapshot(updated, changedFields),
+      metadata: {
+        appointmentId: updated.appointment_id,
+        changedFields,
+      },
+    });
+
+    return response;
   }
 }
 

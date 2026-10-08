@@ -3,8 +3,23 @@ import {
   queryNotificationSchema,
   createNotificationSchema,
 } from "../validators/notification.validator.js";
+import { subscribeToNotifications } from "../realtime/notification-stream.js";
 
 class NotificationController {
+  stream(req, res) {
+    res.status(200);
+    res.set({
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
+    });
+    res.flushHeaders?.();
+
+    const unsubscribe = subscribeToNotifications(req.user.id, res);
+    req.on("close", unsubscribe);
+  }
+
   // Lấy danh sách thông báo của tôi (GET /api/notifications)
   async getMyNotifications(req, res, next) {
     try {

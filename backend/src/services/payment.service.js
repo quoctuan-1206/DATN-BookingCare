@@ -5,11 +5,71 @@ import {
   verifyVnpaySignature,
   createTxnRef,
 } from "../utils/vnpay.js";
+import defaultNotificationService from "./notification.service.js";
+import defaultAuditLogService from "./audit-log.service.js";
 
 class PaymentService {
-  constructor({ config = null, repository = defaultPaymentRepository } = {}) {
+  constructor({
+    config = null,
+    repository = defaultPaymentRepository,
+    notifications,
+    auditLogs,
+  } = {}) {
     this.config = config;
     this.repository = repository;
+    this.notifications =
+      notifications === undefined
+        ? repository === defaultPaymentRepository
+          ? defaultNotificationService
+          : null
+        : notifications;
+    this.auditLogs =
+      auditLogs === undefined
+        ? repository === defaultPaymentRepository
+          ? defaultAuditLogService
+          : null
+        : auditLogs;
+  }
+
+  async recordPaymentAudit({ invoice, action, actorId = null, oldValue, newValue, metadata }) {
+    if (!this.auditLogs || !invoice) return;
+    await this.auditLogs.record({
+      userId:
+        actorId ?? invoice.appointments?.patient_profiles?.account_id ?? null,
+      action,
+      resource: "PAYMENT",
+      resourceId: invoice.id,
+      oldValue,
+      newValue,
+      metadata: {
+        appointmentId: invoice.appointment_id || invoice.appointments?.id || null,
+        invoiceType: invoice.invoice_type,
+        amount: Number(invoice.amount || 0),
+        ...metadata,
+      },
+    });
+  }
+
+  async notifyPayment(invoice, succeeded) {
+    if (!this.notifications || !invoice) return;
+    const patientId = invoice.appointments?.patient_profiles?.account_id;
+    const appointmentId = invoice.appointment_id || invoice.appointments?.id;
+    if (!patientId || !appointmentId) return;
+
+    try {
+      await this.notifications.notifyOnce(patientId, {
+        title: succeeded
+          ? "Thanh toán thành công"
+          : "Thanh toán không thành công",
+        content: succeeded
+          ? `Thanh toán phí khám cho lịch ${invoice.appointments?.booking_code || `#${appointmentId}`} đã thành công.`
+          : `Giao dịch cho lịch ${invoice.appointments?.booking_code || `#${appointmentId}`} chưa thành công. Bạn có thể thử thanh toán lại khi hóa đơn còn hạn.`,
+        link: `/patient/appointments/${appointmentId}`,
+        type: succeeded ? "PAYMENT_SUCCESS" : "PAYMENT_FAILED",
+      });
+    } catch (error) {
+      console.error("[PaymentService] Không thể gửi thông báo thanh toán:", error);
+    }
   }
 
   getConfig() {
@@ -190,6 +250,28 @@ class PaymentService {
       return { RspCode: "04", Message: "Order expired or cancelled" };
     }
 
+    if (result.code === "SUCCESS") {
+      const invoice = await this.repository.findClinicInvoiceById(
+        result.invoice.id,
+      );
+      await this.notifyPayment(invoice, true);
+      await this.recordPaymentAudit({
+        invoice,
+        action: "PAYMENT_SUCCESS",
+        oldValue: { payment_status: "UNPAID" },
+        newValue: {
+          payment_status: invoice.payment_status,
+          transaction_id: invoice.transaction_id,
+          payment_date: invoice.payment_date,
+        },
+        metadata: {
+          provider: "VNPAY",
+          providerTransactionNo: query.vnp_TransactionNo || null,
+          source: "IPN",
+        },
+      });
+    }
+
     return { RspCode: "00", Message: "Confirm Success" };
   }
 
@@ -214,6 +296,18 @@ class PaymentService {
     }
 
     if (query.vnp_ResponseCode !== "00") {
+      await this.notifyPayment(invoice, false);
+      await this.recordPaymentAudit({
+        invoice,
+        action: "PAYMENT_FAILED",
+        oldValue: { payment_status: invoice.payment_status },
+        newValue: { payment_status: invoice.payment_status },
+        metadata: {
+          provider: "VNPAY",
+          responseCode: query.vnp_ResponseCode,
+          source: "RETURN",
+        },
+      });
       return `${config.frontendUrl}/payment/result?status=failed&invoiceId=${invoice.id}`;
     }
 
@@ -232,10 +326,10 @@ class PaymentService {
     }
 
     const patientAccountId = invoice.appointments?.patient_profiles?.account_id;
+    const isOwner = Number(patientAccountId) === Number(user.id);
     if (
-      user.role?.name !== "Patient" &&
       user.role?.name !== "Admin" &&
-      Number(patientAccountId) !== Number(user.id)
+      !(user.role?.name === "Patient" && isOwner)
     ) {
       const error = new Error("Bạn không có quyền thực hiện thao tác này");
       error.statusCode = 403;
@@ -265,11 +359,62 @@ class PaymentService {
       paidAt: now,
     });
 
+    if (result.code === "SUCCESS") {
+      const updatedInvoice = await this.repository.findClinicInvoiceById(
+        result.invoice.id,
+      );
+      await this.notifyPayment(updatedInvoice, true);
+      await this.recordPaymentAudit({
+        invoice: updatedInvoice,
+        action: "PAYMENT_SUCCESS",
+        actorId: user.id,
+        oldValue: { payment_status: invoice.payment_status },
+        newValue: {
+          payment_status: updatedInvoice.payment_status,
+          transaction_id: updatedInvoice.transaction_id,
+          payment_date: updatedInvoice.payment_date,
+        },
+        metadata: { provider: "MOCK", source: "MOCK_GATEWAY" },
+      });
+    }
+
     return {
       success: true,
       message: "Thanh toán giả lập thành công",
       result,
     };
+  }
+
+  async mockFailPayment(user, invoiceId) {
+    const id = this.parseId(invoiceId);
+    const invoice = await this.repository.findClinicInvoiceById(id);
+    if (!invoice || invoice.invoice_type !== "CLINIC_FEE") {
+      const error = new Error("Không tìm thấy hóa đơn phí khám");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const patientAccountId = invoice.appointments?.patient_profiles?.account_id;
+    const isOwner = Number(patientAccountId) === Number(user.id);
+    if (
+      user.role?.name !== "Admin" &&
+      !(user.role?.name === "Patient" && isOwner)
+    ) {
+      const error = new Error("Bạn không có quyền thực hiện thao tác này");
+      error.statusCode = 403;
+      throw error;
+    }
+
+    await this.notifyPayment(invoice, false);
+    await this.recordPaymentAudit({
+      invoice,
+      action: "PAYMENT_FAILED",
+      actorId: user.id,
+      oldValue: { payment_status: invoice.payment_status },
+      newValue: { payment_status: invoice.payment_status },
+      metadata: { provider: "MOCK", source: "MOCK_GATEWAY" },
+    });
+    return { success: true, message: "Đã ghi nhận giao dịch không thành công" };
   }
 }
 

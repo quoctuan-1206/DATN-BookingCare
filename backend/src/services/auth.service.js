@@ -22,6 +22,7 @@ import {
 } from "../utils/jwt.js";
 import { generateOTP } from "../utils/otp.js";
 import prisma from "../config/prisma.js";
+import auditLogService from "./audit-log.service.js";
 
 const REFRESH_TOKEN_DAYS = 7;
 const OTP_EXPIRE_MINUTES = 5;
@@ -31,6 +32,28 @@ function sanitizeUser(user) {
   if (!user) return null;
   const { password, ...safeUser } = user;
   return safeUser;
+}
+
+const auditUserFields = [
+  "email",
+  "first_name",
+  "last_name",
+  "phone",
+  "gender",
+  "date_of_birth",
+  "address",
+  "avatar",
+  "role_id",
+  "is_active",
+];
+
+function auditUserSnapshot(user, fields = auditUserFields) {
+  if (!user) return null;
+  return Object.fromEntries(
+    fields
+      .filter((field) => Object.prototype.hasOwnProperty.call(user, field))
+      .map((field) => [field, user[field]]),
+  );
 }
 
 // Tạo payload nhúng vào JWT (id, email, role)
@@ -112,6 +135,15 @@ export async function register(userData) {
   // 4. Cấp token ngay sau đăng ký
   const tokens = await issueTokens(user);
 
+  await auditLogService.record({
+    userId: user.id,
+    action: "CREATE",
+    resource: "USER",
+    resourceId: user.id,
+    newValue: auditUserSnapshot(user),
+    metadata: { registrationType: "SELF_SERVICE_PATIENT" },
+  });
+
   return {
     user: sanitizeUser(user),
     ...tokens,
@@ -124,18 +156,46 @@ export async function login(email, password) {
 
   // Không phân biệt email sai hay password sai (bảo mật)
   if (!user || !(await comparePassword(password, user.password))) {
+    await auditLogService.record({
+      userId: user?.id ?? null,
+      action: "LOGIN_FAILED",
+      resource: "USER",
+      resourceId: user?.id ?? null,
+      metadata: {
+        attemptedEmail: String(email || "").trim().toLowerCase(),
+        reason: "INVALID_CREDENTIALS",
+      },
+    });
     throw Object.assign(new Error("Email or password is incorrect"), {
       statusCode: 401,
     });
   }
 
   if (!user.is_active) {
+    await auditLogService.record({
+      userId: user.id,
+      action: "LOGIN_FAILED",
+      resource: "USER",
+      resourceId: user.id,
+      metadata: {
+        attemptedEmail: user.email,
+        reason: "ACCOUNT_DISABLED",
+      },
+    });
     throw Object.assign(new Error("Account has been disabled"), {
       statusCode: 403,
     });
   }
 
   const tokens = await issueTokens(user);
+
+  await auditLogService.record({
+    userId: user.id,
+    action: "LOGIN",
+    resource: "USER",
+    resourceId: user.id,
+    metadata: { role: user.role?.name || null },
+  });
 
   return {
     user: sanitizeUser(user),
@@ -195,7 +255,16 @@ export async function logout(refreshTokenValue) {
     });
   }
 
+  const storedToken = await findRefreshToken(refreshTokenValue);
   await deleteRefreshToken(refreshTokenValue);
+
+  await auditLogService.record({
+    userId: storedToken?.user_id ?? null,
+    action: "LOGOUT",
+    resource: "USER",
+    resourceId: storedToken?.user_id ?? null,
+    metadata: { allDevices: false },
+  });
 
   return { message: "Logout successfully" };
 }
@@ -203,6 +272,13 @@ export async function logout(refreshTokenValue) {
 // Đăng xuất mọi thiết bị — xóa toàn bộ refresh token của user
 export async function logoutAll(userId) {
   await deleteAllRefreshTokens(userId);
+  await auditLogService.record({
+    userId,
+    action: "LOGOUT",
+    resource: "USER",
+    resourceId: userId,
+    metadata: { allDevices: true },
+  });
   return { message: "Logout all devices successfully" };
 }
 
@@ -284,6 +360,14 @@ export async function resetPassword(email, newPassword) {
   await deleteOTPsByEmail(email);
   await deleteAllRefreshTokens(user.id);
 
+  await auditLogService.record({
+    userId: user.id,
+    action: "RESET_PASSWORD",
+    resource: "USER",
+    resourceId: user.id,
+    newValue: { credentialsUpdated: true, sessionsRevoked: true },
+  });
+
   return { message: "Password reset successfully" };
 }
 
@@ -304,6 +388,16 @@ export async function updateProfile(userId, data) {
   }
 
   const updatedUser = await updateUserProfile(user.id, profileData);
+  const changedFields = Object.keys(profileData);
+  await auditLogService.record({
+    userId: user.id,
+    action: "UPDATE",
+    resource: "USER",
+    resourceId: user.id,
+    oldValue: auditUserSnapshot(user, changedFields),
+    newValue: auditUserSnapshot(updatedUser, changedFields),
+    metadata: { changedFields, selfService: true },
+  });
   return sanitizeUser(updatedUser);
 }
 
@@ -330,6 +424,14 @@ export async function changePassword(userId, currentPassword, newPassword) {
 
   const hashedPassword = await hashPassword(newPassword);
   await changePasswordAndRevokeTokens(user.id, hashedPassword);
+
+  await auditLogService.record({
+    userId: user.id,
+    action: "CHANGE_PASSWORD",
+    resource: "USER",
+    resourceId: user.id,
+    newValue: { credentialsUpdated: true, sessionsRevoked: true },
+  });
 
   return { message: "Đổi mật khẩu thành công. Vui lòng đăng nhập lại" };
 }

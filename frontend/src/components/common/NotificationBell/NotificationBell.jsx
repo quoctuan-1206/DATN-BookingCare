@@ -34,6 +34,32 @@ function NotificationBell({
   }, []);
 
   useEffect(() => {
+    const handleNewNotification = (event) => {
+      const notification = event.detail;
+      if (!notification) {
+        notificationService.getNotifications({ page: 1, limit: 8 }).then(
+          (result) => {
+            setItems(result.data);
+            setUnreadCount(result.unread_count);
+          },
+          () => {},
+        );
+        return;
+      }
+
+      setUnreadCount((count) => count + (notification.is_read ? 0 : 1));
+      setItems((current) => {
+        if (current.some((item) => item.id === notification.id)) return current;
+        return [notification, ...current].slice(0, 8);
+      });
+    };
+
+    window.addEventListener("notification:new", handleNewNotification);
+    return () =>
+      window.removeEventListener("notification:new", handleNewNotification);
+  }, []);
+
+  useEffect(() => {
     if (!open) return undefined;
 
     const onPointerDown = (event) => {

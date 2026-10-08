@@ -18,6 +18,11 @@ export const paymentService = {
     const res = await axiosClient.post(`/payments/mock-complete/${invoiceId}`);
     return res.data?.data;
   },
+
+  async mockFail(invoiceId) {
+    const res = await axiosClient.post(`/payments/mock-fail/${invoiceId}`);
+    return res.data?.data;
+  },
 };
 
 export default paymentService;

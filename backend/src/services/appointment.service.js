@@ -2,6 +2,7 @@ import appointmentRepository from "../repositories/appointment.repository.js";
 import patientProfileRepository from "../repositories/patient-profile.repository.js";
 import userRepository from "../repositories/user.repository.js";
 import notificationService from "./notification.service.js";
+import auditLogService from "./audit-log.service.js";
 import {
   formatDateOnly,
   formatTimeOnly,
@@ -31,6 +32,23 @@ const operationalStatuses = [
   "CALLED",
   "IN_PROGRESS",
 ];
+
+function appointmentAuditSnapshot(appointment) {
+  if (!appointment) return null;
+  return {
+    schedule_id: appointment.schedule_id,
+    patient_profile_id: appointment.patient_profile_id,
+    booking_code: appointment.booking_code ?? null,
+    reason: appointment.reason ?? null,
+    status: appointment.status,
+    queue_number: appointment.queue_number ?? null,
+    check_in_at: appointment.check_in_at ?? null,
+    called_at: appointment.called_at ?? null,
+    started_at: appointment.started_at ?? null,
+    completed_at: appointment.completed_at ?? null,
+    no_show_at: appointment.no_show_at ?? null,
+  };
+}
 
 function getVietnamDate() {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -136,10 +154,19 @@ class AppointmentService {
 
       if (actorRole !== "Patient" && patientAccountId) {
         await notificationService.notify(patientAccountId, {
-          title: "Lịch hẹn đã bị hủy",
-          content: `Lịch ${bookingCode}${when ? ` (${when})` : ""} đã bị hủy.`,
+          title:
+            actorRole === "Doctor"
+              ? "Bác sĩ đã hủy lịch khám"
+              : "Lịch hẹn đã bị hủy",
+          content:
+            actorRole === "Doctor"
+              ? `Bác sĩ đã hủy lịch ${bookingCode}${when ? ` (${when})` : ""}. Vui lòng chọn lịch khám khác.`
+              : `Lịch ${bookingCode}${when ? ` (${when})` : ""} đã bị hủy.`,
           link: `/patient/appointments/${appointment.id}`,
-          type: "APPOINTMENT",
+          type:
+            actorRole === "Doctor"
+              ? "APPOINTMENT_CANCELLED_BY_DOCTOR"
+              : "APPOINTMENT",
         });
       }
 
@@ -408,7 +435,15 @@ class AppointmentService {
     }
 
     this.assertCanView(user, appointment);
-    return this.formatAppointment(appointment);
+    const response = this.formatAppointment(appointment);
+    await auditLogService.record({
+      userId: user.id,
+      action: "VIEW",
+      resource: "APPOINTMENT",
+      resourceId: appointment.id,
+      metadata: { bookingCode: appointment.booking_code || null },
+    });
+    return response;
   }
 
   // Kiểm tra quyền xem lịch hẹn
@@ -475,7 +510,15 @@ class AppointmentService {
       // Không chặn đặt lịch nếu gửi thông báo lỗi
     }
 
-    return this.formatAppointment(appointment);
+    const response = this.formatAppointment(appointment);
+    await auditLogService.record({
+      userId: user.id,
+      action: "CREATE_APPOINTMENT",
+      resource: "APPOINTMENT",
+      resourceId: appointment.id,
+      newValue: appointmentAuditSnapshot(appointment),
+    });
+    return response;
   }
 
   // Cập nhật trạng thái lịch hẹn
@@ -540,7 +583,23 @@ class AppointmentService {
       // Không chặn cập nhật nếu gửi thông báo lỗi
     }
 
-    return this.formatAppointment(updated);
+    const response = this.formatAppointment(updated);
+    const action =
+      status === "CONFIRMED"
+        ? "CONFIRM_APPOINTMENT"
+        : status === "CANCELLED"
+          ? "CANCEL_APPOINTMENT"
+          : "UPDATE";
+    await auditLogService.record({
+      userId: user.id,
+      action,
+      resource: "APPOINTMENT",
+      resourceId: appointmentId,
+      oldValue: { status: current },
+      newValue: { status: updated.status },
+      metadata: { bookingCode: updated.booking_code || null },
+    });
+    return response;
   }
 
   assertOperationalDate(appointment) {
@@ -658,7 +717,17 @@ class AppointmentService {
     } catch {
       // Không chặn workflow nếu notification lỗi.
     }
-    return this.formatAppointment(updated);
+    const response = this.formatAppointment(updated);
+    await auditLogService.record({
+      userId: user.id,
+      action: "UPDATE",
+      resource: "APPOINTMENT",
+      resourceId: appointmentId,
+      oldValue: appointmentAuditSnapshot(existing),
+      newValue: appointmentAuditSnapshot(updated),
+      metadata: { workflowAction: action },
+    });
+    return response;
   }
 
   async getQueuePosition(user, id) {

@@ -115,6 +115,29 @@ class ScheduleRepository {
     });
   }
 
+  async findActiveAppointments(id) {
+    return prisma.appointments.findMany({
+      where: {
+        schedule_id: Number(id),
+        status: {
+          in: [
+            "PENDING",
+            "CONFIRMED",
+            "CHECKED_IN",
+            "WAITING",
+            "CALLED",
+            "IN_PROGRESS",
+          ],
+        },
+      },
+      select: {
+        id: true,
+        booking_code: true,
+        patient_profiles: { select: { account_id: true } },
+      },
+    });
+  }
+
   // Tạo 1 khung giờ lịch khám
   async create(data) {
     return prisma.schedules.create({

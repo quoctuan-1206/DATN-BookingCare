@@ -8,7 +8,10 @@ import {
 class UserController {
   async createStaff(req, res, next) {
     try {
-      const staff = await userService.createStaff(createStaffSchema.parse(req.body));
+      const staff = await userService.createStaff(
+        createStaffSchema.parse(req.body),
+        req.user.id,
+      );
       return res.status(201).json({
         success: true,
         message: "Tạo tài khoản STAFF thành công",

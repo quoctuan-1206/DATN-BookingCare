@@ -1,4 +1,5 @@
 import notificationRepository from "../repositories/notification.repository.js";
+import { publishNotification } from "../realtime/notification-stream.js";
 
 class NotificationService {
   // Chuẩn hóa định dạng dữ liệu thông báo trả về cho API
@@ -26,7 +27,20 @@ class NotificationService {
       link,
       type,
     });
-    return this.format(created);
+    const formatted = this.format(created);
+    publishNotification(userId, formatted);
+    return formatted;
+  }
+
+  async notifyOnce(userId, payload) {
+    if (!userId) return null;
+    const existing = await notificationRepository.findDuplicate({
+      user_id: userId,
+      type: payload.type || "SYSTEM",
+      link: payload.link || null,
+    });
+    if (existing) return this.format(existing);
+    return this.notify(userId, payload);
   }
 
   // Tạo thông báo hàng loạt cho nhiều người dùng
@@ -44,6 +58,8 @@ class NotificationService {
         is_read: false,
       })),
     );
+
+    for (const userId of uniqueIds) publishNotification(userId, null);
   }
 
   // Lấy danh sách thông báo của người dùng hiện tại
@@ -87,8 +103,7 @@ class NotificationService {
 
   // Tạo thông báo bởi Admin
   async createByAdmin(data) {
-    const created = await notificationRepository.create(data);
-    return this.format(created);
+    return this.notify(data.user_id, data);
   }
 }
 

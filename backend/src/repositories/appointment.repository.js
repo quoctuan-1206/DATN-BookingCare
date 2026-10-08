@@ -241,6 +241,21 @@ class AppointmentRepository {
     });
   }
 
+  async findUpcomingForReminders(fromDate, toDate) {
+    return this.prisma.appointments.findMany({
+      where: {
+        status: "CONFIRMED",
+        schedules: {
+          work_date: {
+            gte: fromDate,
+            lte: toDate,
+          },
+        },
+      },
+      include: appointmentInclude,
+    });
+  }
+
   // Chuyển trạng thái có điều kiện để hai thao tác đồng thời không thể cùng thắng.
   async transitionStatus(id, fromStatus, toStatus, data = {}) {
     return this.prisma.$transaction(async (tx) => {

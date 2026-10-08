@@ -34,6 +34,23 @@ function Notifications() {
     fetchNotifications();
   }, [fetchNotifications]);
 
+  useEffect(() => {
+    const handleRealtime = (event) => {
+      const notification = event.detail;
+      if (!notification) {
+        void fetchNotifications();
+        return;
+      }
+      setItems((current) => {
+        if (current.some((item) => item.id === notification.id)) return current;
+        return [notification, ...current].slice(0, 50);
+      });
+      if (!notification.is_read) setUnreadCount((count) => count + 1);
+    };
+    window.addEventListener("notification:new", handleRealtime);
+    return () => window.removeEventListener("notification:new", handleRealtime);
+  }, [fetchNotifications]);
+
   const markRead = async (id) => {
     try {
       await notificationService.markRead(id);

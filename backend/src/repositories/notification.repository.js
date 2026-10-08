@@ -50,6 +50,17 @@ class NotificationRepository {
     return prisma.notifications.createMany({ data: items });
   }
 
+  async findDuplicate({ user_id, type, link }) {
+    return prisma.notifications.findFirst({
+      where: {
+        user_id: Number(user_id),
+        type,
+        link,
+      },
+      orderBy: { id: "desc" },
+    });
+  }
+
   // Đánh dấu 1 thông báo đã đọc
   async markRead(id, userId) {
     return prisma.notifications.updateMany({

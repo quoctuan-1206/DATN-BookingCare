@@ -1,4 +1,6 @@
 import labRepository from "../repositories/lab.repository.js";
+import notificationService from "./notification.service.js";
+import auditLogService from "./audit-log.service.js";
 import {
   formatDateDisplay,
   formatDateOnly,
@@ -187,6 +189,38 @@ function formatEvent(item) {
   };
 }
 
+function labResultAuditSnapshot(item) {
+  if (!item) return null;
+  return {
+    lab_order_id: item.lab_order_id,
+    test_id: item.test_id,
+    result: item.result ?? null,
+    unit: item.unit ?? null,
+    reference_range: item.reference_range ?? null,
+    findings: item.findings ?? null,
+    conclusion: item.conclusion ?? null,
+    measurements: item.measurements ?? null,
+    note: item.note ?? null,
+    created_by: item.created_by ?? null,
+  };
+}
+
+function labOrderAuditSnapshot(order) {
+  if (!order) return null;
+  return {
+    service_type: order.service_type || "LAB",
+    appointment_id: order.appointment_id ?? null,
+    lab_schedule_id: order.lab_schedule_id ?? null,
+    patient_id: order.patient_id,
+    doctor_id: order.doctor_id ?? null,
+    booking_code: order.booking_code ?? null,
+    indication: order.indication ?? null,
+    preparation_note: order.preparation_note ?? null,
+    patient_note: order.patient_note ?? null,
+    status: order.status,
+  };
+}
+
 function formatOrder(order, currentUser = null) {
   if (!order) return null;
   const serviceType = order.service_type || "LAB";
@@ -251,6 +285,27 @@ function getAttachmentKind(mimeType) {
 }
 
 class LabService {
+  async notifyResultReady(order) {
+    const accountId = order?.patient_profiles?.account_id;
+    if (!accountId || order?.status !== "COMPLETED") return;
+
+    const serviceLabel =
+      CLINICAL_SERVICE_LABELS[order.service_type || "LAB"] ||
+      "Cận lâm sàng";
+    const code =
+      order.booking_code || order.appointments?.booking_code || `#${order.id}`;
+    try {
+      await notificationService.notifyOnce(accountId, {
+        title: `Đã có kết quả ${serviceLabel.toLowerCase()}`,
+        content: `Kết quả phiếu ${code} đã sẵn sàng. Bạn có thể xem chi tiết trên hồ sơ cận lâm sàng.`,
+        link: `/patient/clinical?order=${order.id}`,
+        type: "CLINICAL_RESULT_READY",
+      });
+    } catch (error) {
+      console.error("[LabService] Không thể gửi thông báo kết quả:", error);
+    }
+  }
+
   buildServiceWhere(query, forcedServiceType = null) {
     const where = {};
     if (query.search) where.name = { contains: query.search };
@@ -425,7 +480,20 @@ class LabService {
       patientNote: null,
       tests,
     });
-    return formatOrder(order, currentUser);
+    const response = formatOrder(order, currentUser);
+    await auditLogService.record({
+      userId: currentUser.id,
+      action: "CREATE_LAB_ORDER",
+      resource: "LAB_ORDER",
+      resourceId: order.id,
+      newValue: labOrderAuditSnapshot(order),
+      metadata: {
+        appointmentId: order.appointment_id,
+        serviceIds,
+        serviceType,
+      },
+    });
+    return response;
   }
 
   async createPatientOrder(data, currentUser, forcedServiceType = "LAB") {
@@ -489,7 +557,21 @@ class LabService {
       patientNote: data.patient_note,
       tests,
     });
-    return formatOrder(order, currentUser);
+    const response = formatOrder(order, currentUser);
+    await auditLogService.record({
+      userId: currentUser.id,
+      action: "CREATE_LAB_ORDER",
+      resource: "LAB_ORDER",
+      resourceId: order.id,
+      newValue: labOrderAuditSnapshot(order),
+      metadata: {
+        selfBooking: true,
+        serviceIds,
+        serviceType,
+        scheduleId,
+      },
+    });
+    return response;
   }
 
   async getSchedules(query, publicOnly = false, forcedServiceType = null) {
@@ -663,11 +745,26 @@ class LabService {
       this.buildOrderWhere(query, currentUser, forcedServiceType),
       query,
     );
-    return {
+    const response = {
       ...result,
       total_pages: Math.ceil(result.total / result.limit) || 0,
       data: result.orders.map((order) => formatOrder(order, currentUser)),
     };
+
+    await auditLogService.record({
+      userId: currentUser.id,
+      action: "VIEW",
+      resource: "LAB_ORDER",
+      metadata: {
+        scope: "LIST",
+        serviceType: forcedServiceType || query.service_type || null,
+        page: result.page,
+        limit: result.limit,
+        resultCount: result.orders.length,
+      },
+    });
+
+    return response;
   }
 
   assertCanViewOrder(order, currentUser) {
@@ -697,10 +794,16 @@ class LabService {
   }
 
   async getOrderById(id, currentUser, forcedServiceType = null) {
-    return formatOrder(
-      await this.getOrderEntity(id, currentUser, forcedServiceType),
-      currentUser,
-    );
+    const order = await this.getOrderEntity(id, currentUser, forcedServiceType);
+    const response = formatOrder(order, currentUser);
+    await auditLogService.record({
+      userId: currentUser.id,
+      action: "VIEW",
+      resource: "LAB_ORDER",
+      resourceId: order.id,
+      metadata: { serviceType: order.service_type },
+    });
+    return response;
   }
 
   async updateOrderStatus(id, payload, currentUser, forcedServiceType = null) {
@@ -725,15 +828,27 @@ class LabService {
         400,
       );
     }
-    return formatOrder(
-      await labRepository.updateOrderStatus(
-        order.id,
-        status,
-        currentUser.id,
-        cancellationReason,
-      ),
-      currentUser,
+    const updated = await labRepository.updateOrderStatus(
+      order.id,
+      status,
+      currentUser.id,
+      cancellationReason,
     );
+    if (status === "COMPLETED") await this.notifyResultReady(updated);
+    const response = formatOrder(updated, currentUser);
+    await auditLogService.record({
+      userId: currentUser.id,
+      action: "UPDATE",
+      resource: "LAB_ORDER",
+      resourceId: order.id,
+      oldValue: { status: order.status },
+      newValue: {
+        status: updated.status,
+        cancellation_reason: updated.cancellation_reason ?? null,
+      },
+      metadata: { serviceType: order.service_type },
+    });
+    return response;
   }
 
   assertOrderCanBeEdited(order) {
@@ -761,15 +876,35 @@ class LabService {
       throw httpError("Dịch vụ này chưa có trong phiếu chỉ định", 400);
     }
     const { test_id: _testId, ...resultData } = data;
-    return formatOrder(
-      await labRepository.createOrUpdateResult(
-        order.id,
-        test,
-        resultData,
-        currentUser.id,
-      ),
-      currentUser,
+    const previousResult = order.lab_results.find(
+      (item) => Number(item.test_id) === Number(test.id),
     );
+    const updated = await labRepository.createOrUpdateResult(
+      order.id,
+      test,
+      resultData,
+      currentUser.id,
+    );
+    const savedResult = updated.lab_results.find(
+      (item) => Number(item.test_id) === Number(test.id),
+    );
+    const response = formatOrder(updated, currentUser);
+
+    await auditLogService.record({
+      userId: currentUser.id,
+      action: "UPDATE_LAB_RESULT",
+      resource: "LAB_RESULT",
+      resourceId: savedResult?.id,
+      oldValue: labResultAuditSnapshot(previousResult),
+      newValue: labResultAuditSnapshot(savedResult),
+      metadata: {
+        labOrderId: order.id,
+        serviceType: order.service_type,
+        operation: previousResult ? "UPDATE" : "CREATE",
+      },
+    });
+
+    return response;
   }
 
   async getResultById(id, currentUser) {
@@ -781,7 +916,18 @@ class LabService {
     if (currentUser.role?.name === "Patient" && order.status !== "COMPLETED") {
       throw httpError("Kết quả chỉ được xem sau khi phiếu hoàn thành", 403);
     }
-    return formatResult(result);
+    const response = formatResult(result);
+    await auditLogService.record({
+      userId: currentUser.id,
+      action: "VIEW",
+      resource: "LAB_RESULT",
+      resourceId: result.id,
+      metadata: {
+        labOrderId: result.lab_order_id,
+        serviceType: order.service_type,
+      },
+    });
+    return response;
   }
 
   async updateResult(
@@ -802,15 +948,39 @@ class LabService {
       forcedServiceType,
     );
     this.assertOrderCanBeEdited(order);
+    const parsedResultId = parseId(resultId, "ID kết quả");
+    const previousResult = order.lab_results.find(
+      (item) => Number(item.id) === parsedResultId,
+    );
     const updated = await labRepository.updateResult(
       order.id,
-      parseId(resultId, "ID kết quả"),
+      parsedResultId,
       data,
       currentUser.id,
       { autoComplete },
     );
     if (!updated) throw httpError("Không tìm thấy kết quả cận lâm sàng", 404);
-    return formatOrder(updated, currentUser);
+    if (updated.status === "COMPLETED") await this.notifyResultReady(updated);
+    const savedResult = updated.lab_results.find(
+      (item) => Number(item.id) === parsedResultId,
+    );
+    const response = formatOrder(updated, currentUser);
+
+    await auditLogService.record({
+      userId: currentUser.id,
+      action: "UPDATE_LAB_RESULT",
+      resource: "LAB_RESULT",
+      resourceId: parsedResultId,
+      oldValue: labResultAuditSnapshot(previousResult),
+      newValue: labResultAuditSnapshot(savedResult),
+      metadata: {
+        labOrderId: order.id,
+        serviceType: order.service_type,
+        autoCompletedOrder: autoComplete && updated.status === "COMPLETED",
+      },
+    });
+
+    return response;
   }
 
   async attachResultFile(id, file, currentUser) {
@@ -826,6 +996,26 @@ class LabService {
       { ...file, kind: getAttachmentKind(file.mimeType) },
       currentUser.id,
     );
+    await this.notifyResultReady(updated);
+    await auditLogService.record({
+      userId: currentUser.id,
+      action: "UPDATE_LAB_RESULT",
+      resource: "LAB_RESULT",
+      resourceId: order.id,
+      oldValue: order.result_file_path
+        ? {
+            file_name: order.result_file_name,
+            file_type: order.result_file_type,
+            file_size: order.result_file_size,
+          }
+        : null,
+      newValue: {
+        file_name: updated.result_file_name,
+        file_type: updated.result_file_type,
+        file_size: updated.result_file_size,
+      },
+      metadata: { labOrderId: order.id, legacyResultFile: true },
+    });
     return {
       data: formatOrder(updated, currentUser),
       previousFilePath: order.result_file_path || null,
@@ -840,6 +1030,17 @@ class LabService {
     if (!order.result_file_path) {
       throw httpError("Phiếu xét nghiệm chưa có file kết quả", 404);
     }
+    await auditLogService.record({
+      userId: currentUser.id,
+      action: "DOWNLOAD_LAB_RESULT",
+      resource: "LAB_RESULT",
+      resourceId: order.id,
+      metadata: {
+        labOrderId: order.id,
+        fileName: order.result_file_name || null,
+        delivery: "LEGACY_RESULT_FILE",
+      },
+    });
     return {
       path: order.result_file_path,
       name: order.result_file_name || "ket-qua-xet-nghiem",
@@ -860,7 +1061,31 @@ class LabService {
       { ...file, kind: getAttachmentKind(file.mimeType) },
       currentUser.id,
     );
-    return formatOrder(updated, currentUser);
+    const attachment = (updated.clinical_attachments || []).find(
+      (item) => item.storage_path === file.filename,
+    ) || (updated.clinical_attachments || []).at(-1);
+    const response = formatOrder(updated, currentUser);
+    await auditLogService.record({
+      userId: currentUser.id,
+      action: "UPDATE_LAB_RESULT",
+      resource: "LAB_RESULT",
+      resourceId: attachment?.id,
+      newValue: attachment
+        ? {
+            kind: attachment.kind,
+            original_name: attachment.original_name,
+            mime_type: attachment.mime_type,
+            file_size: attachment.file_size,
+          }
+        : {
+            kind: getAttachmentKind(file.mimeType),
+            original_name: file.originalName,
+            mime_type: file.mimeType,
+            file_size: file.size,
+          },
+      metadata: { labOrderId: order.id, operation: "ATTACHMENT_ADDED" },
+    });
+    return response;
   }
 
   async getAttachments(orderId, currentUser) {
@@ -868,7 +1093,18 @@ class LabService {
     if (currentUser.role?.name === "Patient" && order.status !== "COMPLETED") {
       return [];
     }
-    return (order.clinical_attachments || []).map(formatAttachment);
+    const attachments = (order.clinical_attachments || []).map(formatAttachment);
+    await auditLogService.record({
+      userId: currentUser.id,
+      action: "VIEW",
+      resource: "LAB_RESULT",
+      metadata: {
+        scope: "ATTACHMENT_LIST",
+        labOrderId: order.id,
+        resultCount: attachments.length,
+      },
+    });
+    return attachments;
   }
 
   async getAttachmentFile(id, currentUser) {
@@ -883,6 +1119,17 @@ class LabService {
     ) {
       throw httpError("Tệp kết quả chỉ được xem sau khi phiếu hoàn thành", 403);
     }
+    await auditLogService.record({
+      userId: currentUser.id,
+      action: "DOWNLOAD_LAB_RESULT",
+      resource: "LAB_RESULT",
+      resourceId: attachment.id,
+      metadata: {
+        labOrderId: attachment.lab_order_id,
+        fileName: attachment.original_name,
+        delivery: "ATTACHMENT",
+      },
+    });
     return {
       path: attachment.storage_path,
       name: attachment.original_name,
@@ -905,6 +1152,22 @@ class LabService {
       attachment.id,
       currentUser.id,
     );
+    await auditLogService.record({
+      userId: currentUser.id,
+      action: "DELETE",
+      resource: "LAB_RESULT",
+      resourceId: attachment.id,
+      oldValue: {
+        kind: attachment.kind,
+        original_name: attachment.original_name,
+        mime_type: attachment.mime_type,
+        file_size: attachment.file_size,
+      },
+      metadata: {
+        labOrderId: attachment.lab_order_id,
+        operation: "ATTACHMENT_REMOVED",
+      },
+    });
     return {
       id: deleted.id,
       storagePath: deleted.storage_path,
@@ -913,7 +1176,15 @@ class LabService {
 
   async getOrderEvents(orderId, currentUser) {
     const order = await this.getOrderEntity(orderId, currentUser);
-    return (order.clinical_order_events || []).map(formatEvent);
+    const events = (order.clinical_order_events || []).map(formatEvent);
+    await auditLogService.record({
+      userId: currentUser.id,
+      action: "VIEW",
+      resource: "LAB_ORDER",
+      resourceId: order.id,
+      metadata: { scope: "EVENTS", resultCount: events.length },
+    });
+    return events;
   }
 }
 

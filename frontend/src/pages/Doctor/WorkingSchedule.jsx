@@ -12,6 +12,7 @@ function WorkingSchedule() {
   const [workplaces, setWorkplaces] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({
     doctor_workplace_id: "",
     work_date: "",
@@ -58,6 +59,30 @@ function WorkingSchedule() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  const resetForm = () => {
+    setEditingId(null);
+    setForm((current) => ({
+      doctor_workplace_id:
+        current.doctor_workplace_id || String(workplaces[0]?.id || ""),
+      work_date: "",
+      start_time: "08:00",
+      end_time: "09:00",
+      max_patients: 10,
+    }));
+  };
+
+  const handleEdit = (item) => {
+    setEditingId(item.id);
+    setForm({
+      doctor_workplace_id: String(item.doctor_workplace_id || ""),
+      work_date: item.work_date,
+      start_time: item.start_time,
+      end_time: item.end_time,
+      max_patients: item.max_patients,
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const handleCreate = async (e) => {
     e.preventDefault();
     if (!form.doctor_workplace_id || !form.work_date) {
@@ -67,15 +92,24 @@ function WorkingSchedule() {
 
     setSaving(true);
     try {
-      await scheduleService.createSchedule({
-        doctor_workplace_id: Number(form.doctor_workplace_id),
+      const scheduleData = {
         work_date: form.work_date,
         start_time: form.start_time,
         end_time: form.end_time,
         max_patients: Number(form.max_patients) || 10,
-      });
-      toast.success("Đã thêm khung giờ");
-      loadData();
+      };
+      if (editingId) {
+        await scheduleService.updateSchedule(editingId, scheduleData);
+        toast.success("Đã cập nhật lịch và thông báo cho bệnh nhân");
+      } else {
+        await scheduleService.createSchedule({
+          doctor_workplace_id: Number(form.doctor_workplace_id),
+          ...scheduleData,
+        });
+        toast.success("Đã thêm khung giờ");
+      }
+      resetForm();
+      await loadData();
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Không tạo được lịch"));
     } finally {
@@ -102,7 +136,9 @@ function WorkingSchedule() {
     <DoctorLayout title="Lịch làm việc">
       <div className="doctor-page">
         <div className="doctor-card" style={{ marginBottom: 20 }}>
-          <h3 style={{ marginBottom: 12 }}>Thêm khung giờ khám</h3>
+          <h3 style={{ marginBottom: 12 }}>
+            {editingId ? "Cập nhật khung giờ khám" : "Thêm khung giờ khám"}
+          </h3>
           <form
             onSubmit={handleCreate}
             style={{
@@ -119,6 +155,7 @@ function WorkingSchedule() {
                 className="admin-select"
                 value={form.doctor_workplace_id}
                 onChange={handleChange}
+                disabled={Boolean(editingId)}
                 required
               >
                 <option value="">Chọn...</option>
@@ -174,13 +211,29 @@ function WorkingSchedule() {
                 onChange={handleChange}
               />
             </label>
-            <button
-              type="submit"
-              className="admin-btn admin-btn-primary"
-              disabled={saving}
-            >
-              {saving ? "Đang lưu..." : "Thêm lịch"}
-            </button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                type="submit"
+                className="admin-btn admin-btn-primary"
+                disabled={saving}
+              >
+                {saving
+                  ? "Đang lưu..."
+                  : editingId
+                    ? "Lưu thay đổi"
+                    : "Thêm lịch"}
+              </button>
+              {editingId && (
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-secondary"
+                  onClick={resetForm}
+                  disabled={saving}
+                >
+                  Hủy sửa
+                </button>
+              )}
+            </div>
           </form>
         </div>
 
@@ -217,6 +270,15 @@ function WorkingSchedule() {
                         {item.booked_patients}/{item.max_patients}
                       </td>
                       <td>
+                        <button
+                          type="button"
+                          className="admin-btn admin-btn-secondary"
+                          onClick={() => handleEdit(item)}
+                          disabled={saving}
+                          style={{ marginRight: 8 }}
+                        >
+                          Sửa
+                        </button>
                         <button
                           type="button"
                           className="admin-btn admin-btn-danger"

@@ -1,4 +1,5 @@
 import scheduleRepository from "../repositories/schedule.repository.js";
+import notificationService from "./notification.service.js";
 import {
   formatDateOnly,
   formatTimeOnly,
@@ -177,14 +178,15 @@ class ScheduleService {
       currentUser,
     );
 
-    if ((existing.booked_patients || 0) > 0) {
-      if (data.work_date || data.start_time || data.end_time) {
-        const error = new Error(
-          "Không thể đổi ngày/giờ khi đã có bệnh nhân đặt lịch",
-        );
-        error.statusCode = 400;
-        throw error;
-      }
+    if (
+      data.max_patients !== undefined &&
+      data.max_patients < (existing.booked_patients || 0)
+    ) {
+      const error = new Error(
+        "Số bệnh nhân tối đa không được nhỏ hơn số lượt đã đặt",
+      );
+      error.statusCode = 400;
+      throw error;
     }
 
     const start = data.start_time || formatTimeOnly(existing.start_time);
@@ -196,7 +198,33 @@ class ScheduleService {
     }
 
     try {
+      const hasTimeChange = Boolean(
+        data.work_date || data.start_time || data.end_time,
+      );
+      const activeAppointments = hasTimeChange
+        ? await scheduleRepository.findActiveAppointments(scheduleId)
+        : [];
       const updated = await scheduleRepository.update(scheduleId, data);
+
+      if (activeAppointments.length) {
+        const before = this.formatScheduleResponse(existing);
+        const after = this.formatScheduleResponse(updated);
+        const actor =
+          currentUser?.role?.name === "Doctor" ? "Bác sĩ" : "Cơ sở y tế";
+        await Promise.allSettled(
+          activeAppointments.map((appointment) =>
+            notificationService.notify(
+              appointment.patient_profiles?.account_id,
+              {
+                title: `${actor} đã đổi lịch khám`,
+                content: `Lịch ${appointment.booking_code || `#${appointment.id}`} đã đổi từ ${before.date_display} · ${before.time} sang ${after.date_display} · ${after.time}.`,
+                link: `/patient/appointments/${appointment.id}`,
+                type: "APPOINTMENT_CHANGED",
+              },
+            ),
+          ),
+        );
+      }
       return this.formatScheduleResponse(updated);
     } catch (error) {
       if (error.code === "P2002") {

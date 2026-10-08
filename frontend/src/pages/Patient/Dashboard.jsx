@@ -80,6 +80,22 @@ function Dashboard() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    const handleRealtime = (event) => {
+      const notification = event.detail;
+      if (!notification) return;
+      setNotifications((current) => {
+        if (current.some((item) => item.id === notification.id)) return current;
+        return [notification, ...current].slice(0, 4);
+      });
+      if (!notification.is_read) {
+        setStats((current) => ({ ...current, unread: current.unread + 1 }));
+      }
+    };
+    window.addEventListener("notification:new", handleRealtime);
+    return () => window.removeEventListener("notification:new", handleRealtime);
+  }, []);
+
   const fullName = useMemo(() => {
     if (!user) return "Bệnh nhân";
     return [user.last_name, user.first_name].filter(Boolean).join(" ").trim();

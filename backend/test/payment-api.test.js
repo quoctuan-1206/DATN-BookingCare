@@ -438,3 +438,40 @@ test("mockCompletePayment marks invoice paid and returns success", async () => {
   assert.equal(result.success, true);
   assert.equal(repo.currentInvoice.payment_status, "PAID");
 });
+
+test("mock payment emits success and failure notifications for the invoice owner", async () => {
+  const successRepo = createMockRepo();
+  const successNotifications = [];
+  const successService = new PaymentService({
+    config,
+    repository: successRepo,
+    notifications: {
+      notifyOnce: async (userId, payload) =>
+        successNotifications.push({ userId, ...payload }),
+    },
+  });
+  const patient = { id: 1, role: { name: "Patient" } };
+
+  await successService.mockCompletePayment(
+    patient,
+    42,
+    new Date("2026-09-25T03:00:00.000Z"),
+  );
+  assert.equal(successNotifications.length, 1);
+  assert.equal(successNotifications[0].type, "PAYMENT_SUCCESS");
+
+  const failureRepo = createMockRepo();
+  const failureNotifications = [];
+  const failureService = new PaymentService({
+    config,
+    repository: failureRepo,
+    notifications: {
+      notifyOnce: async (userId, payload) =>
+        failureNotifications.push({ userId, ...payload }),
+    },
+  });
+  await failureService.mockFailPayment(patient, 42);
+  assert.equal(failureNotifications.length, 1);
+  assert.equal(failureNotifications[0].type, "PAYMENT_FAILED");
+  assert.equal(failureNotifications[0].userId, 1);
+});

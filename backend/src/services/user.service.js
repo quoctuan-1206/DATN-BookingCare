@@ -1,8 +1,9 @@
 import userRepository from "../repositories/user.repository.js";
 import { hashPassword } from "../utils/bcrypt.js";
+import auditLogService from "./audit-log.service.js";
 
 class UserService {
-  async createStaff(data) {
+  async createStaff(data, currentAdminId) {
     const [existing, role] = await Promise.all([
       userRepository.findByEmail(data.email),
       userRepository.findRoleByName("STAFF"),
@@ -21,7 +22,23 @@ class UserService {
       { ...data, password: await hashPassword(data.password) },
       role.id,
     );
-    return this.formatUserResponse(staff);
+    const response = this.formatUserResponse(staff);
+    await auditLogService.record({
+      userId: currentAdminId,
+      action: "CREATE",
+      resource: "USER",
+      resourceId: staff.id,
+      newValue: {
+        email: staff.email,
+        first_name: staff.first_name,
+        last_name: staff.last_name,
+        phone: staff.phone,
+        role: staff.role?.name || "STAFF",
+        is_active: staff.is_active,
+      },
+      metadata: { accountType: "STAFF" },
+    });
+    return response;
   }
 
   // Chuẩn hóa dữ liệu người dùng trả về API
@@ -127,7 +144,17 @@ class UserService {
     }
 
     const updated = await userRepository.updateStatus(userId, isActive);
-    return this.formatUserResponse(updated);
+    const response = this.formatUserResponse(updated);
+    await auditLogService.record({
+      userId: currentAdminId,
+      action: isActive ? "UNLOCK_USER" : "LOCK_USER",
+      resource: "USER",
+      resourceId: userId,
+      oldValue: { is_active: currentlyActive },
+      newValue: { is_active: isActive },
+      metadata: { targetEmail: user.email },
+    });
+    return response;
   }
 }
 

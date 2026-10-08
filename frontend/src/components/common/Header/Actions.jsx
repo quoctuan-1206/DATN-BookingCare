@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "../../../context/AuthContext";
+import NotificationBell from "../NotificationBell/NotificationBell";
 
 function Actions() {
   const navigate = useNavigate();
@@ -14,9 +15,19 @@ function Actions() {
 
   if (isAuthenticated && user) {
     const dashboardPath = getRedirectPathByRole(user.role?.name);
+    const notificationPath =
+      user.role?.name === "Doctor"
+        ? "/doctor/notifications"
+        : user.role?.name === "Admin"
+          ? "/admin/notifications"
+          : "/patient/notifications";
 
     return (
       <div className="actions">
+        <NotificationBell
+          viewAllTo={notificationPath}
+          buttonClassName="header-notification-btn"
+        />
         <Link to={dashboardPath} className="support-btn">
           {user.first_name || "Tài khoản"}
         </Link>

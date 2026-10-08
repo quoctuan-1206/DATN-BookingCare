@@ -4,6 +4,7 @@ import App from "./App";
 import { BrowserRouter } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";
+import NotificationRealtime from "./components/common/NotificationRealtime";
 import "./styles/variables.css";
 import "./styles/global.css";
 import "./styles/layout.css";
@@ -21,6 +22,7 @@ import "./styles/booking.css";
 import "./styles/patient.css";
 import "./styles/auth.css";
 import "./styles/admin.css";
+import "./styles/audit-log.css";
 import "./styles/doctor-dashboard.css";
 import "./styles/lab.css";
 import "./styles/clinical.css";
@@ -30,6 +32,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
       <AuthProvider>
+        <NotificationRealtime />
         <App />
         <Toaster position="top-right" />
       </AuthProvider>

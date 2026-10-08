@@ -25,7 +25,8 @@ export default function MockVnpayGateway() {
 
   const invoiceId = searchParams.get("invoiceId");
   const amount = searchParams.get("amount") || "200000";
-  const txnRef = searchParams.get("txnRef") || `INV${Date.now()}`;
+  const [fallbackTxnRef] = useState(() => `INV${Date.now()}`);
+  const txnRef = searchParams.get("txnRef") || fallbackTxnRef;
   const bookingCode = searchParams.get("bookingCode") || "BK-TEST";
   const patientName = searchParams.get("patientName") || "";
 
@@ -62,8 +63,14 @@ export default function MockVnpayGateway() {
     }
   };
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
     if (invoiceId) {
+      setSubmitting(true);
+      try {
+        await paymentService.mockFail(invoiceId);
+      } catch {
+        // Vẫn điều hướng về trang kết quả nếu cổng mô phỏng không phản hồi.
+      }
       navigate(`/payment/result?invoiceId=${invoiceId}&status=failed`);
     } else {
       navigate(-1);

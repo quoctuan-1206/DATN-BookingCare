@@ -16,6 +16,7 @@ import {
     LogOut,
     Pill,
     Activity,
+    History,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 
@@ -95,6 +96,12 @@ function AdminSidebar({ collapsed, setCollapsed }) {
             title: "Thông báo",
             path: "/admin/notifications",
             icon: <Bell size={18} />,
+        },
+
+        {
+            title: "Nhật ký hệ thống",
+            path: "/admin/audit-logs",
+            icon: <History size={18} />,
         },
 
         {

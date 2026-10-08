@@ -84,6 +84,22 @@ class PaymentController {
       next(error);
     }
   }
+
+  async mockFailPayment(req, res, next) {
+    try {
+      const data = await paymentService.mockFailPayment(
+        req.user,
+        req.params.invoiceId,
+      );
+      return res.status(200).json({
+        success: true,
+        message: "Đã ghi nhận thanh toán thất bại",
+        data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default new PaymentController();

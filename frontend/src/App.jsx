@@ -58,6 +58,7 @@ import AdminSettings from "./pages/Admin/Settings";
 import AdminProfile from "./pages/Admin/Profile";
 import AdminNotifications from "./pages/Admin/Notifications";
 import AdminClinicalServices from "./pages/Admin/ClinicalServices";
+import AdminAuditLogs from "./pages/Admin/AuditLogs";
 
 import DoctorDashboard from "./pages/Doctor/Dashboard";
 import DoctorSchedule from "./pages/Doctor/Schedule";
@@ -213,6 +214,7 @@ function App() {
             <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="/admin/profile" element={<AdminProfile />} />
             <Route path="/admin/clinical-services" element={<AdminClinicalServices />} />
+            <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
 
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />

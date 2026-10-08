@@ -22,10 +22,19 @@ import prescriptionRoutes from "./routes/prescription.routes.js";
 import labRoutes from "./routes/lab.routes.js";
 import clinicalRoutes from "./routes/clinical.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
+import auditLogRoutes from "./routes/audit-log.routes.js";
+import { requestContextMiddleware } from "./context/request-context.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
+// Chỉ tin số proxy hop do operator cấu hình; không đọc X-Forwarded-For trực tiếp.
+const trustProxyHops = Number(process.env.TRUST_PROXY_HOPS || 0);
+if (Number.isInteger(trustProxyHops) && trustProxyHops > 0) {
+  app.set("trust proxy", trustProxyHops);
+}
+
+app.use(requestContextMiddleware);
 app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
@@ -92,6 +101,7 @@ app.use("/api/clinical", clinicalRoutes);
 
 // Thanh toán VNPAY (Khám bệnh)
 app.use("/api/payments", paymentRoutes);
+app.use("/api/admin/audit-logs", auditLogRoutes);
 
 // Middleware bắt lỗi chung toàn hệ thống
 app.use((err, req, res, next) => {

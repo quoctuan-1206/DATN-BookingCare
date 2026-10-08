@@ -12,6 +12,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 -- Xóa bảng theo thứ tự ngược dependency
 DROP TABLE IF EXISTS `articles`;
+DROP TABLE IF EXISTS `audit_logs`;
 DROP TABLE IF EXISTS `lab_results`;
 DROP TABLE IF EXISTS `lab_orders`;
 DROP TABLE IF EXISTS `lab_schedules`;
@@ -69,6 +70,32 @@ CREATE TABLE users (
     INDEX idx_user_email (email),
     INDEX idx_user_phone (phone)
 ) ENGINE=InnoDB COMMENT='Bảng tài khoản người dùng';
+
+-- ============================================================================
+-- AUDIT LOGS (chỉ backend ghi, API chỉ cho Admin đọc)
+-- ============================================================================
+CREATE TABLE audit_logs (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NULL,
+    action VARCHAR(64) NOT NULL,
+    resource VARCHAR(64) NOT NULL,
+    resource_id VARCHAR(191) NULL,
+    old_value JSON NULL,
+    new_value JSON NULL,
+    ip_address VARCHAR(45) NULL,
+    user_agent VARCHAR(512) NULL,
+    metadata JSON NULL,
+    created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    CONSTRAINT fk_audit_logs_user
+      FOREIGN KEY (user_id) REFERENCES users(id)
+      ON DELETE SET NULL ON UPDATE NO ACTION,
+    INDEX idx_audit_logs_created_id (created_at, id),
+    INDEX idx_audit_logs_user_created (user_id, created_at),
+    INDEX idx_audit_logs_action_created (action, created_at),
+    INDEX idx_audit_logs_resource_created (resource, created_at),
+    INDEX idx_audit_logs_resource_id_created (resource_id, created_at),
+    INDEX idx_audit_logs_resource_target_created (resource, resource_id, created_at)
+) ENGINE=InnoDB COMMENT='Nhật ký thao tác bất biến của hệ thống';
 
 -- ============================================================================
 -- 3. BẢNG CLINICS

@@ -2,6 +2,23 @@ import prescriptionRepository from "../repositories/prescription.repository.js";
 import medicalRecordRepository from "../repositories/medical-record.repository.js";
 import medicineRepository from "../repositories/medicine.repository.js";
 import notificationService from "./notification.service.js";
+import auditLogService from "./audit-log.service.js";
+
+function prescriptionAuditSnapshot(prescription) {
+  if (!prescription) return null;
+
+  return {
+    medical_record_id: prescription.medical_record_id,
+    note: prescription.note || null,
+    items: (prescription.prescription_details || []).map((item) => ({
+      medicine_id: item.medicine_id,
+      quantity: item.quantity,
+      price_at_sale: item.price_at_sale,
+      dosage: item.dosage || null,
+      instruction: item.instruction || null,
+    })),
+  };
+}
 
 class PrescriptionService {
   formatPrescription(prescription) {
@@ -124,7 +141,18 @@ class PrescriptionService {
     }
 
     this.assertCanView(user, prescription);
-    return this.formatPrescription(prescription);
+    const response = this.formatPrescription(prescription);
+    await auditLogService.record({
+      userId: user.id,
+      action: "VIEW",
+      resource: "PRESCRIPTION",
+      resourceId: prescription.id,
+      metadata: {
+        medicalRecordId: prescription.medical_record_id,
+        appointmentId: response.appointment_id,
+      },
+    });
+    return response;
   }
 
   async getByMedicalRecordId(user, medicalRecordId) {
@@ -139,7 +167,18 @@ class PrescriptionService {
     }
 
     this.assertCanView(user, prescription);
-    return this.formatPrescription(prescription);
+    const response = this.formatPrescription(prescription);
+    await auditLogService.record({
+      userId: user.id,
+      action: "VIEW",
+      resource: "PRESCRIPTION",
+      resourceId: prescription.id,
+      metadata: {
+        medicalRecordId: prescription.medical_record_id,
+        appointmentId: response.appointment_id,
+      },
+    });
+    return response;
   }
 
   async create(user, data) {
@@ -191,7 +230,19 @@ class PrescriptionService {
       }
     }
 
-    return this.formatPrescription(prescription);
+    const response = this.formatPrescription(prescription);
+    await auditLogService.record({
+      userId: user.id,
+      action: "CREATE_PRESCRIPTION",
+      resource: "PRESCRIPTION",
+      resourceId: prescription.id,
+      newValue: prescriptionAuditSnapshot(prescription),
+      metadata: {
+        medicalRecordId: prescription.medical_record_id,
+        appointmentId: response.appointment_id,
+      },
+    });
+    return response;
   }
 
   async update(user, id, data) {
@@ -215,7 +266,20 @@ class PrescriptionService {
       items,
     );
 
-    return this.formatPrescription(updated);
+    const response = this.formatPrescription(updated);
+    await auditLogService.record({
+      userId: user.id,
+      action: "UPDATE_PRESCRIPTION",
+      resource: "PRESCRIPTION",
+      resourceId: prescriptionId,
+      oldValue: prescriptionAuditSnapshot(existing),
+      newValue: prescriptionAuditSnapshot(updated),
+      metadata: {
+        medicalRecordId: updated.medical_record_id,
+        appointmentId: response.appointment_id,
+      },
+    });
+    return response;
   }
 }
 

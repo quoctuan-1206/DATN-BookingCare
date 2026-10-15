@@ -1,0 +1,15 @@
+import { Router } from "express";
+import controller from "../controllers/inventory.controller.js";
+import { verifyAccessTokenMiddleware } from "../middlewares/auth.middleware.js";
+import { authorize } from "../middlewares/role.middleware.js";
+const router=Router();
+router.use(verifyAccessTokenMiddleware);
+router.get("/summary",authorize("Admin","STAFF"),controller.summary);
+router.get("/batches",authorize("Admin","STAFF"),controller.batches);
+router.get("/alerts",authorize("Admin","STAFF"),controller.alerts);
+router.get("/transactions",authorize("Admin","STAFF"),controller.transactions);
+router.post("/receipts",authorize("Admin","STAFF"),controller.receive);
+router.post("/issues",authorize("Admin","STAFF"),controller.issue);
+router.post("/adjustments",authorize("Admin","STAFF"),controller.adjust);
+router.post("/expired/process",authorize("Admin","STAFF"),controller.processExpired);
+export default router;

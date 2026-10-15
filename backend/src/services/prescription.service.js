@@ -3,6 +3,7 @@ import medicalRecordRepository from "../repositories/medical-record.repository.j
 import medicineRepository from "../repositories/medicine.repository.js";
 import notificationService from "./notification.service.js";
 import auditLogService from "./audit-log.service.js";
+import inventoryService from "./inventory.service.js";
 
 function prescriptionAuditSnapshot(prescription) {
   if (!prescription) return null;
@@ -119,6 +120,13 @@ class PrescriptionService {
 
       const price =
         medicine.price != null ? Number(medicine.price) : 0;
+
+      const available = await inventoryService.availability(medicine.id);
+      if (available < item.quantity) {
+        const error = new Error(`Tồn khả dụng của ${medicine.name} không đủ (còn ${available})`);
+        error.statusCode = 409;
+        throw error;
+      }
 
       resolved.push({
         medicine_id: medicine.id,

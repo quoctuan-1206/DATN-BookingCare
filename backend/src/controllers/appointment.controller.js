@@ -2,6 +2,7 @@ import appointmentService from "../services/appointment.service.js";
 import {
   createAppointmentSchema,
   updateAppointmentStatusSchema,
+  rescheduleAppointmentSchema,
   queryAppointmentSchema,
 } from "../validators/appointment.validator.js";
 
@@ -125,6 +126,25 @@ class AppointmentController {
       return res.status(200).json({
         success: true,
         message: "Cập nhật trạng thái lịch hẹn thành công",
+        data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Đổi khung giờ cho lịch hẹn đã đặt (PATCH /api/appointments/:id/reschedule)
+  async reschedule(req, res, next) {
+    try {
+      const { schedule_id } = rescheduleAppointmentSchema.parse(req.body);
+      const data = await appointmentService.reschedule(
+        req.user,
+        req.params.id,
+        schedule_id,
+      );
+      return res.status(200).json({
+        success: true,
+        message: "Đã gửi yêu cầu đổi lịch",
         data,
       });
     } catch (error) {

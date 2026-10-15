@@ -112,7 +112,9 @@ function Appointments() {
                       <td>{item.room || "—"}</td>
                       <td><span className={`status ${STATUS_CLASS[item.status] || "pending"}`}>{STATUS_LABEL[item.status]}</span></td>
                       <td style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        {(actionsByStatus[item.status] || []).map((action) => (
+                        {(actionsByStatus[item.status] || [])
+                          .filter((action) => item.consultation_type !== "ONLINE" || !["check-in", "enqueue"].includes(action.action))
+                          .map((action) => (
                           <button
                             key={action.action}
                             type="button"
@@ -122,7 +124,7 @@ function Appointments() {
                           >
                             {action.label}
                           </button>
-                        ))}
+                          ))}
                       </td>
                     </tr>
                   ))}

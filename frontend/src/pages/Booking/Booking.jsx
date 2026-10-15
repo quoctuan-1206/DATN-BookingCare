@@ -290,6 +290,13 @@ function Booking() {
                     </div>
                   </div>
                   <div className="booking-meta-chip">
+                    <Headphones size={18} />
+                    <div>
+                      <span>Hình thức khám</span>
+                      <strong>{schedule.consultation_type === "ONLINE" ? "Tư vấn trực tuyến" : "Trực tiếp tại phòng khám"}</strong>
+                    </div>
+                  </div>
+                  <div className="booking-meta-chip">
                     <Wallet size={18} />
                     <div>
                       <span>Phí khám</span>

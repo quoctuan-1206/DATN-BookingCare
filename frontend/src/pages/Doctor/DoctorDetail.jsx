@@ -77,6 +77,7 @@ function DoctorDetail() {
       work_date: slot.work_date,
       start: slot.start_time,
       end: slot.end_time,
+      consultation_type: slot.consultation_type || "IN_PERSON",
     });
   };
 

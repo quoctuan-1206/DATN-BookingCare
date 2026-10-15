@@ -34,7 +34,10 @@ function SlotGrid({ slots, selectedId, onSelectSlot }) {
           disabled={!slot.available}
           onClick={() => onSelectSlot(slot)}
         >
-          {slot.start_time}
+          <span>{slot.start_time}</span>
+          <small style={{ display: "block", fontSize: 10, fontWeight: 600 }}>
+            {slot.consultation_type === "ONLINE" ? "Trực tuyến" : "Trực tiếp"}
+          </small>
         </button>
       ))}
     </div>

@@ -11,6 +11,8 @@ export const createMedicineSchema = z.object({
   unit: z.string().trim().optional().nullable(),
   price: z.coerce.number().min(0, "Giá thuốc không được âm").optional().nullable(),
   description: z.string().trim().optional().nullable(),
+  minimum_stock: z.coerce.number().int().min(0).optional(),
+  issue_strategy: z.enum(["FIFO", "FEFO"]).optional(),
 });
 
 export const updateMedicineSchema = z.object({
@@ -18,4 +20,6 @@ export const updateMedicineSchema = z.object({
   unit: z.string().trim().optional().nullable(),
   price: z.coerce.number().min(0).optional().nullable(),
   description: z.string().trim().optional().nullable(),
+  minimum_stock: z.coerce.number().int().min(0).optional(),
+  issue_strategy: z.enum(["FIFO", "FEFO"]).optional(),
 });

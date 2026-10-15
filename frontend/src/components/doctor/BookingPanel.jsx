@@ -32,6 +32,7 @@ function BookingPanel({ doctor, selectedDate, selectedSchedule }) {
           work_date: selectedSchedule.work_date,
           start: selectedSchedule.start,
           end: selectedSchedule.end,
+          consultation_type: selectedSchedule.consultation_type || "IN_PERSON",
           time: `${selectedSchedule.start} - ${selectedSchedule.end}`,
         },
       },
@@ -55,6 +56,13 @@ function BookingPanel({ doctor, selectedDate, selectedSchedule }) {
           <div>
             <span>Giờ khám</span>
             <strong>{selectedSchedule?.start || "Chưa chọn"}</strong>
+          </div>
+        </li>
+        <li>
+          <Clock3 size={18} />
+          <div>
+            <span>Hình thức khám</span>
+            <strong>{selectedSchedule?.consultation_type === "ONLINE" ? "Tư vấn trực tuyến" : "Trực tiếp"}</strong>
           </div>
         </li>
         <li>

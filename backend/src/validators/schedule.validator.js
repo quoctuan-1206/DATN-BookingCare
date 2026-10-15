@@ -2,6 +2,7 @@ import { z } from "zod";
 
 const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/;
+const consultationType = z.enum(["IN_PERSON", "ONLINE"]);
 
 const slotSchema = z.object({
   start_time: z.string().regex(timeRegex, "start_time phải dạng HH:mm"),
@@ -13,6 +14,7 @@ export const createScheduleSchema = z
   .object({
     doctor_workplace_id: z.coerce.number().int().positive(),
     work_date: z.string().regex(dateRegex, "work_date phải dạng YYYY-MM-DD"),
+    consultation_type: consultationType.optional().default("IN_PERSON"),
     start_time: z
       .string()
       .regex(timeRegex, "start_time phải dạng HH:mm")
@@ -72,6 +74,7 @@ export const updateScheduleSchema = z
       .regex(timeRegex, "end_time phải dạng HH:mm")
       .optional(),
     max_patients: z.coerce.number().int().min(1).max(100).optional(),
+    consultation_type: consultationType.optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: "Không có dữ liệu cập nhật",
@@ -89,6 +92,7 @@ export const queryScheduleSchema = z.object({
     .enum(["true", "false"])
     .optional()
     .transform((v) => v === "true"),
+  consultation_type: consultationType.optional(),
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().min(1).max(200).default(50),
 });

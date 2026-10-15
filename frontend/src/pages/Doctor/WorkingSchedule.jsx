@@ -19,6 +19,7 @@ function WorkingSchedule() {
     start_time: "08:00",
     end_time: "09:00",
     max_patients: 10,
+    consultation_type: "IN_PERSON",
   });
 
   const loadData = useCallback(async () => {
@@ -68,6 +69,7 @@ function WorkingSchedule() {
       start_time: "08:00",
       end_time: "09:00",
       max_patients: 10,
+      consultation_type: "IN_PERSON",
     }));
   };
 
@@ -79,6 +81,7 @@ function WorkingSchedule() {
       start_time: item.start_time,
       end_time: item.end_time,
       max_patients: item.max_patients,
+      consultation_type: item.consultation_type || "IN_PERSON",
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -97,6 +100,7 @@ function WorkingSchedule() {
         start_time: form.start_time,
         end_time: form.end_time,
         max_patients: Number(form.max_patients) || 10,
+        consultation_type: form.consultation_type,
       };
       if (editingId) {
         await scheduleService.updateSchedule(editingId, scheduleData);
@@ -211,6 +215,13 @@ function WorkingSchedule() {
                 onChange={handleChange}
               />
             </label>
+            <label>
+              Hình thức khám
+              <select name="consultation_type" className="admin-select" value={form.consultation_type} onChange={handleChange}>
+                <option value="IN_PERSON">Trực tiếp</option>
+                <option value="ONLINE">Tư vấn trực tuyến</option>
+              </select>
+            </label>
             <div style={{ display: "flex", gap: 8 }}>
               <button
                 type="submit"
@@ -250,6 +261,7 @@ function WorkingSchedule() {
                   <tr>
                     <th>Ngày</th>
                     <th>Giờ</th>
+                    <th>Hình thức</th>
                     <th>Phòng khám</th>
                     <th>Đã đặt</th>
                     <th>Thao tác</th>
@@ -260,6 +272,7 @@ function WorkingSchedule() {
                     <tr key={item.id}>
                       <td>{item.date_display}</td>
                       <td>{item.time}</td>
+                      <td>{item.consultation_type === "ONLINE" ? "Trực tuyến" : "Trực tiếp"}</td>
                       <td>
                         {item.clinic_name}
                         {item.specialty_name

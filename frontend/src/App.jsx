@@ -75,12 +75,15 @@ import DoctorClinicalOrders from "./pages/Doctor/ClinicalOrders";
 import StaffClinical from "./pages/Staff/Clinical";
 import StaffClinicalSchedules from "./pages/Staff/ClinicalSchedules";
 import StaffAppointments from "./pages/Staff/Appointments";
+import StaffInventory from "./pages/Staff/Inventory";
 import LabTests from "./pages/Lab/LabTests";
 import LabTestDetail from "./pages/Lab/LabTestDetail";
 import LabBooking from "./pages/Lab/LabBooking";
 import ClinicalServiceCatalog from "./pages/Clinical/ClinicalServiceCatalog";
 import ClinicalServiceDetail from "./pages/Clinical/ClinicalServiceDetail";
 import ClinicalBooking from "./pages/Clinical/ClinicalBooking";
+import ConsultationRoom from "./pages/Consultation/ConsultationRoom";
+import ConsultationEnded from "./pages/Consultation/ConsultationEnded";
 
 function App() {
     return (
@@ -109,6 +112,8 @@ function App() {
             <Route path="/clinical-booking" element={<ClinicalBooking />} />
 
             <Route path="/booking" element={<Booking />} />
+            <Route path="/consultations/:id" element={<ConsultationRoom />} />
+            <Route path="/consultations/:id/ended" element={<ConsultationEnded />} />
             <Route path="/booking/success" element={<BookingSuccess />} />
             <Route path="/payment/result" element={<PaymentResult />} />
             <Route
@@ -164,6 +169,7 @@ function App() {
 
             <Route path="/staff/clinical" element={<Navigate to="/staff/clinical/orders" replace />} />
             <Route path="/staff/appointments" element={<StaffAppointments />} />
+            <Route path="/staff/inventory" element={<StaffInventory />} />
             <Route path="/staff/clinical/orders" element={<StaffClinical />} />
             <Route path="/staff/clinical/schedules" element={<StaffClinicalSchedules />} />
             <Route path="/staff/labs" element={<Navigate to="/staff/clinical/orders" replace />} />

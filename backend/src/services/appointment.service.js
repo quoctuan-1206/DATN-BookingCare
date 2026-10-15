@@ -273,6 +273,7 @@ class AppointmentService {
       id: appointment.id,
       booking_code: appointment.booking_code,
       status: appointment.status,
+      consultation_type: appointment.consultation_type || appointment.schedules?.consultation_type || "IN_PERSON",
       reason: appointment.reason || null,
       schedule_id: appointment.schedule_id,
       patient_profile_id: appointment.patient_profile_id,
@@ -602,6 +603,73 @@ class AppointmentService {
     return response;
   }
 
+  async reschedule(user, id, scheduleId) {
+    const appointmentId = this.parseId(id);
+    const targetScheduleId = this.parseId(scheduleId);
+    const role = user.role?.name;
+    if (role !== "Patient") {
+      const error = new Error("Chỉ bệnh nhân mới được yêu cầu đổi lịch");
+      error.statusCode = 403;
+      throw error;
+    }
+
+    const existing = await appointmentRepository.findById(appointmentId);
+    if (!existing) {
+      const error = new Error("Không tìm thấy lịch hẹn");
+      error.statusCode = 404;
+      throw error;
+    }
+    this.assertCanView(user, existing);
+    if (!["PENDING", "CONFIRMED"].includes(existing.status)) {
+      const error = new Error("Chỉ có thể đổi lịch đang chờ hoặc đã xác nhận");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    const priorStatus = existing.status;
+    const updated = await appointmentRepository.reschedule(
+      appointmentId,
+      targetScheduleId,
+      priorStatus,
+      "PENDING",
+    );
+    const formatted = this.formatAppointment(updated);
+    const parties = this.getParties(updated);
+    const oldFormatted = this.formatAppointment(existing);
+    const newWhen = [formatted.date_display, formatted.time].filter(Boolean).join(" · ");
+
+    try {
+      if (priorStatus === "CONFIRMED" && parties.doctorId) {
+        await notificationService.notify(parties.doctorId, {
+          title: "Bệnh nhân yêu cầu đổi lịch",
+          content: `${parties.patientName} yêu cầu đổi lịch ${parties.bookingCode} từ ${oldFormatted.date_display} · ${oldFormatted.time} sang ${newWhen}. Vui lòng xác nhận lịch mới.`,
+          link: `/doctor/appointments/${appointmentId}`,
+          type: "APPOINTMENT",
+        });
+      } else if (parties.patientAccountId) {
+        await notificationService.notify(parties.patientAccountId, {
+          title: "Đổi lịch thành công",
+          content: `Lịch ${parties.bookingCode} đã được đổi sang ${newWhen}.`,
+          link: `/patient/appointments/${appointmentId}`,
+          type: "APPOINTMENT_CHANGED",
+        });
+      }
+    } catch {
+      // Không chặn đổi lịch nếu gửi thông báo lỗi.
+    }
+
+    await auditLogService.record({
+      userId: user.id,
+      action: "RESCHEDULE_APPOINTMENT",
+      resource: "APPOINTMENT",
+      resourceId: appointmentId,
+      oldValue: { schedule_id: existing.schedule_id, status: priorStatus },
+      newValue: { schedule_id: updated.schedule_id, status: updated.status },
+      metadata: { bookingCode: updated.booking_code || null },
+    });
+    return this.formatAppointment(updated);
+  }
+
   assertOperationalDate(appointment) {
     const appointmentDate = formatDateOnly(appointment.schedules?.work_date);
     if (appointmentDate !== getVietnamDate()) {
@@ -640,6 +708,15 @@ class AppointmentService {
     const role = user.role?.name;
     this.assertWorkflowPermission(role, action);
     this.assertOperationalDate(existing);
+
+    if (
+      ["check-in", "enqueue"].includes(action) &&
+      (existing.consultation_type || existing.schedules?.consultation_type) === "ONLINE"
+    ) {
+      const error = new Error("Lịch tư vấn trực tuyến không cần check-in hoặc cấp số thứ tự");
+      error.statusCode = 409;
+      throw error;
+    }
 
     const now = new Date();
     const workflow = {

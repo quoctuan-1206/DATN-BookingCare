@@ -12,6 +12,7 @@ model appointments {
   id                 Int                  @id @default(autoincrement())
   schedule_id        Int
   patient_profile_id Int
+  consultation_type  consultation_type @default(IN_PERSON)
   reason             String?              @db.Text
   status             appointments_status? @default(PENDING)
   booking_code       String?              @unique(map: "booking_code") @db.VarChar(50)
@@ -31,6 +32,7 @@ model appointments {
   medical_records    medical_records?
   reviews            reviews?
   lab_orders         lab_orders[]
+  consultation_session consultation_sessions?
 
   @@index([patient_profile_id], map: "patient_profile_id")
   @@index([schedule_id], map: "schedule_id")
@@ -169,6 +171,54 @@ model medicines {
   description          String?                @db.Text
   created_at           DateTime?              @default(now()) @db.Timestamp(0)
   prescription_details prescription_details[]
+  inventory_batches      inventory_batches[]
+  inventory_transactions inventory_transactions[]
+  minimum_stock          Int                    @default(0)
+  issue_strategy         inventory_issue_strategy @default(FEFO)
+}
+
+model inventory_batches {
+  id                  Int                     @id @default(autoincrement())
+  medicine_id         Int
+  batch_code          String                  @db.VarChar(100)
+  received_at         DateTime                @default(now()) @db.DateTime(0)
+  expires_at          DateTime?               @db.Date
+  quantity_received   Int
+  quantity_remaining  Int
+  unit_cost           Decimal                 @default(0) @db.Decimal(10, 2)
+  supplier            String?                 @db.VarChar(255)
+  is_locked           Boolean                 @default(false)
+  created_at          DateTime                @default(now()) @db.Timestamp(0)
+  medicines           medicines               @relation(fields: [medicine_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  allocations         inventory_allocations[]
+  @@unique([medicine_id, batch_code], map: "uk_inventory_batch_medicine_code")
+  @@index([medicine_id, expires_at, received_at], map: "idx_inventory_batch_issue")
+}
+
+model inventory_transactions {
+  id            Int                       @id @default(autoincrement())
+  medicine_id   Int
+  kind          inventory_transaction_kind
+  quantity      Int
+  reference_type String?                   @db.VarChar(40)
+  reference_id  Int?
+  note          String?                   @db.Text
+  actor_id      Int?
+  created_at    DateTime                  @default(now()) @db.Timestamp(0)
+  medicines     medicines                 @relation(fields: [medicine_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  allocations   inventory_allocations[]
+  @@index([medicine_id, created_at], map: "idx_inventory_tx_medicine_created")
+  @@index([reference_type, reference_id], map: "idx_inventory_tx_reference")
+}
+
+model inventory_allocations {
+  id                       Int                    @id @default(autoincrement())
+  transaction_id           Int
+  batch_id                 Int
+  quantity                 Int
+  inventory_transactions   inventory_transactions @relation(fields: [transaction_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  inventory_batches        inventory_batches      @relation(fields: [batch_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  @@index([batch_id], map: "idx_inventory_allocation_batch")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -284,12 +334,28 @@ model schedules {
   end_time            DateTime          @db.Time(0)
   max_patients        Int?              @default(10)
   booked_patients     Int?              @default(0)
+  consultation_type   consultation_type @default(IN_PERSON)
   created_at          DateTime?         @default(now()) @db.Timestamp(0)
   updated_at          DateTime?         @default(now()) @db.Timestamp(0)
   appointments        appointments[]
   doctor_workplaces   doctor_workplaces @relation(fields: [doctor_workplace_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "schedules_ibfk_1")
 
   @@unique([doctor_workplace_id, work_date, start_time], map: "uk_schedule")
+}
+
+model consultation_sessions {
+  id                Int                         @id @default(autoincrement())
+  appointment_id    Int                         @unique(map: "uk_consultation_sessions_appointment")
+  room_id           String                      @unique(map: "uk_consultation_sessions_room") @db.VarChar(64)
+  status            consultation_session_status @default(WAITING)
+  started_at        DateTime?                   @db.DateTime(0)
+  ended_at          DateTime?                   @db.DateTime(0)
+  duration_seconds  Int?
+  created_at        DateTime                    @default(now()) @db.Timestamp(0)
+  updated_at        DateTime                    @updatedAt @db.Timestamp(0)
+  appointments      appointments                @relation(fields: [appointment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([status, started_at], map: "idx_consultation_sessions_status_started")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -516,6 +582,19 @@ enum invoices_invoice_type {
   MEDICINE_FEE
 }
 
+enum inventory_issue_strategy {
+  FIFO
+  FEFO
+}
+
+enum inventory_transaction_kind {
+  RECEIPT
+  ISSUE
+  ADJUSTMENT
+  EXPIRED
+  RETURN
+}
+
 enum appointments_status {
   PENDING
   CONFIRMED
@@ -526,6 +605,20 @@ enum appointments_status {
   COMPLETED
   CANCELLED
   NO_SHOW
+}
+
+enum consultation_type {
+  IN_PERSON
+  ONLINE
+}
+
+enum consultation_session_status {
+  WAITING
+  CONNECTING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  CANCELLED
 }
 
 enum invoices_payment_method {

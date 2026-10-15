@@ -49,6 +49,7 @@ function AppointmentDetail() {
   const [searchParams] = useSearchParams();
   const autoStartExam = searchParams.get("exam") === "1";
   const autoPrescribe = searchParams.get("prescribe") === "1";
+  const consultationMode = searchParams.get("consultation") === "1";
 
   const [appointment, setAppointment] = useState(null);
   const [medicalRecord, setMedicalRecord] = useState(null);
@@ -71,8 +72,11 @@ function AppointmentDetail() {
   const showMedicalForm = useMemo(() => {
     if (!appointment) return false;
     if (medicalRecord) return true;
-    return examStarted && appointment.status === "IN_PROGRESS";
-  }, [appointment, medicalRecord, examStarted]);
+    return (
+      (examStarted && appointment.status === "IN_PROGRESS") ||
+      (consultationMode && appointment.consultation_type === "ONLINE")
+    );
+  }, [appointment, medicalRecord, examStarted, consultationMode]);
 
   const showPrescriptionForm = useMemo(() => {
     if (!medicalRecord || prescriptionSkipped) return false;
@@ -287,6 +291,10 @@ function AppointmentDetail() {
           aria-label="Thông tin lịch khám"
         >
           <div className="doctor-appointment-summary-item">
+            <span className="doctor-appointment-summary-icon" aria-hidden="true"><Stethoscope size={19} /></span>
+            <div><span>Hình thức khám</span><strong>{appointment.consultation_type === "ONLINE" ? "Tư vấn trực tuyến" : "Trực tiếp"}</strong></div>
+          </div>
+          <div className="doctor-appointment-summary-item">
             <span className="doctor-appointment-summary-icon" aria-hidden="true">
               <CalendarDays size={19} />
             </span>
@@ -391,8 +399,15 @@ function AppointmentDetail() {
                 !examStarted && (
                   <>
                     <p className="doctor-appointment-action-note">
-                      Chờ nhân viên check-in và đưa bệnh nhân vào hàng đợi.
+                      {appointment.consultation_type === "ONLINE"
+                        ? "Lịch tư vấn trực tuyến đã xác nhận. Bác sĩ và bệnh nhân có thể vào phòng trước giờ hẹn 15 phút."
+                        : "Chờ nhân viên check-in và đưa bệnh nhân vào hàng đợi."}
                     </p>
+                    {appointment.consultation_type === "ONLINE" && (
+                      <Link className="admin-btn admin-btn-primary" to={`/consultations/${appointment.id}`}>
+                        Vào phòng tư vấn
+                      </Link>
+                    )}
                     <button
                       type="button"
                       className="admin-btn admin-btn-danger"

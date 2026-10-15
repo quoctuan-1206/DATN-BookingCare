@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Star } from "lucide-react";
+import { ArrowLeft, CalendarDays, Star } from "lucide-react";
 import toast from "react-hot-toast";
 import PatientLayout from "../../components/patient/PatientLayout";
 import PatientPrescriptionView from "../../components/patient/PatientPrescriptionView";
@@ -11,6 +11,7 @@ import appointmentService, {
 } from "../../services/appointment.service";
 import reviewService from "../../services/review.service";
 import paymentService from "../../services/payment.service";
+import scheduleService from "../../services/schedule.service";
 import {
   computeRemainingSeconds,
   formatCountdown,
@@ -61,6 +62,11 @@ function AppointmentDetail() {
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
   const [queuePosition, setQueuePosition] = useState(null);
+  const [showReschedule, setShowReschedule] = useState(false);
+  const [scheduleOptions, setScheduleOptions] = useState([]);
+  const [selectedScheduleId, setSelectedScheduleId] = useState("");
+  const [loadingSchedules, setLoadingSchedules] = useState(false);
+  const [rescheduling, setRescheduling] = useState(false);
 
   const [review, setReview] = useState(null);
   const [reviewLoading, setReviewLoading] = useState(false);
@@ -170,6 +176,52 @@ function AppointmentDetail() {
       toast.error(getApiErrorMessage(error, "Không hủy được lịch hẹn"));
     } finally {
       setCancelling(false);
+    }
+  };
+
+  const handleOpenReschedule = async () => {
+    if (showReschedule) {
+      setShowReschedule(false);
+      return;
+    }
+    setLoadingSchedules(true);
+    try {
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      const result = await scheduleService.getSchedules({
+        doctor_id: appointment.doctor_id,
+        from_date: today,
+        available_only: true,
+        page: 1,
+        limit: 200,
+      });
+      const options = result.data.filter((slot) => Number(slot.id) !== Number(appointment.schedule_id));
+      setScheduleOptions(options);
+      setSelectedScheduleId(options[0]?.id ? String(options[0].id) : "");
+      setShowReschedule(true);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Không tải được khung giờ còn trống"));
+    } finally {
+      setLoadingSchedules(false);
+    }
+  };
+
+  const handleReschedule = async (event) => {
+    event.preventDefault();
+    if (!selectedScheduleId) return;
+    const wasConfirmed = appointment.status === "CONFIRMED";
+    setRescheduling(true);
+    try {
+      const updated = await appointmentService.reschedule(id, Number(selectedScheduleId));
+      setAppointment(updated);
+      setShowReschedule(false);
+      toast.success(wasConfirmed
+        ? "Đã gửi yêu cầu đổi lịch. Vui lòng chờ bác sĩ xác nhận lại."
+        : "Đã đổi lịch thành công.");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Không đổi được lịch hẹn"));
+    } finally {
+      setRescheduling(false);
     }
   };
 
@@ -290,7 +342,9 @@ function AppointmentDetail() {
   const canRetry = canRetryPayment(clinicInvoice, appointment.status);
   const paymentBadge = getPaymentBadge(clinicInvoice, appointment.status);
   const statusMessage = {
-    CONFIRMED: "Lịch khám đã được xác nhận. Vui lòng đến đúng giờ để nhân viên check-in.",
+    CONFIRMED: appointment.consultation_type === "ONLINE"
+      ? "Lịch tư vấn trực tuyến đã được xác nhận. Bạn có thể vào phòng tư vấn trước giờ hẹn 15 phút."
+      : "Lịch khám đã được xác nhận. Vui lòng đến đúng giờ để nhân viên check-in.",
     CHECKED_IN: "Bạn đã check-in và đang chờ được cấp số.",
     WAITING: "Bạn đang chờ khám.",
     CALLED: `Đến lượt bạn. Vui lòng đến ${appointment.room ? `phòng ${appointment.room}` : "phòng khám"}.`,
@@ -322,6 +376,7 @@ function AppointmentDetail() {
             }
           />
           <DetailRow label="Bác sĩ" value={appointment.doctor_name} />
+          <DetailRow label="Hình thức khám" value={appointment.consultation_type === "ONLINE" ? "Tư vấn trực tuyến" : "Trực tiếp tại phòng khám"} />
           <DetailRow label="Chuyên khoa" value={appointment.specialty} />
           <DetailRow label="Phòng khám" value={appointment.clinic} />
           <DetailRow
@@ -336,11 +391,19 @@ function AppointmentDetail() {
           />
         </div>
 
+        {appointment.consultation_type === "ONLINE" && appointment.status === "CONFIRMED" && (
+          <div className="detail-card">
+            <h2>Buổi tư vấn trực tuyến</h2>
+            <p>Phòng tư vấn mở 15 phút trước giờ hẹn. Hãy cho phép trình duyệt sử dụng camera và microphone.</p>
+            <Link className="admin-btn admin-btn-primary" to={`/consultations/${appointment.id}`}>Vào phòng tư vấn</Link>
+          </div>
+        )}
+
         {statusMessage && (
           <div className="detail-card" aria-live="polite">
             <h2>Tiến trình khám</h2>
             <p>{statusMessage}</p>
-            {queuePosition?.queue_number && (
+            {appointment.consultation_type !== "ONLINE" && queuePosition?.queue_number && (
               <div className="queue-position-summary">
                 <DetailRow label="STT của bạn" value={`#${String(queuePosition.queue_number).padStart(2, "0")}`} />
                 <DetailRow
@@ -400,8 +463,19 @@ function AppointmentDetail() {
           </div>
         )}
 
-        {canCancel && (
+        {(canCancel || ["PENDING", "CONFIRMED"].includes(appointment.status)) && (
           <div className="patient-detail-actions">
+            {["PENDING", "CONFIRMED"].includes(appointment.status) && (
+              <button
+                type="button"
+                className="patient-profile-save-btn appointment-reschedule-trigger"
+                disabled={loadingSchedules || rescheduling}
+                onClick={handleOpenReschedule}
+              >
+                <CalendarDays size={16} aria-hidden="true" />
+                {loadingSchedules ? "Đang tải khung giờ..." : "Đổi lịch"}
+              </button>
+            )}
             <button
               type="button"
               className="patient-profile-secondary-btn"
@@ -411,6 +485,78 @@ function AppointmentDetail() {
               {cancelling ? "Đang hủy..." : "Hủy lịch"}
             </button>
           </div>
+        )}
+
+        {showReschedule && (
+          <form
+            className="detail-card appointment-reschedule-card"
+            onSubmit={handleReschedule}
+          >
+            <div className="appointment-reschedule-heading">
+              <span className="appointment-reschedule-icon" aria-hidden="true">
+                <CalendarDays size={18} />
+              </span>
+              <div>
+                <h2>Đổi lịch khám</h2>
+                <p>Chọn một khung giờ còn trống của bác sĩ này.</p>
+              </div>
+            </div>
+
+            {appointment.status === "CONFIRMED" && (
+              <div className="appointment-reschedule-notice" role="status">
+                Bác sĩ cần xác nhận lại khung giờ mới. Sau khi gửi yêu cầu, lịch sẽ ở trạng thái chờ xác nhận.
+              </div>
+            )}
+
+            {scheduleOptions.length ? (
+              <>
+                <label className="appointment-reschedule-label" htmlFor="reschedule-slot">
+                  Khung giờ mới
+                </label>
+                <select
+                  id="reschedule-slot"
+                  className="appointment-reschedule-select"
+                  value={selectedScheduleId}
+                  onChange={(event) => setSelectedScheduleId(event.target.value)}
+                  required
+                >
+                  {scheduleOptions.map((slot) => (
+                    <option key={slot.id} value={slot.id}>
+                      {slot.date_display} · {slot.time} · Còn {slot.remaining} chỗ
+                    </option>
+                  ))}
+                </select>
+                <div className="patient-detail-actions appointment-reschedule-actions">
+                  <button
+                    type="button"
+                    className="patient-profile-secondary-btn"
+                    onClick={() => setShowReschedule(false)}
+                    disabled={rescheduling}
+                  >
+                    Đóng
+                  </button>
+                  <button
+                    type="submit"
+                    className="patient-profile-save-btn"
+                    disabled={rescheduling || !selectedScheduleId}
+                  >
+                    {rescheduling ? "Đang cập nhật..." : "Xác nhận đổi lịch"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="appointment-reschedule-empty">
+                <p>Hiện chưa có khung giờ trống khác cho bác sĩ này.</p>
+                <button
+                  type="button"
+                  className="patient-profile-secondary-btn"
+                  onClick={() => setShowReschedule(false)}
+                >
+                  Đóng
+                </button>
+              </div>
+            )}
+          </form>
         )}
 
         {isCompleted && medicalRecord && (

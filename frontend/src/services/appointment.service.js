@@ -68,6 +68,13 @@ export const appointmentService = {
   updateStatus: (id, status) =>
     axiosClient.patch(`/appointments/${id}/status`, { status }),
 
+  reschedule: async (id, scheduleId) => {
+    const res = await axiosClient.patch(`/appointments/${id}/reschedule`, {
+      schedule_id: scheduleId,
+    });
+    return mapAppointmentFromApi(res.data?.data);
+  },
+
   startExam: async (id) => {
     const res = await axiosClient.post(`/appointments/${id}/start`);
     return mapAppointmentFromApi(res.data?.data);

@@ -9,6 +9,8 @@ class MedicineService {
       unit: medicine.unit || null,
       price: medicine.price != null ? Number(medicine.price) : null,
       description: medicine.description || null,
+      minimum_stock: medicine.minimum_stock ?? 0,
+      issue_strategy: medicine.issue_strategy || "FEFO",
       created_at: medicine.created_at,
     };
   }
@@ -54,6 +56,8 @@ class MedicineService {
       unit: data.unit?.trim() || null,
       price: data.price ?? null,
       description: data.description?.trim() || null,
+      minimum_stock: data.minimum_stock ?? 0,
+      issue_strategy: data.issue_strategy || "FEFO",
     });
     return this.formatMedicine(medicine);
   }
@@ -74,6 +78,8 @@ class MedicineService {
     if (data.description !== undefined) {
       payload.description = data.description?.trim() || null;
     }
+    if (data.minimum_stock !== undefined) payload.minimum_stock = data.minimum_stock;
+    if (data.issue_strategy !== undefined) payload.issue_strategy = data.issue_strategy;
 
     const medicine = await medicineRepository.update(medicineId, payload);
     return this.formatMedicine(medicine);

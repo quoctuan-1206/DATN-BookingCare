@@ -10,7 +10,7 @@
     "seed": "node src/seed.js",
     "test": "node --test",
     "check:clinical-permissions": "node scripts/check-clinical-permissions.js",
-    "db:migrate": "node scripts/ensure-clinic-content-columns.js && node scripts/ensure-medical-record-columns.js && node scripts/ensure-lab-schema.js && node scripts/ensure-payment-schema.js && node scripts/ensure-appointment-queue-schema.js && node scripts/ensure-audit-log-schema.js",
+    "db:migrate": "node scripts/ensure-clinic-content-columns.js && node scripts/ensure-medical-record-columns.js && node scripts/ensure-lab-schema.js && node scripts/ensure-payment-schema.js && node scripts/ensure-appointment-queue-schema.js && node scripts/ensure-audit-log-schema.js && node scripts/ensure-inventory-schema.js && node scripts/ensure-consultation-schema.js",
     "db:generate": "prisma generate",
     "db:prepare": "npm run db:migrate && npm run db:generate"
   },
@@ -22,6 +22,7 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
+    "socket.io": "^4.8.1",
     "multer": "^2.2.0",
     "prisma": "^6.19.3",
     "zod": "^4.4.3"

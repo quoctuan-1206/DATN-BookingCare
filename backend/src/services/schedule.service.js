@@ -47,6 +47,7 @@ class ScheduleService {
         workplace?.specialty_id || workplace?.specialties?.id || null,
       specialty_name: workplace?.specialties?.name || null,
       room: workplace?.room || null,
+      consultation_type: schedule.consultation_type || "IN_PERSON",
       created_at: schedule.created_at,
       updated_at: schedule.updated_at,
     };
@@ -122,6 +123,7 @@ class ScheduleService {
         start_time: slot.start_time,
         end_time: slot.end_time,
         max_patients: slot.max_patients ?? data.max_patients ?? 10,
+        consultation_type: data.consultation_type || "IN_PERSON",
       }));
     }
 
@@ -132,6 +134,7 @@ class ScheduleService {
         start_time: data.start_time,
         end_time: data.end_time,
         max_patients: data.max_patients ?? 10,
+        consultation_type: data.consultation_type || "IN_PERSON",
       },
     ];
   }
@@ -141,6 +144,22 @@ class ScheduleService {
     await this.assertCanManageWorkplace(data.doctor_workplace_id, currentUser);
 
     const slots = this.normalizeSlots(data);
+
+    for (let index = 0; index < slots.length; index += 1) {
+      const slot = slots[index];
+      const start = slot.start_time;
+      const end = slot.end_time;
+      if (slots.some((other, otherIndex) => otherIndex !== index && start < other.end_time && end > other.start_time)) {
+        const error = new Error("Các khung giờ trong cùng yêu cầu bị chồng lấn");
+        error.statusCode = 409;
+        throw error;
+      }
+      if (await scheduleRepository.hasOverlap({ workplaceId: slot.doctor_workplace_id, workDate: slot.work_date, startTime: start, endTime: end })) {
+        const error = new Error("Khung giờ bị trùng với lịch làm việc đã tạo");
+        error.statusCode = 409;
+        throw error;
+      }
+    }
 
     try {
       if (slots.length === 1) {
@@ -179,6 +198,16 @@ class ScheduleService {
     );
 
     if (
+      data.consultation_type &&
+      data.consultation_type !== (existing.consultation_type || "IN_PERSON") &&
+      ((existing.booked_patients || 0) > 0 || existing._count?.appointments > 0)
+    ) {
+      const error = new Error("Không thể đổi hình thức của khung giờ đã có lịch hẹn");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    if (
       data.max_patients !== undefined &&
       data.max_patients < (existing.booked_patients || 0)
     ) {
@@ -194,6 +223,19 @@ class ScheduleService {
     if (start >= end) {
       const error = new Error("end_time phải sau start_time");
       error.statusCode = 400;
+      throw error;
+    }
+
+    const nextDate = data.work_date || formatDateOnly(existing.work_date);
+    if (await scheduleRepository.hasOverlap({
+      workplaceId: existing.doctor_workplace_id,
+      workDate: nextDate,
+      startTime: start,
+      endTime: end,
+      excludeId: scheduleId,
+    })) {
+      const error = new Error("Khung giờ bị trùng với lịch làm việc đã tạo");
+      error.statusCode = 409;
       throw error;
     }
 

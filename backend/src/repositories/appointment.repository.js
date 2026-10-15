@@ -1,4 +1,5 @@
 import prisma from "../config/prisma.js";
+import { formatDateOnly, formatTimeOnly } from "../utils/datetime.js";
 
 const appointmentInclude = {
   schedules: {
@@ -162,11 +163,23 @@ class AppointmentRepository {
         data: {
           schedule_id: Number(data.schedule_id),
           patient_profile_id: Number(data.patient_profile_id),
+          consultation_type: schedule.consultation_type || "IN_PERSON",
           reason: data.reason,
           status: "PENDING",
           booking_code: data.booking_code,
         },
       });
+
+      const reserved = await tx.$executeRaw`
+        UPDATE schedules
+        SET booked_patients = COALESCE(booked_patients, 0) + 1, updated_at = NOW()
+        WHERE id = ${schedule.id} AND COALESCE(booked_patients, 0) < ${maxPatients}
+      `;
+      if (reserved !== 1) {
+        const error = new Error("Khung giá» vá»«a háº¿t chá»—, vui lĂ²ng chá»n khung giá» khĂ¡c");
+        error.statusCode = 409;
+        throw error;
+      }
 
       const amount =
         schedule.doctor_workplaces?.consultation_fee ??
@@ -181,14 +194,6 @@ class AppointmentRepository {
           payment_method: "VNPAY",
           payment_status: "UNPAID",
           payment_expires_at: new Date(now.getTime() + 10 * 60 * 1000),
-        },
-      });
-
-      await tx.schedules.update({
-        where: { id: schedule.id },
-        data: {
-          booked_patients: booked + 1,
-          updated_at: new Date(),
         },
       });
 
@@ -221,6 +226,13 @@ class AppointmentRepository {
         include: appointmentInclude,
       });
 
+      if (status === "CANCELLED") {
+        await tx.consultation_sessions.updateMany({
+          where: { appointment_id: Number(id), status: { in: ["WAITING", "CONNECTING", "IN_PROGRESS"] } },
+          data: { status: "CANCELLED", ended_at: new Date() },
+        });
+      }
+
       if (shouldReleaseSlot) {
         const schedule = await tx.schedules.findFirst({
           where: { id: existing.schedule_id },
@@ -238,6 +250,140 @@ class AppointmentRepository {
       }
 
       return updated;
+    });
+  }
+
+  // Chuyển lịch hẹn sang khung giờ khác và cập nhật sức chứa trong một transaction.
+  async reschedule(id, scheduleId, expectedStatus, nextStatus) {
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.appointments.findFirst({
+        where: { id: Number(id) },
+      });
+      if (!existing || existing.status !== expectedStatus) {
+        const error = new Error("Lịch hẹn đã được cập nhật bởi một thao tác khác");
+        error.statusCode = existing ? 409 : 404;
+        throw error;
+      }
+
+      const target = await tx.schedules.findFirst({
+        where: { id: Number(scheduleId) },
+        include: { doctor_workplaces: true },
+      });
+      if (!target) {
+        const error = new Error("Không tìm thấy khung giờ mới");
+        error.statusCode = 404;
+        throw error;
+      }
+      const dateParts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Ho_Chi_Minh",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).formatToParts(new Date());
+      const timeParts = new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Asia/Ho_Chi_Minh",
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23",
+      }).formatToParts(new Date());
+      const nowParts = Object.fromEntries(
+        [...dateParts, ...timeParts].map((part) => [part.type, part.value]),
+      );
+      const today = `${nowParts.year}-${nowParts.month}-${nowParts.day}`;
+      const targetDate = formatDateOnly(target.work_date);
+      const targetTime = formatTimeOnly(target.start_time);
+      if (targetDate < today || (targetDate === today && targetTime <= `${nowParts.hour}:${nowParts.minute}`)) {
+        const error = new Error("Chỉ có thể đổi sang khung giờ trong tương lai");
+        error.statusCode = 400;
+        throw error;
+      }
+      if (target.id === existing.schedule_id) {
+        const error = new Error("Vui lòng chọn khung giờ khác");
+        error.statusCode = 400;
+        throw error;
+      }
+
+      const oldSchedule = await tx.schedules.findFirst({
+        where: { id: existing.schedule_id },
+        include: { doctor_workplaces: true },
+      });
+      if (
+        oldSchedule?.doctor_workplaces?.doctor_id !==
+        target.doctor_workplaces?.doctor_id
+      ) {
+        const error = new Error("Chỉ có thể đổi sang khung giờ của cùng bác sĩ");
+        error.statusCode = 400;
+        throw error;
+      }
+      const maxPatients = target.max_patients ?? 10;
+      if ((target.booked_patients ?? 0) >= maxPatients) {
+        const error = new Error("Khung giờ đã hết chỗ");
+        error.statusCode = 409;
+        throw error;
+      }
+
+      const duplicate = await tx.appointments.findFirst({
+        where: {
+          id: { not: Number(id) },
+          schedule_id: Number(scheduleId),
+          patient_profile_id: existing.patient_profile_id,
+          status: { in: ["PENDING", "CONFIRMED", "CHECKED_IN", "WAITING", "CALLED", "IN_PROGRESS"] },
+        },
+      });
+      if (duplicate) {
+        const error = new Error("Hồ sơ này đã đặt khung giờ mới rồi");
+        error.statusCode = 409;
+        throw error;
+      }
+
+      const updated = await tx.appointments.updateMany({
+        where: { id: Number(id), status: expectedStatus },
+        data: {
+          schedule_id: Number(scheduleId),
+          consultation_type: target.consultation_type || "IN_PERSON",
+          status: nextStatus,
+          queue_key: null,
+          queue_number: null,
+          check_in_at: null,
+          called_at: null,
+          started_at: null,
+          completed_at: null,
+          no_show_at: null,
+          updated_at: new Date(),
+        },
+      });
+      if (updated.count !== 1) {
+        const error = new Error("Lịch hẹn đã được cập nhật bởi một thao tác khác");
+        error.statusCode = 409;
+        throw error;
+      }
+
+      const reserved = await tx.$executeRaw`
+        UPDATE schedules
+        SET booked_patients = COALESCE(booked_patients, 0) + 1, updated_at = NOW()
+        WHERE id = ${target.id} AND COALESCE(booked_patients, 0) < ${maxPatients}
+      `;
+      if (reserved !== 1) {
+        const error = new Error("Khung giờ vừa hết chỗ, vui lòng chọn khung giờ khác");
+        error.statusCode = 409;
+        throw error;
+      }
+      if (oldSchedule && (oldSchedule.booked_patients ?? 0) > 0) {
+        await tx.schedules.updateMany({
+          where: { id: oldSchedule.id, booked_patients: { gt: 0 } },
+          data: { booked_patients: { decrement: 1 }, updated_at: new Date() },
+        });
+      }
+
+      await tx.consultation_sessions.updateMany({
+        where: { appointment_id: Number(id), status: { in: ["WAITING", "CONNECTING", "IN_PROGRESS"] } },
+        data: { status: "CANCELLED", ended_at: new Date() },
+      });
+
+      return tx.appointments.findUnique({
+        where: { id: Number(id) },
+        include: appointmentInclude,
+      });
     });
   }
 

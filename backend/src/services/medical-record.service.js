@@ -1,5 +1,6 @@
 import medicalRecordRepository from "../repositories/medical-record.repository.js";
 import appointmentRepository from "../repositories/appointment.repository.js";
+import prisma from "../config/prisma.js";
 import notificationService from "./notification.service.js";
 import auditLogService from "./audit-log.service.js";
 import { CLINICAL_SERVICE_LABELS } from "./lab.service.js";
@@ -406,9 +407,19 @@ class MedicalRecordService {
       throw error;
     }
 
+    const completedOnlineConsultation =
+      user.role?.name === "Doctor" &&
+      appointment.consultation_type === "ONLINE" &&
+      appointment.status === "CONFIRMED" &&
+      (await prisma.consultation_sessions.findUnique({
+        where: { appointment_id: appointment.id },
+        select: { status: true },
+      }))?.status === "COMPLETED";
+
     if (
       appointment.status !== "IN_PROGRESS" &&
-      appointment.status !== "COMPLETED"
+      appointment.status !== "COMPLETED" &&
+      !completedOnlineConsultation
     ) {
       const error = new Error(
         "Chỉ tạo bệnh án khi lượt khám đang diễn ra hoặc đã hoàn thành",

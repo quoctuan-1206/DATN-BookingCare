@@ -19,9 +19,14 @@ function createMockPrisma({
     createdInvoices: [],
     createdAppointments: [],
     updatedSchedules: [],
+    reservedSchedules: [],
   };
 
   const tx = {
+    async $executeRaw(_query, scheduleId, maxPatients) {
+      state.reservedSchedules.push({ scheduleId, maxPatients });
+      return 1;
+    },
     schedules: {
       async findFirst({ where }) {
         if (where.id === schedule?.id) {
@@ -112,9 +117,9 @@ test("createWithBooking creates one unpaid clinic invoice expiring in ten minute
     "2026-09-25T03:10:00.000Z",
   );
 
-  // Check schedule incremented
-  assert.equal(state.updatedSchedules.length, 1);
-  assert.equal(state.updatedSchedules[0].data.booked_patients, 3);
+  // Slot capacity is reserved atomically with the raw update.
+  assert.equal(state.reservedSchedules.length, 1);
+  assert.deepEqual(state.reservedSchedules[0], { scheduleId: 1, maxPatients: 10 });
 
   // Result includes invoices
   assert.equal(result.invoices.length, 1);

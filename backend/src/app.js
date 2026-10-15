@@ -23,6 +23,8 @@ import labRoutes from "./routes/lab.routes.js";
 import clinicalRoutes from "./routes/clinical.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
 import auditLogRoutes from "./routes/audit-log.routes.js";
+import inventoryRoutes from "./routes/inventory.routes.js";
+import consultationRoutes from "./routes/consultation.routes.js";
 import { requestContextMiddleware } from "./context/request-context.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -35,7 +37,14 @@ if (Number.isInteger(trustProxyHops) && trustProxyHops > 0) {
 }
 
 app.use(requestContextMiddleware);
-app.use(cors());
+const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+app.use(cors({
+  origin: (origin, callback) => callback(null, !origin || allowedOrigins.includes(origin)),
+  credentials: true,
+}));
 app.use(express.json());
 app.use(cookieParser());
 
@@ -76,6 +85,7 @@ app.use("/api/patient-profiles", patientProfileRoutes);
 
 // Lịch hẹn (Appointment)
 app.use("/api/appointments", appointmentRoutes);
+app.use("/api/consultations", consultationRoutes);
 
 // Bệnh án (Medical records)
 app.use("/api/medical-records", medicalRecordRoutes);
@@ -91,6 +101,7 @@ app.use("/api/reviews", reviewRoutes);
 
 // Thuốc & đơn thuốc
 app.use("/api/medicines", medicineRoutes);
+app.use("/api/inventory", inventoryRoutes);
 app.use("/api/prescriptions", prescriptionRoutes);
 
 // Xét nghiệm (Doctor chỉ định/xem; STAFF thực hiện/nhập kết quả)

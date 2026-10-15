@@ -165,13 +165,13 @@ function Appointments() {
                             Hủy
                           </button>
                         )}
-                        {item.status === "CONFIRMED" && (
+                        {item.status === "CONFIRMED" && item.consultation_type !== "ONLINE" && (
                           <>
                             <button type="button" className="admin-btn admin-btn-primary" onClick={() => handleWorkflow(item, "check-in")}>Check-in & cấp số</button>
                             <button type="button" className="admin-btn admin-btn-secondary" onClick={() => handleWorkflow(item, "no-show")}>Không đến</button>
                           </>
                         )}
-                        {item.status === "CHECKED_IN" && (
+                        {item.status === "CHECKED_IN" && item.consultation_type !== "ONLINE" && (
                           <button type="button" className="admin-btn admin-btn-primary" onClick={() => handleWorkflow(item, "enqueue")}>Cấp số</button>
                         )}
                         {item.status === "WAITING" && (

@@ -22,6 +22,10 @@ export const updateAppointmentStatusSchema = z.object({
   status: z.enum(appointmentStatuses),
 });
 
+export const rescheduleAppointmentSchema = z.object({
+  schedule_id: z.coerce.number().int().positive(),
+});
+
 export const queryAppointmentSchema = z.object({
   status: z.enum(appointmentStatuses).optional(),
   doctor_id: z.coerce.number().int().positive().optional(),

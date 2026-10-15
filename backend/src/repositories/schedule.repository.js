@@ -28,6 +28,39 @@ const workplaceInclude = {
 };
 
 class ScheduleRepository {
+  async lockAndAssertNoOverlap(tx, schedule, excludeId) {
+    await tx.$queryRaw`SELECT id FROM doctor_workplaces WHERE id = ${Number(schedule.doctor_workplace_id)} FOR UPDATE`;
+    const rows = await tx.schedules.findMany({
+      where: {
+        doctor_workplace_id: Number(schedule.doctor_workplace_id),
+        work_date: parseDateOnly(schedule.work_date),
+        ...(excludeId ? { id: { not: Number(excludeId) } } : {}),
+      },
+      select: { start_time: true, end_time: true },
+    });
+    const start = parseTimeOnly(schedule.start_time).getTime();
+    const end = parseTimeOnly(schedule.end_time).getTime();
+    if (rows.some((row) => start < row.end_time.getTime() && end > row.start_time.getTime())) {
+      const error = new Error("Khung giờ bị trùng với lịch làm việc đã tạo");
+      error.statusCode = 409;
+      throw error;
+    }
+  }
+
+  async hasOverlap({ workplaceId, workDate, startTime, endTime, excludeId }) {
+    const rows = await prisma.schedules.findMany({
+      where: {
+        doctor_workplace_id: Number(workplaceId),
+        work_date: parseDateOnly(workDate),
+        ...(excludeId ? { id: { not: Number(excludeId) } } : {}),
+      },
+      select: { start_time: true, end_time: true },
+    });
+    const start = parseTimeOnly(startTime).getTime();
+    const end = parseTimeOnly(endTime).getTime();
+    return rows.some((row) => start < row.end_time.getTime() && end > row.start_time.getTime());
+  }
+
   // Lấy danh sách lịch khám kèm lọc và phân trang
   async findAll(filters) {
     const {
@@ -39,12 +72,14 @@ class ScheduleRepository {
       from_date,
       to_date,
       available_only,
+      consultation_type,
       page = 1,
       limit = 50,
     } = filters;
 
     const skip = (page - 1) * limit;
     const where = {};
+    if (consultation_type) where.consultation_type = consultation_type;
 
     if (doctor_workplace_id) {
       where.doctor_workplace_id = doctor_workplace_id;
@@ -140,37 +175,45 @@ class ScheduleRepository {
 
   // Tạo 1 khung giờ lịch khám
   async create(data) {
-    return prisma.schedules.create({
-      data: {
-        doctor_workplace_id: data.doctor_workplace_id,
-        work_date: parseDateOnly(data.work_date),
-        start_time: parseTimeOnly(data.start_time),
-        end_time: parseTimeOnly(data.end_time),
-        max_patients: data.max_patients ?? 10,
-        booked_patients: 0,
-      },
-      include: workplaceInclude,
+    return prisma.$transaction(async (tx) => {
+      await this.lockAndAssertNoOverlap(tx, data);
+      return tx.schedules.create({
+        data: {
+          doctor_workplace_id: data.doctor_workplace_id,
+          work_date: parseDateOnly(data.work_date),
+          start_time: parseTimeOnly(data.start_time),
+          end_time: parseTimeOnly(data.end_time),
+          max_patients: data.max_patients ?? 10,
+          consultation_type: data.consultation_type || "IN_PERSON",
+          booked_patients: 0,
+        },
+        include: workplaceInclude,
+      });
     });
   }
 
   // Tạo nhiều khung giờ lịch khám
   async createMany(slots) {
-    const created = [];
-    for (const slot of slots) {
-      const item = await prisma.schedules.create({
-        data: {
-          doctor_workplace_id: slot.doctor_workplace_id,
-          work_date: parseDateOnly(slot.work_date),
-          start_time: parseTimeOnly(slot.start_time),
-          end_time: parseTimeOnly(slot.end_time),
-          max_patients: slot.max_patients ?? 10,
-          booked_patients: 0,
-        },
-        include: workplaceInclude,
-      });
-      created.push(item);
-    }
-    return created;
+    return prisma.$transaction(async (tx) => {
+      const created = [];
+      for (const slot of slots) {
+        await this.lockAndAssertNoOverlap(tx, slot);
+        const item = await tx.schedules.create({
+          data: {
+            doctor_workplace_id: slot.doctor_workplace_id,
+            work_date: parseDateOnly(slot.work_date),
+            start_time: parseTimeOnly(slot.start_time),
+            end_time: parseTimeOnly(slot.end_time),
+            max_patients: slot.max_patients ?? 10,
+            consultation_type: slot.consultation_type || "IN_PERSON",
+            booked_patients: 0,
+          },
+          include: workplaceInclude,
+        });
+        created.push(item);
+      }
+      return created;
+    });
   }
 
   // Cập nhật lịch khám
@@ -189,11 +232,24 @@ class ScheduleRepository {
     if (data.max_patients !== undefined) {
       payload.max_patients = data.max_patients;
     }
+    if (data.consultation_type !== undefined) {
+      payload.consultation_type = data.consultation_type;
+    }
 
-    return prisma.schedules.update({
-      where: { id: Number(id) },
-      data: payload,
-      include: workplaceInclude,
+    return prisma.$transaction(async (tx) => {
+      const existing = await tx.schedules.findUnique({ where: { id: Number(id) } });
+      if (!existing) return null;
+      await this.lockAndAssertNoOverlap(tx, {
+        doctor_workplace_id: existing.doctor_workplace_id,
+        start_time: data.start_time ?? formatTimeOnly(existing.start_time),
+        end_time: data.end_time ?? formatTimeOnly(existing.end_time),
+        work_date: data.work_date ?? formatDateOnly(existing.work_date),
+      }, id);
+      return tx.schedules.update({
+        where: { id: Number(id) },
+        data: payload,
+        include: workplaceInclude,
+      });
     });
   }
 

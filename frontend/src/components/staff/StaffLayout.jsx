@@ -1,4 +1,4 @@
-import { CalendarClock, ClipboardList, LogOut, UsersRound } from "lucide-react";
+import { CalendarClock, ClipboardList, LogOut, UsersRound, Package } from "lucide-react";
 import { Navigate, NavLink, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
@@ -24,6 +24,9 @@ function StaffLayout({ children, title }) {
           <NavLink to="/staff/appointments" className={({ isActive }) => `sidebar-item${isActive ? " active" : ""}`}>
             <span className="sidebar-icon"><UsersRound size={18} /></span>
             <span>Check-in & hàng đợi</span>
+          </NavLink>
+          <NavLink to="/staff/inventory" className={({ isActive }) => `sidebar-item${isActive ? " active" : ""}`}>
+            <span className="sidebar-icon"><Package size={18} /></span><span>Kho dược</span>
           </NavLink>
           <NavLink to="/staff/clinical/orders" className={({ isActive }) => `sidebar-item${isActive ? " active" : ""}`}>
             <span className="sidebar-icon"><ClipboardList size={18} /></span>

@@ -7,6 +7,7 @@ function StaffLayout({ children, title }) {
   const navigate = useNavigate();
   const { user, loading, logout } = useAuth();
   const fullName = [user?.last_name, user?.first_name].filter(Boolean).join(" ");
+  const isUnassignedStaff = user?.role?.name === "STAFF" && !user?.clinic_id;
 
   if (loading) return null;
   if (!user) return <Navigate to="/login" replace />;
@@ -18,9 +19,12 @@ function StaffLayout({ children, title }) {
     <div className="admin-layout">
       <aside className="admin-sidebar">
         <div className="sidebar-top">
-          <NavLink to="/staff/appointments" className="sidebar-logo">MediUTE</NavLink>
+          <NavLink to="/staff" className="sidebar-logo">MediUTE</NavLink>
         </div>
         <nav className="sidebar-menu">
+          <NavLink to="/staff" end className={({ isActive }) => `sidebar-item${isActive ? " active" : ""}`}>
+            <span className="sidebar-icon"><ClipboardList size={18} /></span><span>Tổng quan</span>
+          </NavLink>
           <NavLink to="/staff/appointments" className={({ isActive }) => `sidebar-item${isActive ? " active" : ""}`}>
             <span className="sidebar-icon"><UsersRound size={18} /></span>
             <span>Check-in & hàng đợi</span>
@@ -50,9 +54,15 @@ function StaffLayout({ children, title }) {
       <div className="admin-main">
         <header className="admin-header">
           <div className="admin-header-left"><h2>{title}</h2></div>
-          <div className="admin-header-right"><strong>{fullName || "Nhân viên cận lâm sàng"}</strong></div>
+          <div className="admin-header-right"><strong>{fullName || "Nhân viên cận lâm sàng"}</strong>{user?.role?.name === "STAFF" && <span>{user?.clinics?.name || "Chưa được phân công cơ sở"}</span>}</div>
         </header>
-        <main className="admin-content">{children}</main>
+        <main className="admin-content">
+          {isUnassignedStaff ? (
+            <div className="dashboard-card" role="status">
+              Bạn chưa được phân công cơ sở làm việc. Vui lòng liên hệ quản trị viên.
+            </div>
+          ) : children}
+        </main>
       </div>
     </div>
   );

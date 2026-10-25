@@ -1,6 +1,7 @@
 import labRepository from "../repositories/lab.repository.js";
 import notificationService from "./notification.service.js";
 import auditLogService from "./audit-log.service.js";
+import { assertStaffClinicAccess, getStaffClinicId } from "../utils/facility-scope.js";
 import {
   formatDateDisplay,
   formatDateOnly,
@@ -209,6 +210,7 @@ function labOrderAuditSnapshot(order) {
   if (!order) return null;
   return {
     service_type: order.service_type || "LAB",
+    clinic_id: order.clinic_id ?? null,
     appointment_id: order.appointment_id ?? null,
     lab_schedule_id: order.lab_schedule_id ?? null,
     patient_id: order.patient_id,
@@ -234,6 +236,8 @@ function formatOrder(order, currentUser = null) {
     appointment_id: order.appointment_id,
     medical_record_id: order.appointments?.medical_records?.id || null,
     lab_schedule_id: order.lab_schedule_id,
+    clinic_id: order.clinic_id ?? order.lab_schedules?.clinic_id ?? null,
+    clinic_name: order.clinics?.name ?? order.lab_schedules?.clinics?.name ?? null,
     booking_code: order.booking_code || order.appointments?.booking_code || null,
     lab_booking_code: order.booking_code || null,
     appointment_booking_code: order.appointments?.booking_code || null,
@@ -264,6 +268,15 @@ function formatOrder(order, currentUser = null) {
     completed_at: order.completed_at,
     cancelled_at: order.cancelled_at,
     cancellation_reason: order.cancellation_reason,
+    payment: order.payment_amount == null ? null : {
+      amount: Number(order.payment_amount),
+      method: order.payment_method,
+      status: order.payment_status === "UNPAID" && order.payment_expires_at && order.payment_expires_at <= new Date()
+        ? "EXPIRED"
+        : order.payment_status,
+      expires_at: order.payment_expires_at,
+      transaction_id: order.transaction_id,
+    },
     updated_at: order.updated_at,
     schedule: formatSchedule(order.lab_schedules),
     results: hideUnreleased ? results.map(redactUnreleasedResult) : results,
@@ -287,22 +300,53 @@ function getAttachmentKind(mimeType) {
 class LabService {
   async notifyResultReady(order) {
     const accountId = order?.patient_profiles?.account_id;
-    if (!accountId || order?.status !== "COMPLETED") return;
+    if (order?.status !== "COMPLETED") return;
 
     const serviceLabel =
       CLINICAL_SERVICE_LABELS[order.service_type || "LAB"] ||
       "Cận lâm sàng";
     const code =
       order.booking_code || order.appointments?.booking_code || `#${order.id}`;
+    if (accountId) {
+      try {
+        await notificationService.notifyOnce(accountId, {
+          title: `Đã có kết quả ${serviceLabel.toLowerCase()}`,
+          content: `Kết quả phiếu ${code} đã sẵn sàng. Bạn có thể xem chi tiết trên hồ sơ cận lâm sàng.`,
+          link: `/patient/clinical?order=${order.id}`,
+          type: "CLINICAL_RESULT_READY",
+        });
+      } catch (error) {
+        console.error("[LabService] Không thể gửi thông báo kết quả:", error);
+      }
+    }
+
+    const appointmentId = order.appointment_id || order.appointments?.id;
+    const doctorId = Number(order.doctor_id);
+    if (!appointmentId || !doctorId) return;
+
     try {
-      await notificationService.notifyOnce(accountId, {
-        title: `Đã có kết quả ${serviceLabel.toLowerCase()}`,
-        content: `Kết quả phiếu ${code} đã sẵn sàng. Bạn có thể xem chi tiết trên hồ sơ cận lâm sàng.`,
-        link: `/patient/clinical?order=${order.id}`,
-        type: "CLINICAL_RESULT_READY",
+      const appointmentOrders =
+        await labRepository.findAppointmentOrderStatuses(appointmentId);
+      if (
+        !appointmentOrders.length ||
+        appointmentOrders.some((item) => item.status !== "COMPLETED")
+      ) {
+        return;
+      }
+
+      const completedOrderIds = appointmentOrders
+        .map((item) => item.id)
+        .join(",");
+      const patientName = order.patient_profiles?.full_name || "bệnh nhân";
+      const bookingCode = order.appointments?.booking_code || `#${appointmentId}`;
+      await notificationService.notifyOnce(doctorId, {
+        title: "Đã có đủ kết quả cận lâm sàng",
+        content: `Các chỉ định của ${patientName} trong lịch ${bookingCode} đã hoàn tất. Bác sĩ có thể mở lại lượt khám để xem kết quả và tiếp tục khám.`,
+        link: `/doctor/appointments/${appointmentId}?clinicalResultsReady=${completedOrderIds}`,
+        type: "CLINICAL_RESULTS_READY_FOR_DOCTOR",
       });
     } catch (error) {
-      console.error("[LabService] Không thể gửi thông báo kết quả:", error);
+      console.error("[LabService] Không thể gửi thông báo kết quả cho bác sĩ:", error);
     }
   }
 
@@ -339,10 +383,10 @@ class LabService {
   async getClinicalStatistics(currentUser) {
     assertUserRole(
       currentUser,
-      ["Admin"],
+      ["Admin", "STAFF"],
       "Chỉ quản trị viên được xem thống kê cận lâm sàng",
     );
-    const statistics = await labRepository.getClinicalStatistics();
+    const statistics = await labRepository.getClinicalStatistics(getStaffClinicId(currentUser));
     return {
       total_orders: statistics.total,
       by_status: statistics.byStatus,
@@ -470,6 +514,7 @@ class LabService {
     const order = await labRepository.createOrder({
       serviceType,
       appointmentId: appointment.id,
+      clinicId: appointment.schedules.doctor_workplaces.clinic_id,
       labScheduleId: null,
       patientId: appointment.patient_profile_id,
       doctorId: Number(appointmentDoctorId),
@@ -479,6 +524,8 @@ class LabService {
       preparationNote: data.preparation_note,
       patientNote: null,
       tests,
+      createPayment: true,
+      paymentExpiresAt: false,
     });
     const response = formatOrder(order, currentUser);
     await auditLogService.record({
@@ -493,6 +540,20 @@ class LabService {
         serviceType,
       },
     });
+    const patientAccountId = order.patient_profiles?.account_id;
+    if (patientAccountId) {
+      const amount = Number(order.payment_amount || 0).toLocaleString("vi-VN");
+      try {
+        await notificationService.notifyOnce(patientAccountId, {
+          title: "Bác sĩ đã chỉ định dịch vụ cận lâm sàng",
+          content: `Phiếu ${order.booking_code || `#${order.id}`} cần thanh toán ${amount} đ trước khi nhân viên tiếp nhận.`,
+          link: `/payment/result?clinicalOrderId=${order.id}`,
+          type: "CLINICAL_PAYMENT_REQUIRED",
+        });
+      } catch (error) {
+        console.error("[LabService] Không thể gửi thông báo thanh toán cận lâm sàng:", error);
+      }
+    }
     return response;
   }
 
@@ -547,6 +608,7 @@ class LabService {
     const order = await labRepository.createOrder({
       serviceType,
       appointmentId: null,
+      clinicId: schedule.clinic_id,
       labScheduleId: scheduleId,
       patientId: profile.id,
       doctorId: null,
@@ -556,6 +618,7 @@ class LabService {
       preparationNote: null,
       patientNote: data.patient_note,
       tests,
+      createPayment: true,
     });
     const response = formatOrder(order, currentUser);
     await auditLogService.record({
@@ -574,9 +637,11 @@ class LabService {
     return response;
   }
 
-  async getSchedules(query, publicOnly = false, forcedServiceType = null) {
+  async getSchedules(query, publicOnly = false, forcedServiceType = null, currentUser = null) {
+    const clinicId = getStaffClinicId(currentUser);
     const filters = {
       ...query,
+      ...(clinicId ? { clinic_id: clinicId } : {}),
       service_type: forcedServiceType || query.service_type,
       ...(publicOnly
         ? {
@@ -608,8 +673,9 @@ class LabService {
     };
   }
 
-  async createSchedule(data, forcedServiceType = "LAB") {
-    const clinic = await labRepository.findClinic(data.clinic_id);
+  async createSchedule(data, forcedServiceType = "LAB", currentUser = null) {
+    const clinicId = getStaffClinicId(currentUser) || data.clinic_id;
+    const clinic = await labRepository.findClinic(clinicId);
     if (!clinic) throw httpError("Không tìm thấy cơ sở cận lâm sàng", 404);
     if (!isUpcomingSchedule(data.work_date, data.start_time)) {
       throw httpError("Không thể tạo lịch cận lâm sàng trong quá khứ", 400);
@@ -618,6 +684,7 @@ class LabService {
       return formatSchedule(
         await labRepository.createSchedule({
           ...data,
+          clinic_id: clinicId,
           service_type: forcedServiceType || data.service_type,
         }),
       );
@@ -629,7 +696,7 @@ class LabService {
     }
   }
 
-  async updateSchedule(id, data, forcedServiceType = "LAB") {
+  async updateSchedule(id, data, forcedServiceType = "LAB", currentUser = null) {
     const scheduleId = parseId(id, "ID lịch cận lâm sàng");
     const existing = await labRepository.findScheduleById(scheduleId);
     if (
@@ -637,6 +704,11 @@ class LabService {
       (forcedServiceType && existing.service_type !== forcedServiceType)
     ) {
       throw httpError("Không tìm thấy khung giờ cận lâm sàng", 404);
+    }
+    assertStaffClinicAccess(currentUser, existing.clinic_id);
+    const assignedClinicId = getStaffClinicId(currentUser);
+    if (assignedClinicId && data.clinic_id !== undefined && Number(data.clinic_id) !== assignedClinicId) {
+      throw httpError("STAFF không thể chuyển lịch sang cơ sở khác", 403);
     }
     if (data.clinic_id) {
       const clinic = await labRepository.findClinic(data.clinic_id);
@@ -673,7 +745,7 @@ class LabService {
     }
   }
 
-  async deleteSchedule(id, forcedServiceType = "LAB") {
+  async deleteSchedule(id, forcedServiceType = "LAB", currentUser = null) {
     const scheduleId = parseId(id, "ID lịch cận lâm sàng");
     const existing = await labRepository.findScheduleById(scheduleId);
     if (
@@ -682,6 +754,7 @@ class LabService {
     ) {
       throw httpError("Không tìm thấy khung giờ cận lâm sàng", 404);
     }
+    assertStaffClinicAccess(currentUser, existing.clinic_id);
     if (existing.booked_orders > 0 || existing._count?.lab_orders > 0) {
       throw httpError("Không thể xóa khung giờ đã có người đặt", 400);
     }
@@ -725,6 +798,8 @@ class LabService {
       where.doctor_id = Number(currentUser.id);
     } else if (currentUser.role?.name === "Patient") {
       where.patient_profiles = { account_id: Number(currentUser.id) };
+    } else if (currentUser.role?.name === "STAFF") {
+      where.clinic_id = getStaffClinicId(currentUser);
     }
     return where;
   }
@@ -769,7 +844,11 @@ class LabService {
 
   assertCanViewOrder(order, currentUser) {
     const role = currentUser.role?.name;
-    if (role === "Admin" || role === "STAFF") return;
+    if (role === "Admin") return;
+    if (role === "STAFF") {
+      assertStaffClinicAccess(currentUser, order.clinic_id ?? order.lab_schedules?.clinic_id);
+      return;
+    }
     if (role === "Doctor" && Number(order.doctor_id) === Number(currentUser.id)) {
       return;
     }
@@ -827,6 +906,13 @@ class LabService {
         `Không thể chuyển trạng thái từ ${order.status} sang ${status}`,
         400,
       );
+    }
+    if (
+      status === "IN_PROGRESS" &&
+      order.payment_amount != null &&
+      order.payment_status !== "PAID"
+    ) {
+      throw httpError("Chưa thể tiếp nhận phiếu khi bệnh nhân chưa thanh toán", 409);
     }
     const updated = await labRepository.updateOrderStatus(
       order.id,
@@ -1147,6 +1233,7 @@ class LabService {
       parseId(id, "ID tệp đính kèm"),
     );
     if (!attachment) throw httpError("Không tìm thấy tệp đính kèm", 404);
+    this.assertCanViewOrder(attachment.lab_orders, currentUser);
     this.assertOrderCanBeEdited(attachment.lab_orders);
     const deleted = await labRepository.deleteAttachment(
       attachment.id,

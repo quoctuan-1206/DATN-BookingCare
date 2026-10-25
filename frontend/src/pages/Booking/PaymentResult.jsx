@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 function PaymentResult() {
   const [searchParams] = useSearchParams();
   const invoiceId = searchParams.get("invoiceId");
+  const clinicalOrderId = searchParams.get("clinicalOrderId");
   const statusParam = searchParams.get("status");
 
   const [loading, setLoading] = useState(true);
@@ -19,7 +20,9 @@ function PaymentResult() {
 
   const checkStatus = async () => {
     try {
-      const res = await paymentService.getStatus(invoiceId);
+      const res = clinicalOrderId
+        ? await paymentService.getClinicalStatus(clinicalOrderId)
+        : await paymentService.getStatus(invoiceId);
       setPaymentData(res);
       setFetchError(null);
       setLoading(false);
@@ -38,7 +41,7 @@ function PaymentResult() {
   };
 
   useEffect(() => {
-    if (!invoiceId || statusParam === "invalid" || statusParam === "not_found") {
+    if ((!invoiceId && !clinicalOrderId) || statusParam === "invalid" || statusParam === "not_found") {
       setLoading(false);
       return;
     }
@@ -65,13 +68,15 @@ function PaymentResult() {
         clearInterval(pollIntervalRef.current);
       }
     };
-  }, [invoiceId, statusParam]);
+  }, [invoiceId, clinicalOrderId, statusParam]);
 
   const handleRetryPayment = async () => {
-    if (!invoiceId) return;
+    if (!invoiceId && !clinicalOrderId) return;
     setRetrying(true);
     try {
-      const res = await paymentService.createPaymentUrl(invoiceId);
+      const res = clinicalOrderId
+        ? await paymentService.createClinicalPaymentUrl(clinicalOrderId)
+        : await paymentService.createPaymentUrl(invoiceId);
       if (res?.payment_url) {
         window.location.assign(res.payment_url);
       } else {
@@ -89,7 +94,7 @@ function PaymentResult() {
   if (
     statusParam === "invalid" ||
     statusParam === "not_found" ||
-    (!loading && !invoiceId) ||
+    (!loading && !invoiceId && !clinicalOrderId) ||
     (!loading && fetchError && !paymentData)
   ) {
     const isFetchError = Boolean(fetchError && !paymentData);
@@ -201,7 +206,11 @@ function PaymentResult() {
                 <Link to="/" className="btn btn-outline">
                   Về trang chủ
                 </Link>
-                {paymentData?.appointment_id ? (
+                {paymentData?.clinical_order_id ? (
+                  <Link to="/patient/clinical" className="btn btn-primary">
+                    Xem phiếu cận lâm sàng
+                  </Link>
+                ) : paymentData?.appointment_id ? (
                   <Link
                     to={`/patient/appointments/${paymentData.appointment_id}`}
                     className="btn btn-primary"

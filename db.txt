@@ -62,13 +62,15 @@ CREATE TABLE users (
     address VARCHAR(255),
     avatar TEXT,
     role_id INT NOT NULL,
+    clinic_id INT NULL,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
     FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE RESTRICT,
     INDEX idx_user_email (email),
-    INDEX idx_user_phone (phone)
+    INDEX idx_user_phone (phone),
+    INDEX idx_users_clinic (clinic_id)
 ) ENGINE=InnoDB COMMENT='Bảng tài khoản người dùng';
 
 -- ============================================================================
@@ -118,6 +120,9 @@ CREATE TABLE clinics (
 -- ============================================================================
 -- 4. BẢNG SPECIALTIES
 -- ============================================================================
+ALTER TABLE users
+    ADD CONSTRAINT fk_users_clinic FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE SET NULL;
+
 CREATE TABLE specialties (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -405,6 +410,8 @@ CREATE TABLE lab_orders (
     id INT AUTO_INCREMENT PRIMARY KEY,
     appointment_id INT,
     lab_schedule_id INT,
+    clinic_id INT NULL,
+    service_type ENUM('LAB','XRAY','ULTRASOUND','ENDOSCOPY','ECG') NOT NULL DEFAULT 'LAB',
     patient_id INT NOT NULL,
     doctor_id INT,
     booking_code VARCHAR(50) UNIQUE,
@@ -415,17 +422,28 @@ CREATE TABLE lab_orders (
     result_file_size INT,
     result_uploaded_at DATETIME,
     status ENUM('PENDING','IN_PROGRESS','COMPLETED','CANCELLED') NOT NULL DEFAULT 'PENDING',
+    payment_amount DECIMAL(10,2) NULL,
+    payment_method ENUM('CASH','VNPAY','MOMO','BANK_TRANSFER') NULL,
+    payment_status ENUM('UNPAID','PAID','REFUNDED') NULL,
+    payment_date DATETIME NULL,
+    payment_expires_at DATETIME NULL,
+    vnp_txn_ref VARCHAR(100) NULL,
+    transaction_id VARCHAR(100) NULL,
     ordered_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     completed_at DATETIME,
     FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE SET NULL,
     FOREIGN KEY (lab_schedule_id) REFERENCES lab_schedules(id) ON DELETE SET NULL,
+    FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE RESTRICT,
     FOREIGN KEY (patient_id) REFERENCES patient_profiles(id),
     FOREIGN KEY (doctor_id) REFERENCES users(id) ON DELETE SET NULL,
     INDEX idx_lab_orders_appointment (appointment_id),
     INDEX idx_lab_orders_schedule (lab_schedule_id),
+    INDEX idx_lab_orders_clinic_status_ordered (clinic_id, service_type, status, ordered_at),
     INDEX idx_lab_orders_patient (patient_id),
     INDEX idx_lab_orders_doctor (doctor_id),
-    INDEX idx_lab_orders_status (status)
+    INDEX idx_lab_orders_status (status),
+    INDEX idx_lab_orders_payment_expiry (payment_status, payment_expires_at),
+    UNIQUE KEY uk_lab_orders_vnp_txn_ref (vnp_txn_ref)
 ) ENGINE=InnoDB COMMENT='Phiếu chỉ định xét nghiệm';
 
 CREATE TABLE lab_results (

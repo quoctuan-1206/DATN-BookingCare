@@ -24,6 +24,7 @@ import { CLINICAL_TYPE_LABEL } from "../../components/clinical/clinical.constant
 import { useAuth } from "../../context/AuthContext";
 import { getApiErrorMessage } from "../../api/axios";
 import clinicalService from "../../services/clinical.service";
+import paymentService from "../../services/payment.service";
 import patientProfileService from "../../services/patient-profile.service";
 import { resolveMediaUrl } from "../../utils/media";
 
@@ -202,6 +203,17 @@ function ClinicalBooking() {
         service_ids: [service.id],
         patient_note: patientNote.trim() || null,
       });
+      if (order?.payment?.status === "UNPAID") {
+        try {
+          const payment = await paymentService.createClinicalPaymentUrl(order.id);
+          if (payment?.payment_url) {
+            window.location.assign(payment.payment_url);
+            return;
+          }
+        } catch {
+          toast.error("Phiếu đã tạo nhưng chưa mở được thanh toán. Bạn có thể thử lại tại hồ sơ cận lâm sàng.");
+        }
+      }
       setCompletedOrder(order);
       toast.success("Đặt lịch cận lâm sàng thành công");
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -209,6 +221,16 @@ function ClinicalBooking() {
       toast.error(getApiErrorMessage(submitError, "Không đặt được lịch dịch vụ"));
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const retryPayment = async () => {
+    if (!completedOrder?.id) return;
+    try {
+      const payment = await paymentService.createClinicalPaymentUrl(completedOrder.id);
+      if (payment?.payment_url) window.location.assign(payment.payment_url);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Không thể tạo đường dẫn thanh toán"));
     }
   };
 
@@ -240,8 +262,15 @@ function ClinicalBooking() {
                   <span>Thời gian</span>
                   <strong>{completedOrder.schedule?.date_display} · {completedOrder.schedule?.time}</strong>
                 </div>
+                {completedOrder.payment && (
+                  <div className="success-row success-row--highlight">
+                    <span>Phí dịch vụ</span>
+                    <strong>{Number(completedOrder.payment.amount || 0).toLocaleString("vi-VN")} đ</strong>
+                  </div>
+                )}
               </div>
               <div className="success-actions">
+                {completedOrder.payment?.status === "UNPAID" && <button className="btn btn-primary" type="button" onClick={retryPayment}>Thanh toán ngay</button>}
                 <Link className="btn btn-outline" to="/clinical-services">Xem dịch vụ khác</Link>
                 <Link className="btn btn-primary" to="/patient/clinical">Xem phiếu của tôi</Link>
               </div>

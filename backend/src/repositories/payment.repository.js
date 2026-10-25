@@ -53,6 +53,31 @@ class PaymentRepository {
     });
   }
 
+  async findClinicalOrderPaymentById(orderId) {
+    return this.prisma.lab_orders.findFirst({
+      where: { id: Number(orderId), payment_amount: { not: null } },
+      include: {
+        patient_profiles: { select: { id: true, account_id: true, full_name: true } },
+        clinics: { select: { id: true, name: true } },
+      },
+    });
+  }
+
+  async findClinicalOrderPaymentByTxnRef(txnRef) {
+    if (!txnRef) return null;
+    return this.prisma.lab_orders.findFirst({
+      where: { vnp_txn_ref: txnRef, payment_amount: { not: null } },
+      include: { patient_profiles: { select: { id: true, account_id: true, full_name: true } } },
+    });
+  }
+
+  async setClinicalOrderTxnRef(orderId, txnRef) {
+    return this.prisma.lab_orders.update({
+      where: { id: Number(orderId) },
+      data: { vnp_txn_ref: txnRef, updated_at: new Date() },
+    });
+  }
+
   // Xử lý cập nhật thanh toán từ IPN (đảm bảo an toàn giao dịch và idempotent)
   async markPaidFromIpn({
     txnRef,
@@ -73,7 +98,22 @@ class PaymentRepository {
       });
 
       if (!invoice) {
-        return { success: false, code: "NOT_FOUND", message: "Order not found" };
+        const order = await tx.lab_orders.findFirst({
+          where: { vnp_txn_ref: txnRef, payment_amount: { not: null } },
+          include: { patient_profiles: true },
+        });
+        if (!order) return { success: false, code: "NOT_FOUND", message: "Order not found" };
+        const expectedAmount = Math.round(Number(order.payment_amount) * 100);
+        if (Number(amount) !== expectedAmount) return { success: false, code: "INVALID_AMOUNT", message: "Invalid amount" };
+        if (order.payment_status === "PAID") return { success: true, code: "ALREADY_PAID", kind: "CLINICAL", order };
+        if ((order.payment_expires_at && order.payment_expires_at < now) || order.status === "CANCELLED") {
+          return { success: false, code: "EXPIRED", message: "Order expired or cancelled" };
+        }
+        const updated = await tx.lab_orders.update({
+          where: { id: order.id },
+          data: { payment_status: "PAID", payment_method: "VNPAY", transaction_id: transactionNo != null ? String(transactionNo) : null, payment_date: paidAt, updated_at: now },
+        });
+        return { success: true, code: "SUCCESS", kind: "CLINICAL", order: updated };
       }
 
       const expectedAmount = Math.round(Number(invoice.amount) * 100);
@@ -174,6 +214,35 @@ class PaymentRepository {
       });
     }
 
+    return expiredCount;
+  }
+
+  async expireUnpaidClinicalOrders(now = new Date()) {
+    const candidates = await this.prisma.lab_orders.findMany({
+      where: {
+        payment_status: "UNPAID",
+        payment_expires_at: { lte: now },
+        status: "PENDING",
+        lab_schedule_id: { not: null },
+      },
+      select: { id: true, lab_schedule_id: true },
+    });
+    let expiredCount = 0;
+    for (const order of candidates) {
+      await this.prisma.$transaction(async (tx) => {
+        const result = await tx.lab_orders.updateMany({
+          where: { id: order.id, status: "PENDING", payment_status: "UNPAID" },
+          data: { status: "CANCELLED", cancelled_at: now, cancellation_reason: "Payment expired", updated_at: now },
+        });
+        if (result.count === 1) {
+          await tx.lab_schedules.updateMany({
+            where: { id: order.lab_schedule_id, booked_orders: { gt: 0 } },
+            data: { booked_orders: { decrement: 1 }, updated_at: now },
+          });
+          expiredCount += 1;
+        }
+      });
+    }
     return expiredCount;
   }
 }

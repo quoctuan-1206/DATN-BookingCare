@@ -41,15 +41,18 @@ function StaffClinicalSchedules() {
     setLoading(true);
     setError("");
     try {
+      const staffUser = user?.role?.name === "STAFF";
       const [clinicResponse, scheduleResponse] = await Promise.all([
-        clinicService.getClinics({ page: 1, limit: 100 }),
+        staffUser
+          ? Promise.resolve({ data: user?.clinics ? [user.clinics] : [] })
+          : clinicService.getClinics({ page: 1, limit: 100 }),
         clinicalService.getSchedules({
           page: 1,
           limit: 200,
           ...(type !== "ALL" ? { service_type: type } : {}),
         }),
       ]);
-      const clinicData = clinicResponse.data || [];
+      const clinicData = (clinicResponse.data || []).filter((clinic) => clinic.is_active !== false);
       setClinics(clinicData);
       setSchedules(scheduleResponse.data || []);
       setForm((current) => ({
@@ -66,7 +69,7 @@ function StaffClinicalSchedules() {
     } finally {
       setLoading(false);
     }
-  }, [type]);
+  }, [type, user?.role?.name, user?.clinic_id, user?.clinics?.name]);
 
   useEffect(() => {
     if (["STAFF", "Admin"].includes(user?.role?.name)) {
@@ -241,7 +244,7 @@ function StaffClinicalSchedules() {
                   clinic_id: event.target.value,
                 }))}
                 required
-                disabled={!clinics.length}
+                disabled={user?.role?.name === "STAFF" || !clinics.length}
               >
                 <option value="">Chọn cơ sở</option>
                 {clinics.map((clinic) => (

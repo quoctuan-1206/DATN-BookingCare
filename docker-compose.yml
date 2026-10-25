@@ -33,6 +33,12 @@ services:
       JWT_EXPIRES_IN: "1d"
       JWT_REFRESH_SECRET: "super_secret_refresh_key_booking_care"
       JWT_REFRESH_EXPIRES_IN: "7d"
+      FRONTEND_URL: "http://localhost:5173"
+      VNPAY_MOCK: "true"
+      VNPAY_TMN_CODE: "LOCALMOCK"
+      VNPAY_HASH_SECRET: "local-mock-secret"
+      VNPAY_RETURN_URL: "http://localhost:3000/api/payments/vnpay/return"
+      VNPAY_IPN_URL: "http://localhost:3000/api/payments/vnpay/ipn"
     depends_on:
       mysql_db:
         condition: service_healthy

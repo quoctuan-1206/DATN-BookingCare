@@ -22,6 +22,19 @@ function prescriptionAuditSnapshot(prescription) {
 }
 
 class PrescriptionService {
+  assertClinicalOrdersComplete(record) {
+    const incomplete = (record?.appointments?.lab_orders || []).filter(
+      (order) => ["PENDING", "IN_PROGRESS"].includes(order.status),
+    );
+    if (incomplete.length) {
+      const error = new Error(
+        "Chỉ có thể kê đơn sau khi đã có đầy đủ kết quả cận lâm sàng",
+      );
+      error.statusCode = 409;
+      throw error;
+    }
+  }
+
   formatPrescription(prescription) {
     if (!prescription) return null;
 
@@ -204,6 +217,7 @@ class PrescriptionService {
     }
 
     this.assertCanManage(user, record);
+    this.assertClinicalOrdersComplete(record);
 
     const existing = await prescriptionRepository.findByMedicalRecordId(
       data.medical_record_id,
@@ -264,6 +278,7 @@ class PrescriptionService {
     }
 
     this.assertCanManage(user, existing.medical_records);
+    this.assertClinicalOrdersComplete(existing.medical_records);
 
     const items = await this.resolveItems(data.items || []);
     const updated = await prescriptionRepository.update(

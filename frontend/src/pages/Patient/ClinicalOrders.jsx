@@ -7,6 +7,7 @@ import PatientLayout from "../../components/patient/PatientLayout";
 import { useAuth } from "../../context/AuthContext";
 import { getApiErrorMessage } from "../../api/axios";
 import clinicalService from "../../services/clinical.service";
+import paymentService from "../../services/payment.service";
 
 function PatientClinicalOrders() {
   const { user, loading: authLoading } = useAuth();
@@ -55,6 +56,16 @@ function PatientClinicalOrders() {
     }
   };
 
+  const payOrder = async (orderId) => {
+    try {
+      const payment = await paymentService.createClinicalPaymentUrl(orderId);
+      if (payment?.payment_url) window.location.assign(payment.payment_url);
+      else toast.error("Không nhận được đường dẫn thanh toán");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Không thể tạo đường dẫn thanh toán"));
+    }
+  };
+
   if (authLoading) return null;
   if (!user) return <Navigate to="/login" replace />;
   if (user.role?.name !== "Patient") return <Navigate to="/unauthorized" replace />;
@@ -90,6 +101,7 @@ function PatientClinicalOrders() {
           mode="patient"
           onQueryChange={loadOrders}
           onOpenAttachment={openAttachment}
+          onPay={payOrder}
         />
       </div>
     </PatientLayout>

@@ -4,7 +4,7 @@ class UserRepository {
   async createStaff(data, roleId) {
     return prisma.users.create({
       data: { ...data, role_id: roleId, is_active: true },
-      include: { role: true },
+      include: { role: true, clinics: true },
     });
   }
 
@@ -17,7 +17,7 @@ class UserRepository {
   }
 
   // Lấy danh sách người dùng (lọc + phân trang) — Admin
-  async findAll({ search, role, is_active, page = 1, limit = 10 }) {
+  async findAll({ search, role, is_active, clinic_id, unassigned, page = 1, limit = 10 }) {
     const skip = (page - 1) * limit;
 
     const where = {};
@@ -28,6 +28,11 @@ class UserRepository {
 
     if (role) {
       where.role = { name: role };
+    }
+    if (clinic_id !== undefined) where.clinic_id = clinic_id;
+    if (unassigned) {
+      where.clinic_id = null;
+      where.role = { name: "STAFF" };
     }
 
     if (search) {
@@ -66,6 +71,7 @@ class UserRepository {
               description: true,
             },
           },
+          clinics: { select: { id: true, name: true, address: true, is_active: true } },
         },
       }),
     ]);
@@ -97,6 +103,7 @@ class UserRepository {
             description: true,
           },
         },
+        clinics: { select: { id: true, name: true, address: true, is_active: true } },
         doctor_profiles: {
           select: {
             id: true,
@@ -113,6 +120,21 @@ class UserRepository {
           },
         },
       },
+    });
+  }
+
+  findActiveClinicById(id) {
+    return prisma.clinics.findFirst({
+      where: { id: Number(id), is_active: true },
+      select: { id: true, name: true, address: true },
+    });
+  }
+
+  async updateStaffClinic(id, clinicId) {
+    return prisma.users.update({
+      where: { id: Number(id) },
+      data: { clinic_id: clinicId, updated_at: new Date() },
+      include: { role: true, clinics: true },
     });
   }
 
@@ -145,6 +167,7 @@ class UserRepository {
               description: true,
             },
           },
+          clinics: { select: { id: true, name: true, address: true, is_active: true } },
         },
       });
 

@@ -78,6 +78,10 @@ model clinics {
   updated_at            DateTime?           @default(now()) @db.Timestamp(0)
   doctor_workplaces     doctor_workplaces[]
   lab_schedules         lab_schedules[]
+  staff_users           users[]              @relation("StaffClinic")
+  lab_orders            lab_orders[]
+  inventory_batches     inventory_batches[]
+  inventory_transactions inventory_transactions[]
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -180,6 +184,7 @@ model medicines {
 model inventory_batches {
   id                  Int                     @id @default(autoincrement())
   medicine_id         Int
+  clinic_id           Int?
   batch_code          String                  @db.VarChar(100)
   received_at         DateTime                @default(now()) @db.DateTime(0)
   expires_at          DateTime?               @db.Date
@@ -190,14 +195,17 @@ model inventory_batches {
   is_locked           Boolean                 @default(false)
   created_at          DateTime                @default(now()) @db.Timestamp(0)
   medicines           medicines               @relation(fields: [medicine_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  clinics             clinics?                @relation(fields: [clinic_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_inventory_batches_clinic")
   allocations         inventory_allocations[]
   @@unique([medicine_id, batch_code], map: "uk_inventory_batch_medicine_code")
   @@index([medicine_id, expires_at, received_at], map: "idx_inventory_batch_issue")
+  @@index([clinic_id, medicine_id], map: "idx_inventory_batches_clinic_medicine")
 }
 
 model inventory_transactions {
   id            Int                       @id @default(autoincrement())
   medicine_id   Int
+  clinic_id     Int?
   kind          inventory_transaction_kind
   quantity      Int
   reference_type String?                   @db.VarChar(40)
@@ -206,9 +214,11 @@ model inventory_transactions {
   actor_id      Int?
   created_at    DateTime                  @default(now()) @db.Timestamp(0)
   medicines     medicines                 @relation(fields: [medicine_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  clinics       clinics?                  @relation(fields: [clinic_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_inventory_transactions_clinic")
   allocations   inventory_allocations[]
   @@index([medicine_id, created_at], map: "idx_inventory_tx_medicine_created")
   @@index([reference_type, reference_id], map: "idx_inventory_tx_reference")
+  @@index([clinic_id, created_at], map: "idx_inventory_transactions_clinic_created")
 }
 
 model inventory_allocations {
@@ -383,6 +393,7 @@ model users {
   address          String?            @db.VarChar(255)
   avatar           String?            @db.Text
   role_id          Int
+  clinic_id        Int?
   is_active        Boolean?           @default(true)
   created_at       DateTime?          @default(now()) @db.Timestamp(0)
   updated_at       DateTime?          @default(now()) @db.Timestamp(0)
@@ -400,10 +411,12 @@ model users {
   clinical_order_events      clinical_order_events[]
   audit_logs                 audit_logs[]
   role             roles              @relation(fields: [role_id], references: [id], onUpdate: NoAction, map: "users_ibfk_1")
+  clinics          clinics?           @relation("StaffClinic", fields: [clinic_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_users_clinic")
 
   @@index([email], map: "idx_user_email")
   @@index([phone], map: "idx_user_phone")
   @@index([role_id], map: "role_id")
+  @@index([clinic_id], map: "idx_users_clinic")
 }
 
 model audit_logs {
@@ -475,6 +488,7 @@ model lab_orders {
   service_type            clinical_service_type @default(LAB)
   appointment_id          Int?
   lab_schedule_id         Int?
+  clinic_id               Int?
   patient_id              Int
   doctor_id               Int?
   accepted_by             Int?
@@ -489,6 +503,13 @@ model lab_orders {
   result_file_size        Int?
   result_uploaded_at      DateTime?             @db.DateTime(0)
   status                  lab_orders_status     @default(PENDING)
+  payment_amount          Decimal?              @db.Decimal(10, 2)
+  payment_method           invoices_payment_method?
+  payment_status           invoices_payment_status?
+  payment_date             DateTime?             @db.DateTime(0)
+  payment_expires_at        DateTime?             @db.DateTime(0)
+  vnp_txn_ref               String?               @unique(map: "uk_lab_orders_vnp_txn_ref") @db.VarChar(100)
+  transaction_id            String?               @db.VarChar(100)
   ordered_at              DateTime              @default(now()) @db.Timestamp(0)
   started_at              DateTime?             @db.DateTime(0)
   performed_at            DateTime?             @db.DateTime(0)
@@ -498,6 +519,7 @@ model lab_orders {
   updated_at              DateTime              @default(now()) @updatedAt @db.Timestamp(0)
   appointments            appointments?         @relation(fields: [appointment_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_lab_orders_appointment")
   lab_schedules           lab_schedules?        @relation(fields: [lab_schedule_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_lab_orders_schedule")
+  clinics                 clinics?              @relation(fields: [clinic_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_lab_orders_clinic")
   patient_profiles        patient_profiles      @relation(fields: [patient_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_lab_orders_patient")
   users                   users?                @relation("LabOrderDoctor", fields: [doctor_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_lab_orders_doctor")
   accepted_by_user        users?                @relation("LabOrderAcceptedBy", fields: [accepted_by], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_lab_orders_accepted_by")
@@ -508,11 +530,13 @@ model lab_orders {
 
   @@index([appointment_id], map: "idx_lab_orders_appointment")
   @@index([lab_schedule_id], map: "idx_lab_orders_schedule")
+  @@index([clinic_id, service_type, status, ordered_at], map: "idx_lab_orders_clinic_status_ordered")
   @@index([patient_id], map: "idx_lab_orders_patient")
   @@index([doctor_id], map: "idx_lab_orders_doctor")
   @@index([accepted_by], map: "idx_lab_orders_accepted_by")
   @@index([performed_by], map: "idx_lab_orders_performed_by")
   @@index([status], map: "idx_lab_orders_status")
+  @@index([payment_status, payment_expires_at], map: "idx_lab_orders_payment_expiry")
   @@index([service_type, status, ordered_at], map: "idx_lab_orders_type_status_ordered")
   @@index([patient_id, ordered_at], map: "idx_lab_orders_patient_ordered")
   @@index([doctor_id, ordered_at], map: "idx_lab_orders_doctor_ordered")

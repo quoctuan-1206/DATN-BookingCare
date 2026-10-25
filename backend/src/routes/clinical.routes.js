@@ -19,7 +19,7 @@ router.use(verifyAccessTokenMiddleware, preventSensitiveCaching);
 
 router.get(
   "/stats",
-  authorize("Admin"),
+  authorize("Admin", "STAFF"),
   labController.getClinicalStatistics,
 );
 

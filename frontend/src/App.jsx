@@ -76,6 +76,7 @@ import StaffClinical from "./pages/Staff/Clinical";
 import StaffClinicalSchedules from "./pages/Staff/ClinicalSchedules";
 import StaffAppointments from "./pages/Staff/Appointments";
 import StaffInventory from "./pages/Staff/Inventory";
+import StaffDashboard from "./pages/Staff/Dashboard";
 import LabTests from "./pages/Lab/LabTests";
 import LabTestDetail from "./pages/Lab/LabTestDetail";
 import LabBooking from "./pages/Lab/LabBooking";
@@ -167,6 +168,7 @@ function App() {
             <Route path="/doctor/labs" element={<DoctorLabOrders />} />
             <Route path="/doctor/clinical" element={<DoctorClinicalOrders />} />
 
+            <Route path="/staff" element={<StaffDashboard />} />
             <Route path="/staff/clinical" element={<Navigate to="/staff/clinical/orders" replace />} />
             <Route path="/staff/appointments" element={<StaffAppointments />} />
             <Route path="/staff/inventory" element={<StaffInventory />} />

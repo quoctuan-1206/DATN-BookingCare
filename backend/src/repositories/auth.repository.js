@@ -4,7 +4,7 @@ import prisma from "../config/prisma.js";
 export async function findUserByEmail(email) {
   return prisma.users.findUnique({
     where: { email },
-    include: { role: true },
+    include: { role: true, clinics: { select: { id: true, name: true, address: true } } },
   });
 }
 
@@ -12,7 +12,7 @@ export async function findUserByEmail(email) {
 export async function findUserById(id) {
   return prisma.users.findUnique({
     where: { id },
-    include: { role: true },
+    include: { role: true, clinics: { select: { id: true, name: true, address: true } } },
   });
 }
 
@@ -20,7 +20,7 @@ export async function findUserById(id) {
 export async function createUser(data) {
   return prisma.users.create({
     data,
-    include: { role: true },
+    include: { role: true, clinics: { select: { id: true, name: true, address: true } } },
   });
 }
 

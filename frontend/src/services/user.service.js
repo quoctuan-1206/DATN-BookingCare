@@ -13,6 +13,8 @@ export function mapUserFromApi(user) {
     name: user.full_name || `${user.last_name || ""} ${user.first_name || ""}`.trim(),
     avatar: resolveMediaUrl(user.avatar) || `${DEFAULT_AVATAR}?u=${user.id}`,
     role,
+    clinic_id: user.clinic_id ?? user.clinics?.id ?? null,
+    clinic: user.clinics || user.clinic || null,
     status: user.is_active !== false ? "active" : "inactive",
   };
 }
@@ -44,6 +46,8 @@ export const userService = {
     axiosClient.patch(`/users/${id}/status`, { is_active: isActive }),
 
   createStaff: (payload) => axiosClient.post("/users/staff", payload),
+  assignStaffClinic: (id, clinic_id) =>
+    axiosClient.patch(`/users/${id}/clinic`, { clinic_id }),
 };
 
 export default userService;

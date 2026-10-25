@@ -6,6 +6,7 @@ import PatientLayout from "../../components/patient/PatientLayout";
 import { useAuth } from "../../context/AuthContext";
 import { getApiErrorMessage } from "../../api/axios";
 import labService from "../../services/lab.service";
+import paymentService from "../../services/payment.service";
 
 function PatientLabOrders() {
   const { user, loading: authLoading } = useAuth();
@@ -49,6 +50,16 @@ function PatientLabOrders() {
       await labService.downloadResultFile(order);
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Không tải được file kết quả"));
+    }
+  };
+
+  const payOrder = async (order) => {
+    try {
+      const payment = await paymentService.createClinicalPaymentUrl(order.id);
+      if (payment?.payment_url) window.location.assign(payment.payment_url);
+      else toast.error("Không nhận được đường dẫn thanh toán");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Không thể tạo đường dẫn thanh toán"));
     }
   };
 
@@ -116,6 +127,18 @@ function PatientLabOrders() {
                   <div><span>Nơi xét nghiệm</span><strong>{order.schedule?.clinic_name || "Chưa cập nhật"}</strong>{order.schedule?.clinic_address && <small>{order.schedule.clinic_address}</small>}</div>
                 </div>
               </div>
+              {order.payment && (
+                <div className="patient-lab-result-pending">
+                  <ReceiptText size={18} />
+                  Phí: {Number(order.payment.amount || 0).toLocaleString("vi-VN")} đ · {order.payment.status === "PAID" ? "Đã thanh toán" : order.payment.status === "EXPIRED" ? "Hết hạn thanh toán" : "Chưa thanh toán"}
+                  {order.payment.status === "UNPAID" && order.status === "PENDING" &&
+                    (!order.payment.expires_at || new Date(order.payment.expires_at).getTime() > Date.now()) && (
+                    <button type="button" className="btn btn-primary" onClick={() => payOrder(order)}>
+                      Thanh toán lại
+                    </button>
+                  )}
+                </div>
+              )}
               {order.result_file ? (
                 <div className="patient-lab-result-actions">
                   <button type="button" className="btn btn-outline" disabled={previewingOrderId === order.id} onClick={() => previewResultFile(order)}>

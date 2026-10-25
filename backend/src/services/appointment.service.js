@@ -3,6 +3,7 @@ import patientProfileRepository from "../repositories/patient-profile.repository
 import userRepository from "../repositories/user.repository.js";
 import notificationService from "./notification.service.js";
 import auditLogService from "./audit-log.service.js";
+import { assertStaffClinicAccess, getStaffClinicId } from "../utils/facility-scope.js";
 import {
   formatDateOnly,
   formatTimeOnly,
@@ -323,10 +324,12 @@ class AppointmentService {
       completed_at: appointment.completed_at || null,
       no_show_at: appointment.no_show_at || null,
       has_medical_record: Boolean(appointment.medical_records?.id),
+      consultation_completed: appointment.consultation_session?.status === "COMPLETED",
       clinical_order_count: clinicalOrders.length,
       incomplete_clinical_order_count: incompleteClinicalOrderCount,
       can_complete_exam:
         Boolean(appointment.medical_records?.id) &&
+        Boolean(appointment.medical_records?.diagnosis?.trim()) &&
         incompleteClinicalOrderCount === 0,
       clinic_fee_invoice: clinicInvoice
         ? {
@@ -388,6 +391,7 @@ class AppointmentService {
     if (query.clinic_id) workplaceWhere.clinic_id = query.clinic_id;
 
     if (role === "Admin" || role === "STAFF") {
+      if (role === "STAFF") workplaceWhere.clinic_id = getStaffClinicId(user);
       if (Object.keys(workplaceWhere).length) {
         scheduleWhere.doctor_workplaces = workplaceWhere;
       }
@@ -450,7 +454,11 @@ class AppointmentService {
   // Kiểm tra quyền xem lịch hẹn
   assertCanView(user, appointment) {
     const role = user.role?.name;
-    if (role === "Admin" || role === "STAFF") return;
+    if (role === "Admin") return;
+    if (role === "STAFF") {
+      assertStaffClinicAccess(user, appointment.schedules?.doctor_workplaces?.clinic_id);
+      return;
+    }
 
     if (role === "Doctor") {
       const doctorId =
@@ -551,6 +559,13 @@ class AppointmentService {
       if (!existing.medical_records?.id) {
         const error = new Error(
           "Cần lưu hồ sơ bệnh án trước khi hoàn thành buổi khám",
+        );
+        error.statusCode = 400;
+        throw error;
+      }
+      if (!existing.medical_records.diagnosis?.trim()) {
+        const error = new Error(
+          "Cần bổ sung chẩn đoán cuối cùng trước khi hoàn tất buổi khám",
         );
         error.statusCode = 400;
         throw error;
@@ -757,6 +772,12 @@ class AppointmentService {
       updated = await appointmentRepository.enqueue(appointmentId, queueKey);
     } else {
       const transition = workflow[action];
+      const completedOnlineConsultation = action === "complete" &&
+        (existing.consultation_type || existing.schedules?.consultation_type) === "ONLINE" &&
+        existing.consultation_session?.status === "COMPLETED";
+      if (completedOnlineConsultation && existing.status === "CONFIRMED") {
+        transition.from = "CONFIRMED";
+      }
       if (existing.status !== transition.from) {
         const error = new Error(
           `Không thể chuyển trạng thái từ ${existing.status} sang ${transition.to}`,
@@ -766,8 +787,18 @@ class AppointmentService {
       }
 
       if (action === "complete") {
-        if (!existing.medical_records?.id) {
+        if (!existing.medical_records?.id && !completedOnlineConsultation) {
           const error = new Error("Cần lưu hồ sơ bệnh án trước khi hoàn thành buổi khám");
+          error.statusCode = 400;
+          throw error;
+        }
+        if (
+          !completedOnlineConsultation &&
+          !existing.medical_records?.diagnosis?.trim()
+        ) {
+          const error = new Error(
+            "Cần bổ sung chẩn đoán cuối cùng trước khi hoàn tất buổi khám",
+          );
           error.statusCode = 400;
           throw error;
         }

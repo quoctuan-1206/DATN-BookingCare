@@ -24,6 +24,7 @@ export default function MockVnpayGateway() {
   const navigate = useNavigate();
 
   const invoiceId = searchParams.get("invoiceId");
+  const clinicalOrderId = searchParams.get("clinicalOrderId");
   const amount = searchParams.get("amount") || "200000";
   const [fallbackTxnRef] = useState(() => `INV${Date.now()}`);
   const txnRef = searchParams.get("txnRef") || fallbackTxnRef;
@@ -46,15 +47,16 @@ export default function MockVnpayGateway() {
   const timeFormatted = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 
   const handlePaySuccess = async () => {
-    if (!invoiceId) {
+    if (!invoiceId && !clinicalOrderId) {
       toast.error("Thiếu mã hóa đơn");
       return;
     }
     setSubmitting(true);
     try {
-      await paymentService.mockComplete(invoiceId);
+      if (clinicalOrderId) await paymentService.mockCompleteClinical(clinicalOrderId);
+      else await paymentService.mockComplete(invoiceId);
       toast.success("Giả lập thanh toán thành công!");
-      navigate(`/payment/result?invoiceId=${invoiceId}`);
+      navigate(`/payment/result?${clinicalOrderId ? `clinicalOrderId=${clinicalOrderId}` : `invoiceId=${invoiceId}`}`);
     } catch (error) {
       toast.error(
         error.response?.data?.message || "Lỗi xử lý thanh toán giả lập",
@@ -64,14 +66,15 @@ export default function MockVnpayGateway() {
   };
 
   const handleCancel = async () => {
-    if (invoiceId) {
+    if (invoiceId || clinicalOrderId) {
       setSubmitting(true);
       try {
-        await paymentService.mockFail(invoiceId);
+        if (clinicalOrderId) await paymentService.mockFailClinical(clinicalOrderId);
+        else await paymentService.mockFail(invoiceId);
       } catch {
         // Vẫn điều hướng về trang kết quả nếu cổng mô phỏng không phản hồi.
       }
-      navigate(`/payment/result?invoiceId=${invoiceId}&status=failed`);
+      navigate(`/payment/result?${clinicalOrderId ? `clinicalOrderId=${clinicalOrderId}` : `invoiceId=${invoiceId}`}&status=failed`);
     } else {
       navigate(-1);
     }

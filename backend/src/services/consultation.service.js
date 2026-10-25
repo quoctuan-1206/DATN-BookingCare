@@ -115,10 +115,28 @@ export class ConsultationService {
   }
 
   async markInProgress(sessionId) {
-    return this.prisma.consultation_sessions.updateMany({
+    const startedAt = new Date();
+    const result = await this.prisma.consultation_sessions.updateMany({
       where: { id: Number(sessionId), status: { in: ["WAITING", "CONNECTING"] } },
-      data: { status: "IN_PROGRESS", started_at: new Date() },
+      data: { status: "IN_PROGRESS", started_at: startedAt },
     });
+    if (result.count) {
+      const session = await this.prisma.consultation_sessions.findUnique({
+        where: { id: Number(sessionId) },
+        select: { appointment_id: true },
+      });
+      if (session) {
+        await this.prisma.appointments.updateMany({
+          where: { id: session.appointment_id, status: "CONFIRMED" },
+          data: {
+            status: "IN_PROGRESS",
+            started_at: startedAt,
+            exam_started_at: startedAt,
+          },
+        });
+      }
+    }
+    return result;
   }
 
   async history(user) {

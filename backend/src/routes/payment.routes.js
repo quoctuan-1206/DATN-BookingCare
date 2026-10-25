@@ -18,6 +18,20 @@ router.post(
   paymentController.createPaymentUrl,
 );
 
+router.post(
+  "/clinical/:orderId/create",
+  verifyAccessTokenMiddleware,
+  authorize("Patient"),
+  paymentController.createClinicalPaymentUrl,
+);
+
+router.get(
+  "/clinical/:orderId/status",
+  verifyAccessTokenMiddleware,
+  authorize("Patient", "Admin"),
+  paymentController.getClinicalPaymentStatus,
+);
+
 // GET /api/payments/:invoiceId/status - Kiểm tra trạng thái thanh toán hóa đơn
 router.get(
   "/:invoiceId/status",
@@ -40,5 +54,8 @@ router.post(
   authorize("Patient", "Admin"),
   paymentController.mockFailPayment,
 );
+
+router.post("/mock-complete-clinical/:orderId", verifyAccessTokenMiddleware, authorize("Patient", "Admin"), paymentController.mockCompleteClinicalPayment);
+router.post("/mock-fail-clinical/:orderId", verifyAccessTokenMiddleware, authorize("Patient", "Admin"), paymentController.mockFailClinicalPayment);
 
 export default router;

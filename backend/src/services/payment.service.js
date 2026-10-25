@@ -174,6 +174,64 @@ class PaymentService {
     };
   }
 
+  async createClinicalPaymentUrl(user, orderId, clientIp, now = new Date()) {
+    const id = this.parseId(orderId);
+    const order = await this.repository.findClinicalOrderPaymentById(id);
+    if (!order || order.payment_amount == null) {
+      const error = new Error("Không tìm thấy khoản phí cận lâm sàng"); error.statusCode = 404; throw error;
+    }
+    if (user.role?.name !== "Patient" || Number(order.patient_profiles?.account_id) !== Number(user.id)) {
+      const error = new Error("Bạn không có quyền thanh toán phiếu này"); error.statusCode = 403; throw error;
+    }
+    if (order.payment_status !== "UNPAID" || order.status !== "PENDING") {
+      const error = new Error("Phiếu cận lâm sàng không ở trạng thái chờ thanh toán"); error.statusCode = 400; throw error;
+    }
+    if (order.payment_expires_at && order.payment_expires_at <= now) {
+      const error = new Error("Phiếu đã hết hạn thanh toán"); error.statusCode = 400; throw error;
+    }
+    let txnRef = order.vnp_txn_ref;
+    if (!txnRef) {
+      txnRef = `CLS${createTxnRef(order.id, now).slice(3)}`;
+      await this.repository.setClinicalOrderTxnRef(order.id, txnRef);
+    }
+    const config = this.getConfig();
+    const ipAddress = this.cleanIp(clientIp);
+    const paymentExpiresAt = order.payment_expires_at || new Date(now.getTime() + 10 * 60 * 1000);
+    let paymentUrl;
+    if (config.isMock) {
+      const params = new URLSearchParams({
+        clinicalOrderId: String(order.id), amount: String(order.payment_amount), txnRef,
+        bookingCode: order.booking_code || `CLS-${order.id}`,
+        patientName: order.patient_profiles?.full_name || "",
+        expiresAt: paymentExpiresAt.toISOString(),
+      });
+      paymentUrl = `${config.frontendUrl}/payment/mock-gateway?${params.toString()}`;
+    } else {
+      paymentUrl = buildPaymentUrl(config, {
+        amount: order.payment_amount, txnRef,
+        bookingCode: `CLS ${order.booking_code || order.id}`,
+        orderInfo: `Thanh toan can lam sang ${order.booking_code || order.id}`,
+        ipAddress, createdAt: order.ordered_at || now, expiresAt: paymentExpiresAt,
+      });
+    }
+    return { payment_url: paymentUrl, txn_ref: txnRef, expires_at: order.payment_expires_at };
+  }
+
+  async getClinicalPaymentStatus(user, orderId, now = new Date()) {
+    const id = this.parseId(orderId);
+    const order = await this.repository.findClinicalOrderPaymentById(id);
+    if (!order || order.payment_amount == null) { const error = new Error("Không tìm thấy khoản phí cận lâm sàng"); error.statusCode = 404; throw error; }
+    const owner = Number(order.patient_profiles?.account_id) === Number(user.id);
+    if (user.role?.name !== "Admin" && !(user.role?.name === "Patient" && owner)) { const error = new Error("Bạn không có quyền xem thanh toán này"); error.statusCode = 403; throw error; }
+    return {
+      clinical_order_id: order.id,
+      payment_status: order.payment_status,
+      payment_expires_at: order.payment_expires_at,
+      amount: Number(order.payment_amount),
+      can_retry: order.payment_status === "UNPAID" && order.status === "PENDING" && (!order.payment_expires_at || order.payment_expires_at > now),
+    };
+  }
+
   // Tra cứu trạng thái thanh toán hóa đơn
   async getPaymentStatus(user, invoiceId, now = new Date()) {
     const id = this.parseId(invoiceId);
@@ -251,6 +309,14 @@ class PaymentService {
     }
 
     if (result.code === "SUCCESS") {
+      if (result.kind === "CLINICAL") {
+        const order = await this.repository.findClinicalOrderPaymentById(result.order.id);
+        await this.notifyClinicalPayment(order, true);
+        await this.recordClinicalPaymentAudit(order, "PAYMENT_SUCCESS", {
+          provider: "VNPAY", source: "IPN", providerTransactionNo: query.vnp_TransactionNo || null,
+        });
+        return { RspCode: "00", Message: "Confirm Success" };
+      }
       const invoice = await this.repository.findClinicInvoiceById(
         result.invoice.id,
       );
@@ -292,7 +358,13 @@ class PaymentService {
     const invoice = await this.repository.findClinicInvoiceByTxnRef(txnRef);
 
     if (!invoice) {
-      return `${config.frontendUrl}/payment/result?status=not_found`;
+      const order = await this.repository.findClinicalOrderPaymentByTxnRef(txnRef);
+      if (!order) return `${config.frontendUrl}/payment/result?status=not_found`;
+      if (query.vnp_ResponseCode !== "00") {
+        await this.notifyClinicalPayment(order, false);
+        return `${config.frontendUrl}/payment/result?status=failed&clinicalOrderId=${order.id}`;
+      }
+      return `${config.frontendUrl}/payment/result?clinicalOrderId=${order.id}`;
     }
 
     if (query.vnp_ResponseCode !== "00") {
@@ -316,6 +388,7 @@ class PaymentService {
 
   // Giả lập thanh toán thành công trong Mock mode
   async mockCompletePayment(user, invoiceId, now = new Date()) {
+    if (this.getConfig().isMock === false) { const error = new Error("Mock payment is disabled"); error.statusCode = 404; throw error; }
     const id = this.parseId(invoiceId);
     const invoice = await this.repository.findClinicInvoiceById(id);
 
@@ -386,6 +459,7 @@ class PaymentService {
   }
 
   async mockFailPayment(user, invoiceId) {
+    if (this.getConfig().isMock === false) { const error = new Error("Mock payment is disabled"); error.statusCode = 404; throw error; }
     const id = this.parseId(invoiceId);
     const invoice = await this.repository.findClinicInvoiceById(id);
     if (!invoice || invoice.invoice_type !== "CLINIC_FEE") {
@@ -415,6 +489,66 @@ class PaymentService {
       metadata: { provider: "MOCK", source: "MOCK_GATEWAY" },
     });
     return { success: true, message: "Đã ghi nhận giao dịch không thành công" };
+  }
+  async notifyClinicalPayment(order, succeeded) {
+    const patientId = order?.patient_profiles?.account_id;
+    if (!patientId || !this.notifications) return;
+    try {
+      await this.notifications.notifyOnce(patientId, {
+        title: succeeded ? "Thanh toán cận lâm sàng thành công" : "Thanh toán cận lâm sàng chưa thành công",
+        content: `Phiếu ${order.booking_code || `#${order.id}`} ${succeeded ? "đã được thanh toán" : "chưa thanh toán thành công"}.`,
+        link: "/patient/clinical",
+        type: succeeded ? "PAYMENT_SUCCESS" : "PAYMENT_FAILED",
+      });
+    } catch (error) {
+      console.error("[PaymentService] Could not notify clinical payment:", error);
+    }
+  }
+
+  async recordClinicalPaymentAudit(order, action, metadata = {}, actorId = null) {
+    if (!this.auditLogs || !order) return;
+    await this.auditLogs.record({
+      userId: actorId ?? order.patient_profiles?.account_id ?? null,
+      action,
+      resource: "PAYMENT",
+      resourceId: order.id,
+      oldValue: { payment_status: "UNPAID" },
+      newValue: {
+        payment_status: order.payment_status,
+        transaction_id: order.transaction_id,
+        payment_date: order.payment_date,
+      },
+      metadata: { clinicalOrderId: order.id, amount: Number(order.payment_amount || 0), ...metadata },
+    });
+  }
+
+  async mockCompleteClinicalPayment(user, orderId, now = new Date()) {
+    if (this.getConfig().isMock === false) { const error = new Error("Mock payment is disabled"); error.statusCode = 404; throw error; }
+    const id = this.parseId(orderId);
+    const order = await this.repository.findClinicalOrderPaymentById(id);
+    if (!order || order.payment_amount == null) { const error = new Error("Không tìm thấy phiếu"); error.statusCode = 404; throw error; }
+    const owner = Number(order.patient_profiles?.account_id) === Number(user.id);
+    if (!(user.role?.name === "Admin" || (user.role?.name === "Patient" && owner))) { const error = new Error("Không có quyền"); error.statusCode = 403; throw error; }
+    if (order.payment_expires_at && order.payment_expires_at <= now) { const error = new Error("Phiếu đã hết hạn thanh toán"); error.statusCode = 400; throw error; }
+    if (order.payment_status !== "UNPAID" || order.status !== "PENDING") { const error = new Error("Phiếu không ở trạng thái chờ thanh toán"); error.statusCode = 400; throw error; }
+    let txnRef = order.vnp_txn_ref;
+    if (!txnRef) { txnRef = `CLS${createTxnRef(order.id, now).slice(3)}`; await this.repository.setClinicalOrderTxnRef(order.id, txnRef); }
+    const result = await this.repository.markPaidFromIpn({ txnRef, amount: Math.round(Number(order.payment_amount) * 100), transactionNo: `MOCK_CLS_${Date.now()}`, paidAt: now, now });
+    if (result.code === "SUCCESS") {
+      const updated = await this.repository.findClinicalOrderPaymentById(id);
+      await this.notifyClinicalPayment(updated, true);
+      await this.recordClinicalPaymentAudit(updated, "PAYMENT_SUCCESS", { provider: "MOCK", source: "MOCK_GATEWAY" }, user.id);
+    }
+    return { success: result.code === "SUCCESS" || result.code === "ALREADY_PAID", result };
+  }
+
+  async mockFailClinicalPayment(user, orderId) {
+    if (this.getConfig().isMock === false) { const error = new Error("Mock payment is disabled"); error.statusCode = 404; throw error; }
+    const order = await this.repository.findClinicalOrderPaymentById(this.parseId(orderId));
+    const owner = Number(order?.patient_profiles?.account_id) === Number(user.id);
+    if (!order || !(user.role?.name === "Admin" || (user.role?.name === "Patient" && owner))) { const error = new Error("Không có quyền"); error.statusCode = 403; throw error; }
+    await this.notifyClinicalPayment(order, false);
+    return { success: true };
   }
 }
 

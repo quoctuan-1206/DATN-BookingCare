@@ -4,6 +4,15 @@ import auditLogService from "./audit-log.service.js";
 
 class UserService {
   async createStaff(data, currentAdminId) {
+    let clinic = null;
+    if (data.clinic_id !== undefined && data.clinic_id !== null) {
+      clinic = await userRepository.findActiveClinicById(data.clinic_id);
+      if (!clinic) {
+        const error = new Error("Cơ sở không tồn tại hoặc đã ngừng hoạt động");
+        error.statusCode = 400;
+        throw error;
+      }
+    }
     const [existing, role] = await Promise.all([
       userRepository.findByEmail(data.email),
       userRepository.findRoleByName("STAFF"),
@@ -19,7 +28,11 @@ class UserService {
       throw error;
     }
     const staff = await userRepository.createStaff(
-      { ...data, password: await hashPassword(data.password) },
+      {
+        ...data,
+        clinic_id: data.clinic_id ?? null,
+        password: await hashPassword(data.password),
+      },
       role.id,
     );
     const response = this.formatUserResponse(staff);
@@ -34,6 +47,8 @@ class UserService {
         last_name: staff.last_name,
         phone: staff.phone,
         role: staff.role?.name || "STAFF",
+        clinic_id: staff.clinic_id ?? null,
+        clinic: clinic ? { id: clinic.id, name: clinic.name } : null,
         is_active: staff.is_active,
       },
       metadata: { accountType: "STAFF" },
@@ -66,6 +81,10 @@ class UserService {
       role: user.role?.name || null,
       role_id: user.role?.id || null,
       role_description: user.role?.description || null,
+      clinic_id: user.clinic_id ?? user.clinics?.id ?? null,
+      clinic: user.clinics
+        ? { id: user.clinics.id, name: user.clinics.name, address: user.clinics.address }
+        : null,
       is_active: user.is_active !== false,
       created_at: user.created_at,
       updated_at: user.updated_at,
@@ -97,6 +116,36 @@ class UserService {
       total_pages: Math.ceil(total / limit) || 0,
       data: users.map((u) => this.formatUserResponse(u)),
     };
+  }
+
+  async assignStaffClinic(id, clinicId, currentAdminId) {
+    const userId = this.parseId(id, "ID người dùng");
+    const user = await userRepository.findById(userId);
+    if (!user) throw Object.assign(new Error("Không tìm thấy người dùng"), { statusCode: 404 });
+    if (user.role?.name !== "STAFF") {
+      throw Object.assign(new Error("Chỉ có thể phân công cơ sở cho tài khoản STAFF"), { statusCode: 400 });
+    }
+
+    let clinic = null;
+    if (clinicId !== null) {
+      clinic = await userRepository.findActiveClinicById(clinicId);
+      if (!clinic) throw Object.assign(new Error("Cơ sở không tồn tại hoặc đã ngừng hoạt động"), { statusCode: 400 });
+    }
+
+    const previousClinic = user.clinics
+      ? { id: user.clinics.id, name: user.clinics.name }
+      : null;
+    const updated = await userRepository.updateStaffClinic(userId, clinic?.id ?? null);
+    await auditLogService.record({
+      userId: currentAdminId,
+      action: "ASSIGN_STAFF_CLINIC",
+      resource: "USER",
+      resourceId: userId,
+      oldValue: { clinic: previousClinic },
+      newValue: { clinic: clinic ? { id: clinic.id, name: clinic.name } : null },
+      metadata: { targetEmail: user.email },
+    });
+    return this.formatUserResponse(updated);
   }
 
   // Chi tiết người dùng (Admin)

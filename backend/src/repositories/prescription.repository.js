@@ -22,6 +22,7 @@ const prescriptionInclude = {
               },
             },
           },
+          lab_orders: { select: { status: true } },
         },
       },
     },

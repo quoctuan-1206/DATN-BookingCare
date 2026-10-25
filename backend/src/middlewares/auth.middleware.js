@@ -32,7 +32,7 @@ export async function verifyAccessTokenMiddleware(req, res, next) {
 
     const user = await prisma.users.findUnique({
       where: { id: decoded.id },
-      include: { role: true },
+      include: { role: true, clinics: { select: { id: true, name: true, address: true } } },
     });
 
     if (!user) {
@@ -73,7 +73,7 @@ export async function optionalAuth(req, res, next) {
 
     const user = await prisma.users.findUnique({
       where: { id: decoded.id },
-      include: { role: true },
+      include: { role: true, clinics: { select: { id: true, name: true, address: true } } },
     });
 
     req.user = user?.is_active ? stripPassword(user) : null;

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import AdminLayout from "../../components/admin/layout/AdminLayout";
 import userService from "../../services/user.service";
+import clinicService from "../../services/clinic.service";
 import { getApiErrorMessage } from "../../api/axios";
 
 const roleClass = {
@@ -27,13 +28,17 @@ function Users() {
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("");
   const [status, setStatus] = useState("");
+  const [clinicId, setClinicId] = useState("");
+  const [clinics, setClinics] = useState([]);
   const [filters, setFilters] = useState({
     search: "",
     role: "",
     status: "",
+    clinic_id: "",
+    unassigned: false,
   });
   const [showStaffForm, setShowStaffForm] = useState(false);
-  const [staffForm, setStaffForm] = useState({ email: "", password: "", first_name: "", last_name: "", phone: "" });
+  const [staffForm, setStaffForm] = useState({ email: "", password: "", first_name: "", last_name: "", phone: "", clinic_id: "" });
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -43,6 +48,8 @@ function Users() {
       if (filters.role) params.role = filters.role;
       if (filters.status === "active") params.is_active = "true";
       if (filters.status === "inactive") params.is_active = "false";
+      if (filters.clinic_id) params.clinic_id = filters.clinic_id;
+      if (filters.unassigned) params.unassigned = "true";
 
       const result = await userService.getUsers(params);
       setUsers(result.data);
@@ -60,8 +67,14 @@ function Users() {
     fetchUsers();
   }, [fetchUsers]);
 
+  useEffect(() => {
+    clinicService.getClinics({ page: 1, limit: 100 })
+      .then((result) => setClinics((result.data || []).filter((clinic) => clinic.is_active !== false)))
+      .catch(() => setClinics([]));
+  }, []);
+
   const applyFilters = () => {
-    setFilters({ search, role, status });
+    setFilters({ search, role, status, clinic_id: clinicId === "unassigned" ? "" : clinicId, unassigned: clinicId === "unassigned" });
   };
 
   const handleToggleStatus = async (user) => {
@@ -84,8 +97,8 @@ function Users() {
   const handleCreateStaff = async (event) => {
     event.preventDefault();
     try {
-      await userService.createStaff({ ...staffForm, phone: staffForm.phone || null });
-      setStaffForm({ email: "", password: "", first_name: "", last_name: "", phone: "" });
+      await userService.createStaff({ ...staffForm, clinic_id: staffForm.clinic_id ? Number(staffForm.clinic_id) : null, phone: staffForm.phone || null });
+      setStaffForm({ email: "", password: "", first_name: "", last_name: "", phone: "", clinic_id: "" });
       setShowStaffForm(false);
       toast.success("Đã tạo tài khoản STAFF");
       fetchUsers();
@@ -117,6 +130,7 @@ function Users() {
               <div className="admin-form-group"><label>Mật khẩu</label><input className="admin-input" type="password" minLength={6} value={staffForm.password} onChange={(e) => setStaffForm((v) => ({ ...v, password: e.target.value }))} required /></div>
               <div className="admin-form-group"><label>Số điện thoại</label><input className="admin-input" value={staffForm.phone} onChange={(e) => setStaffForm((v) => ({ ...v, phone: e.target.value }))} /></div>
               <div className="admin-form-actions"><button className="admin-btn admin-btn-primary">Tạo tài khoản</button></div>
+              <div className="admin-form-group"><label>Cơ sở làm việc</label><select className="admin-select" value={staffForm.clinic_id} onChange={(e) => setStaffForm((v) => ({ ...v, clinic_id: e.target.value }))}><option value="">Chưa phân công</option>{clinics.map((clinic) => <option key={clinic.id} value={clinic.id}>{clinic.name}</option>)}</select></div>
             </form>
           </div>
         )}
@@ -156,6 +170,11 @@ function Users() {
               <option value="active">Hoạt động</option>
               <option value="inactive">Tạm khóa</option>
             </select>
+            <select className="admin-select" style={{ maxWidth: 220 }} value={clinicId} onChange={(event) => setClinicId(event.target.value)}>
+              <option value="">Tất cả cơ sở</option>
+              <option value="unassigned">Chưa phân công cơ sở</option>
+              {clinics.map((clinic) => <option key={clinic.id} value={clinic.id}>{clinic.name}</option>)}
+            </select>
             <button
               type="button"
               className="admin-btn admin-btn-primary"
@@ -193,6 +212,7 @@ function Users() {
                           <div className="table-user-info">
                             <strong>{user.name}</strong>
                             <span>{user.email}</span>
+                            {user.role === "STAFF" && <span>{user.clinic?.name || "Chưa phân công"}</span>}
                           </div>
                         </div>
                       </td>

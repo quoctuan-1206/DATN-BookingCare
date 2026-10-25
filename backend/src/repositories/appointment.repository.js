@@ -48,7 +48,10 @@ const appointmentInclude = {
     },
   },
   medical_records: {
-    select: { id: true },
+    select: { id: true, diagnosis: true },
+  },
+  consultation_session: {
+    select: { status: true },
   },
   lab_orders: {
     select: { id: true, status: true },

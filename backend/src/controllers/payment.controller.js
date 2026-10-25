@@ -39,6 +39,34 @@ class PaymentController {
     }
   }
 
+  async createClinicalPaymentUrl(req, res, next) {
+    try {
+      const data = await paymentService.createClinicalPaymentUrl(req.user, req.params.orderId, req.ip || req.connection?.remoteAddress);
+      return res.status(200).json({ success: true, data });
+    } catch (error) { next(error); }
+  }
+
+  async getClinicalPaymentStatus(req, res, next) {
+    try {
+      const data = await paymentService.getClinicalPaymentStatus(req.user, req.params.orderId);
+      return res.status(200).json({ success: true, data });
+    } catch (error) { next(error); }
+  }
+
+  async mockCompleteClinicalPayment(req, res, next) {
+    try {
+      const data = await paymentService.mockCompleteClinicalPayment(req.user, req.params.orderId);
+      return res.status(200).json({ success: true, data });
+    } catch (error) { next(error); }
+  }
+
+  async mockFailClinicalPayment(req, res, next) {
+    try {
+      const data = await paymentService.mockFailClinicalPayment(req.user, req.params.orderId);
+      return res.status(200).json({ success: true, data });
+    } catch (error) { next(error); }
+  }
+
   // Nhận thông báo giao dịch IPN từ VNPAY (GET /api/payments/vnpay/ipn)
   async handleIpn(req, res) {
     try {
@@ -60,9 +88,8 @@ class PaymentController {
       return res.redirect(redirectUrl);
     } catch (error) {
       console.error("[PaymentController] Lỗi xử lý return URL:", error);
-      const frontendUrl = (
-        process.env.FRONTEND_URL || "http://localhost:5173"
-      ).replace(/\/$/, "");
+      const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5173")
+        .split(",")[0].trim().replace(/\/$/, "");
       return res.redirect(`${frontendUrl}/payment/result?status=error`);
     }
   }

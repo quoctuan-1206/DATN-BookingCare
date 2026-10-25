@@ -77,7 +77,12 @@ function AppointmentClinicalOrders({ appointment, onOrdersChange }) {
     }
   };
 
-  const canCreate = appointment.status === "CONFIRMED" && services.length > 0;
+  const canCreate =
+    ["CONFIRMED", "IN_PROGRESS"].includes(appointment.status) &&
+    services.length > 0;
+  const incompleteOrderCount = orders.filter((order) =>
+    ["PENDING", "IN_PROGRESS"].includes(order.status),
+  ).length;
 
   return (
     <>
@@ -107,6 +112,14 @@ function AppointmentClinicalOrders({ appointment, onOrdersChange }) {
         </div>
 
         <div className="doctor-collapsible-content" hidden={!expanded}>
+          {incompleteOrderCount > 0 && (
+            <p className="doctor-appointment-action-note" role="status">
+              Đang chờ kết quả cận lâm sàng. Còn {incompleteOrderCount} phiếu chưa hoàn tất.{" "}
+              <button type="button" onClick={loadData} disabled={loading}>
+                Làm mới trạng thái
+              </button>
+            </p>
+          )}
           {loading ? (
           <div className="doctor-clinical-orders__state">Đang tải chỉ định...</div>
         ) : error ? (

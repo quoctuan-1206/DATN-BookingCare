@@ -49,7 +49,6 @@ function AppointmentDetail() {
   const [searchParams] = useSearchParams();
   const autoStartExam = searchParams.get("exam") === "1";
   const autoPrescribe = searchParams.get("prescribe") === "1";
-  const consultationMode = searchParams.get("consultation") === "1";
 
   const [appointment, setAppointment] = useState(null);
   const [medicalRecord, setMedicalRecord] = useState(null);
@@ -74,9 +73,10 @@ function AppointmentDetail() {
     if (medicalRecord) return true;
     return (
       (examStarted && appointment.status === "IN_PROGRESS") ||
-      (consultationMode && appointment.consultation_type === "ONLINE")
+      (appointment.consultation_type === "ONLINE" &&
+        appointment.consultation_completed)
     );
-  }, [appointment, medicalRecord, examStarted, consultationMode]);
+  }, [appointment, medicalRecord, examStarted]);
 
   const showPrescriptionForm = useMemo(() => {
     if (!medicalRecord || prescriptionSkipped) return false;
@@ -194,8 +194,6 @@ function AppointmentDetail() {
   const handleRecordSaved = async (record) => {
     if (record) {
       setMedicalRecord(mapMedicalRecord(record));
-      setPrescriptionStep(true);
-      setPrescriptionSkipped(false);
     }
     await loadAppointment();
   };
@@ -215,13 +213,15 @@ function AppointmentDetail() {
   };
 
   const handleClinicalOrdersChange = useCallback(({ appointmentId, orders }) => {
+    const incomplete = orders.filter((order) =>
+      ["PENDING", "IN_PROGRESS"].includes(order.status),
+    ).length;
     setClinicalOrderSummary({
       appointmentId: Number(appointmentId),
       total: orders.length,
-      incomplete: orders.filter(
-        (order) => order.status === "PENDING" || order.status === "IN_PROGRESS",
-      ).length,
+      incomplete,
     });
+    if (incomplete > 0) setPrescriptionStep(false);
   }, []);
 
   if (loading) {
@@ -470,30 +470,44 @@ function AppointmentDetail() {
                   <button
                     type="button"
                     className="admin-btn admin-btn-primary"
+                    disabled={incompleteClinicalOrderCount > 0}
                     onClick={() => setPrescriptionStep(true)}
                   >
                     Kê đơn thuốc
                   </button>
                 )}
 
-              {medicalRecord && appointment.status === "IN_PROGRESS" && (
+              {medicalRecord && (
+                (appointment.status === "IN_PROGRESS" ||
+                  (appointment.consultation_type === "ONLINE" &&
+                    appointment.consultation_completed &&
+                    appointment.status === "CONFIRMED")) && (
                 <>
                   <button
                     type="button"
                     className="admin-btn admin-btn-primary doctor-complete-exam-btn"
-                    disabled={updating || incompleteClinicalOrderCount > 0}
+                    disabled={
+                      updating ||
+                      incompleteClinicalOrderCount > 0 ||
+                      !medicalRecord.diagnosis?.trim()
+                    }
                     onClick={() => handleStatus("COMPLETED")}
                   >
                     {updating ? "Đang lưu..." : "Hoàn thành khám"}
                   </button>
                   {incompleteClinicalOrderCount > 0 && (
                     <p className="doctor-appointment-action-note">
-                      Còn {incompleteClinicalOrderCount} chỉ định cận lâm sàng chưa hoàn tất.
-                      Chỉ có thể hoàn thành khám sau khi có đầy đủ kết quả.
+                      Đang chờ kết quả cận lâm sàng ({incompleteClinicalOrderCount} phiếu chưa hoàn tất). Bác sĩ có thể tiếp tục chẩn đoán và kê đơn sau khi nhân viên cập nhật kết quả.
                     </p>
                   )}
+                  {incompleteClinicalOrderCount === 0 &&
+                    !medicalRecord.diagnosis?.trim() && (
+                      <p className="doctor-appointment-action-note">
+                        Bổ sung chẩn đoán cuối cùng trong hồ sơ bệnh án để hoàn tất lượt khám.
+                      </p>
+                    )}
                 </>
-              )}
+              ))}
               </div>
             </div>
           </section>

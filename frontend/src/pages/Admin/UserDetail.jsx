@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import AdminLayout from "../../components/admin/layout/AdminLayout";
 import userService from "../../services/user.service";
+import clinicService from "../../services/clinic.service";
 import { getApiErrorMessage } from "../../api/axios";
 
 const roleLabel = {
@@ -33,12 +34,16 @@ function UserDetail() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
+  const [clinics, setClinics] = useState([]);
+  const [clinicId, setClinicId] = useState("");
+  const [savingClinic, setSavingClinic] = useState(false);
 
   const loadUser = async () => {
     setLoading(true);
     try {
       const data = await userService.getUserById(id);
       setUser(data);
+      setClinicId(data.clinic_id ? String(data.clinic_id) : "");
     } catch (error) {
       setUser(null);
       toast.error(
@@ -53,6 +58,26 @@ function UserDetail() {
     loadUser();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  useEffect(() => {
+    clinicService.getClinics({ page: 1, limit: 100 })
+      .then((result) => setClinics((result.data || []).filter((clinic) => clinic.is_active !== false)))
+      .catch(() => setClinics([]));
+  }, []);
+
+  const saveClinic = async () => {
+    if (!user || user.role !== "STAFF") return;
+    setSavingClinic(true);
+    try {
+      await userService.assignStaffClinic(user.id, clinicId ? Number(clinicId) : null);
+      toast.success("Đã cập nhật cơ sở làm việc");
+      await loadUser();
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Không cập nhật được cơ sở làm việc"));
+    } finally {
+      setSavingClinic(false);
+    }
+  };
 
   const handleToggleStatus = async () => {
     if (!user) return;
@@ -112,6 +137,18 @@ function UserDetail() {
               </div>
 
               <div className="admin-form" style={{ maxWidth: 640 }}>
+                {user.role === "STAFF" && (
+                  <div className="admin-form-group">
+                    <label>Cơ sở làm việc</label>
+                    <select className="admin-select" value={clinicId} onChange={(event) => setClinicId(event.target.value)}>
+                      <option value="">Chưa phân công</option>
+                      {clinics.map((clinic) => <option key={clinic.id} value={clinic.id}>{clinic.name}</option>)}
+                    </select>
+                    <button type="button" className="admin-btn admin-btn-primary" onClick={saveClinic} disabled={savingClinic}>
+                      {savingClinic ? "Đang lưu..." : "Lưu cơ sở"}
+                    </button>
+                  </div>
+                )}
                 <div className="admin-form-group">
                   <label>Vai trò</label>
                   <input

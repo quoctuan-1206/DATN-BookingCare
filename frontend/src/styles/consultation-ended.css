@@ -30,6 +30,9 @@
 .consult-ended-details strong { max-width: 62%; color: #e8edf5; font-size: 10px; font-weight: 550; text-align: right; }
 .consult-ended-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; }
 .consult-ended-actions a { min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 14px; border: 1px solid var(--end-border); border-radius: 10px; font-size: 10px; font-weight: 650; transition: background .16s ease, transform .16s ease; }
+.consult-ended-actions button { min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 14px; border: 1px solid var(--end-border); border-radius: 10px; font: inherit; font-size: 10px; font-weight: 650; cursor: pointer; transition: background .16s ease, transform .16s ease; }
+.consult-ended-actions button:hover:not(:disabled) { transform: translateY(-1px); }
+.consult-ended-actions button:disabled { cursor: wait; opacity: .7; }
 .consult-ended-actions a:hover { transform: translateY(-1px); }
 .consult-ended-primary { border-color: rgba(141,174,255,.18) !important; background: #89a9f5; color: #111824 !important; }
 .consult-ended-primary:hover { background: #a0b9fb; }
@@ -39,6 +42,7 @@
 .consult-ended-text-link:hover { background: rgba(255,255,255,.06); }
 .consult-ended-footnote { display: block; margin-top: 24px; color: #788498; font-size: 9px; line-height: 1.6; }
 .consult-ended-error { color: #ffaaa8; font-size: 11px; }
+.consult-ended-complete-notice { width: 100%; margin: 0; color: #8ee0aa; font-size: 11px; }
 @media (max-width: 500px) {
   .consult-ended-header { height: 62px; }
   .consult-ended-content { margin-top: 24px; border-radius: 17px; }
@@ -47,4 +51,5 @@
   .consult-ended-details strong { max-width: 100%; padding-left: 24px; text-align: left; }
   .consult-ended-actions { display: grid; }
   .consult-ended-actions a { width: 100%; }
+  .consult-ended-actions button { width: 100%; }
 }

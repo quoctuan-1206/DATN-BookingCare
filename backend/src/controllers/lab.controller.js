@@ -393,6 +393,7 @@ class LabController {
         queryLabScheduleSchema.parse(req.query),
         false,
         "LAB",
+        req.user,
       );
       res.json({
         success: true,
@@ -409,6 +410,8 @@ class LabController {
     try {
       const data = await labService.createSchedule(
         createLabScheduleSchema.parse(req.body),
+        "LAB",
+        req.user,
       );
       res.status(201).json({ success: true, message: "Tạo lịch xét nghiệm thành công", data });
     } catch (error) {
@@ -421,6 +424,8 @@ class LabController {
       const data = await labService.updateSchedule(
         req.params.id,
         updateLabScheduleSchema.parse(req.body),
+        "LAB",
+        req.user,
       );
       res.json({ success: true, message: "Cập nhật lịch xét nghiệm thành công", data });
     } catch (error) {
@@ -430,7 +435,7 @@ class LabController {
 
   async deleteSchedule(req, res, next) {
     try {
-      const data = await labService.deleteSchedule(req.params.id);
+      const data = await labService.deleteSchedule(req.params.id, "LAB", req.user);
       res.json({ success: true, message: "Xóa lịch xét nghiệm thành công", data });
     } catch (error) {
       next(error);
@@ -441,6 +446,9 @@ class LabController {
     try {
       const result = await labService.getSchedules(
         queryLabScheduleSchema.parse(req.query),
+        false,
+        null,
+        req.user,
       );
       res.json({
         success: true,
@@ -458,6 +466,7 @@ class LabController {
       const data = await labService.createSchedule(
         createClinicalScheduleSchema.parse(req.body),
         null,
+        req.user,
       );
       res.status(201).json({
         success: true,
@@ -475,6 +484,7 @@ class LabController {
         req.params.id,
         updateClinicalScheduleSchema.parse(req.body),
         null,
+        req.user,
       );
       res.json({
         success: true,
@@ -488,7 +498,7 @@ class LabController {
 
   async deleteClinicalSchedule(req, res, next) {
     try {
-      const data = await labService.deleteSchedule(req.params.id, null);
+      const data = await labService.deleteSchedule(req.params.id, null, req.user);
       res.json({
         success: true,
         message: "Xóa lịch cận lâm sàng thành công",

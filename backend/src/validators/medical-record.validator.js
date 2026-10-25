@@ -29,7 +29,7 @@ const medicalRecordFields = {
   weight: optionalNumber(0, 500),
   height: optionalNumber(0, 300),
   clinical_examination: z.string().max(1000).optional().nullable(),
-  diagnosis: z.string().min(1, "Chẩn đoán không được để trống"),
+  diagnosis: z.string().min(1, "Chẩn đoán không được để trống").nullable().optional(),
   icd10_code: z.string().max(20).optional().nullable(),
   secondary_diagnosis: z.string().max(1000).optional().nullable(),
   assessment: z.string().max(1000).optional().nullable(),

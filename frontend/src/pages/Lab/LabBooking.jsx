@@ -21,6 +21,7 @@ import PatientSelector from "../../components/booking/PatientSelector";
 import { useAuth } from "../../context/AuthContext";
 import patientProfileService from "../../services/patient-profile.service";
 import labService from "../../services/lab.service";
+import paymentService from "../../services/payment.service";
 import { getApiErrorMessage } from "../../api/axios";
 import { resolveMediaUrl } from "../../utils/media";
 
@@ -193,13 +194,35 @@ function LabBooking() {
         test_ids: selectedTestIds,
         patient_note: patientNote.trim() || null,
       });
-      setCompletedOrder(response.data?.data);
+      const order = response.data?.data;
+      if (order?.payment?.status === "UNPAID") {
+        try {
+          const payment = await paymentService.createClinicalPaymentUrl(order.id);
+          if (payment?.payment_url) {
+            window.location.assign(payment.payment_url);
+            return;
+          }
+        } catch {
+          toast.error("Phiếu đã tạo nhưng chưa mở được thanh toán. Bạn có thể thử lại tại hồ sơ cận lâm sàng.");
+        }
+      }
+      setCompletedOrder(order);
       toast.success("Đặt lịch xét nghiệm thành công");
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Không đặt được lịch xét nghiệm"));
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const retryPayment = async () => {
+    if (!completedOrder?.id) return;
+    try {
+      const payment = await paymentService.createClinicalPaymentUrl(completedOrder.id);
+      if (payment?.payment_url) window.location.assign(payment.payment_url);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Không thể tạo đường dẫn thanh toán"));
     }
   };
 
@@ -242,10 +265,11 @@ function LabBooking() {
                 </div>
                 <div className="success-row">
                   <span>Tổng phí tham khảo</span>
-                  <strong>{formatMoney(total)}</strong>
+                  <strong>{formatMoney(completedOrder.payment?.amount ?? total)}</strong>
                 </div>
               </div>
               <div className="success-actions">
+                {completedOrder.payment?.status === "UNPAID" && <button className="btn btn-primary" type="button" onClick={retryPayment}>Thanh toán ngay</button>}
                 <Link className="btn btn-outline" to="/lab-tests">
                   Xem gói khác
                 </Link>

@@ -16,6 +16,7 @@ const scheduleInclude = {
 };
 
 const orderInclude = {
+  clinics: { select: { id: true, name: true, address: true } },
   appointments: {
     select: {
       id: true,
@@ -264,6 +265,7 @@ class LabRepository {
     serviceType,
     appointmentId,
     labScheduleId,
+    clinicId,
     patientId,
     doctorId,
     actorId,
@@ -272,6 +274,9 @@ class LabRepository {
     preparationNote,
     patientNote,
     tests,
+    createPayment = false,
+    paymentExpiresAt = true,
+    now = new Date(),
   }) {
     return prisma.$transaction(async (tx) => {
       if (labScheduleId) {
@@ -320,12 +325,21 @@ class LabRepository {
           service_type: serviceType,
           appointment_id: appointmentId ?? null,
           lab_schedule_id: labScheduleId ?? null,
+          clinic_id: clinicId ?? null,
           patient_id: patientId,
           doctor_id: doctorId ?? null,
           booking_code: bookingCode || null,
           indication: indication || null,
           preparation_note: preparationNote || null,
           patient_note: patientNote || null,
+          ...(createPayment ? {
+            payment_amount: tests.reduce((sum, test) => sum + Math.round(Number(test.price || 0) * 100), 0) / 100,
+            payment_method: "VNPAY",
+            payment_status: "UNPAID",
+            payment_expires_at: paymentExpiresAt
+              ? new Date(now.getTime() + 10 * 60 * 1000)
+              : null,
+          } : {}),
           lab_results: {
             create: tests.map((test) => ({
               test_id: test.id,
@@ -365,14 +379,15 @@ class LabRepository {
     return { total, orders, page, limit };
   }
 
-  async getClinicalStatistics() {
+  async getClinicalStatistics(clinicId = null) {
     const statuses = ["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
     const serviceTypes = ["LAB", "XRAY", "ULTRASOUND", "ENDOSCOPY", "ECG"];
+    const scopedWhere = clinicId ? { clinic_id: clinicId } : {};
     const counts = await prisma.$transaction([
-      prisma.lab_orders.count(),
-      ...statuses.map((status) => prisma.lab_orders.count({ where: { status } })),
+      prisma.lab_orders.count({ where: scopedWhere }),
+      ...statuses.map((status) => prisma.lab_orders.count({ where: { ...scopedWhere, status } })),
       ...serviceTypes.map((service_type) =>
-        prisma.lab_orders.count({ where: { service_type } }),
+        prisma.lab_orders.count({ where: { ...scopedWhere, service_type } }),
       ),
     ]);
 
@@ -394,6 +409,14 @@ class LabRepository {
     return prisma.lab_orders.findUnique({
       where: { id: Number(id) },
       include: orderDetailInclude,
+    });
+  }
+
+  findAppointmentOrderStatuses(appointmentId) {
+    return prisma.lab_orders.findMany({
+      where: { appointment_id: Number(appointmentId) },
+      select: { id: true, status: true },
+      orderBy: { id: "asc" },
     });
   }
 
@@ -419,6 +442,13 @@ class LabRepository {
       };
       if (!allowedTransitions[current.status]?.includes(status)) {
         throw transactionError("Trạng thái phiếu đã thay đổi, vui lòng tải lại");
+      }
+      if (
+        status === "IN_PROGRESS" &&
+        current.payment_amount != null &&
+        current.payment_status !== "PAID"
+      ) {
+        throw transactionError("Chưa thể tiếp nhận phiếu khi bệnh nhân chưa thanh toán", 409);
       }
       if (status === "COMPLETED") {
         const results = await tx.lab_results.findMany({

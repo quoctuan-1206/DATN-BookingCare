@@ -222,6 +222,7 @@ function OrderDrawer({
   onSaveResult,
   onAttach,
   onOpenAttachment,
+  onPay,
   actionPending,
 }) {
   useEffect(() => {
@@ -270,6 +271,23 @@ function OrderDrawer({
             <ClinicalStatusBadge status={order.status} />
             <span>Tạo lúc {formatClinicalDate(order.ordered_at, true)}</span>
           </div>
+
+          {order.payment && (
+            <section className="clinical-drawer-section">
+              <div className="clinical-drawer-section-title">Thanh toán</div>
+              <div className="clinical-detail-grid">
+                <DetailLine label="Số tiền">{Number(order.payment.amount || 0).toLocaleString("vi-VN")} đ</DetailLine>
+                <DetailLine label="Trạng thái">{order.payment.status === "PAID" ? "Đã thanh toán" : order.payment.status === "EXPIRED" ? "Hết hạn thanh toán" : order.payment.status === "UNPAID" ? "Chưa thanh toán" : order.payment.status}</DetailLine>
+                {order.payment.expires_at && order.payment.status === "UNPAID" && <DetailLine label="Hạn thanh toán">{formatClinicalDate(order.payment.expires_at, true)}</DetailLine>}
+              </div>
+              {mode === "patient" && order.payment.status === "UNPAID" && order.status === "PENDING" &&
+                (!order.payment.expires_at || new Date(order.payment.expires_at).getTime() > Date.now()) && (
+                <button type="button" className="clinical-button clinical-button--primary" onClick={() => onPay?.(order.id)}>
+                  Thanh toán lại
+                </button>
+              )}
+            </section>
+          )}
 
           <section className="clinical-drawer-section">
             <div className="clinical-drawer-section-title">Thông tin phiếu</div>
@@ -376,14 +394,20 @@ function OrderDrawer({
         {mode === "staff" && (
           <footer className="clinical-drawer-footer">
             {order.status === "PENDING" && (
-              <button
-                type="button"
-                className="clinical-button clinical-button--primary"
-                disabled={actionPending}
-                onClick={() => onStatusChange?.(order.id, "IN_PROGRESS")}
-              >
-                <Play size={17} /> Tiếp nhận
-              </button>
+              order.payment && order.payment.status !== "PAID" ? (
+                <button type="button" className="clinical-button clinical-button--primary" disabled>
+                  Chờ bệnh nhân thanh toán
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="clinical-button clinical-button--primary"
+                  disabled={actionPending}
+                  onClick={() => onStatusChange?.(order.id, "IN_PROGRESS")}
+                >
+                  <Play size={17} /> Tiếp nhận
+                </button>
+              )
             )}
             {order.status === "IN_PROGRESS" && (
               <button
@@ -424,6 +448,7 @@ function ClinicalOrderWorkspace({
   onSaveResult,
   onAttach,
   onOpenAttachment,
+  onPay,
   openedOrder = null,
   onCloseOpenedOrder,
   actionPending = false,
@@ -635,6 +660,7 @@ function ClinicalOrderWorkspace({
           onSaveResult={onSaveResult}
           onAttach={onAttach}
           onOpenAttachment={onOpenAttachment}
+          onPay={onPay}
           actionPending={actionPending}
         />
       )}

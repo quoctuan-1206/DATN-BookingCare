@@ -31,7 +31,7 @@ export default function ConsultationEnded() {
     const load = async () => {
       const results = await Promise.allSettled([
         axiosClient.get(`/consultations/${id}`),
-        appointmentFromState ? Promise.resolve(appointmentFromState) : appointmentService.getAppointmentById(id),
+        appointmentService.getAppointmentById(id),
       ]);
       if (cancelled) return;
       const [sessionResult, appointmentResult] = results;
@@ -47,8 +47,9 @@ export default function ConsultationEnded() {
   const ended = session?.status === "COMPLETED";
   const doctorHref = `/doctor/appointments/${id}`;
   const patientHref = `/patient/appointments/${id}`;
-  const doctorRecordHref = `${doctorHref}?consultation=1`;
-  const prescriptionHref = `${doctorHref}?consultation=1&prescribe=1`;
+  const doctorRecordHref = doctorHref;
+  const prescriptionHref = `${doctorHref}?prescribe=1`;
+
 
   return (
     <main className="consult-ended-page">
@@ -79,7 +80,7 @@ export default function ConsultationEnded() {
           {appointment?.specialty && <div><span><FileText size={16} /> Chuyên khoa</span><strong>{appointment.specialty}</strong></div>}
         </div>
 
-        {error && !ended && <p className="consult-ended-error" role="alert">{error}</p>}
+        {error && <p className="consult-ended-error" role="alert">{error}</p>}
 
         {ended && isDoctor ? (
           <div className="consult-ended-actions is-doctor">

@@ -3,6 +3,7 @@ import {
   queryUserSchema,
   updateUserStatusSchema,
   createStaffSchema,
+  assignStaffClinicSchema,
 } from "../validators/user.validator.js";
 
 class UserController {
@@ -76,6 +77,24 @@ class UserController {
         message: is_active
           ? "Đã mở khóa tài khoản"
           : "Đã khóa tài khoản",
+        data: updated,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async assignStaffClinic(req, res, next) {
+    try {
+      const { clinic_id } = assignStaffClinicSchema.parse(req.body);
+      const updated = await userService.assignStaffClinic(
+        req.params.id,
+        clinic_id,
+        req.user.id,
+      );
+      return res.status(200).json({
+        success: true,
+        message: "Đã cập nhật cơ sở làm việc của STAFF",
         data: updated,
       });
     } catch (error) {

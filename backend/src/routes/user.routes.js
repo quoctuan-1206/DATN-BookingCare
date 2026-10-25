@@ -15,6 +15,7 @@ router.post("/staff", userController.createStaff);
 router.get("/", userController.getAllUsers);
 // GET /api/users/:id - Chi tiết người dùng
 router.get("/:id", userController.getUserById);
+router.patch("/:id/clinic", userController.assignStaffClinic);
 // PATCH /api/users/:id/status - Khóa / mở khóa tài khoản
 router.patch("/:id/status", userController.updateUserStatus);
 

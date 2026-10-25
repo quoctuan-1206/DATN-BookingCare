@@ -22,7 +22,7 @@ export function getVnpayConfig(env = process.env) {
     paymentUrl: env.VNPAY_PAYMENT_URL || "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html",
     returnUrl: env.VNPAY_RETURN_URL,
     ipnUrl: env.VNPAY_IPN_URL,
-    frontendUrl: env.FRONTEND_URL.replace(/\/$/, ""),
+    frontendUrl: env.FRONTEND_URL.split(",")[0].trim().replace(/\/$/, ""),
     isMock: env.VNPAY_MOCK === "true",
   };
 }

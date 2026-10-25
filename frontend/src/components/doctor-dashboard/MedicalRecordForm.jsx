@@ -125,11 +125,6 @@ export default function MedicalRecordForm({
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!formData.diagnosis.trim()) {
-      toast.error("Vui lòng nhập chẩn đoán chính");
-      return;
-    }
-
     setSaving(true);
     try {
       const payload = Object.entries(formData).reduce((result, [key, value]) => {
@@ -156,7 +151,7 @@ export default function MedicalRecordForm({
           ...payload,
           appointment_id: Number(appointmentId),
         });
-        toast.success("Đã lưu bệnh án. Tiếp theo kê đơn thuốc.");
+        toast.success("Đã lưu ghi nhận ban đầu. Bổ sung chẩn đoán sau khi có kết quả cận lâm sàng.");
       }
 
       onSaved?.(savedRecord);
@@ -271,7 +266,7 @@ export default function MedicalRecordForm({
             <SectionTitle number="04">Chẩn đoán</SectionTitle>
             <div className="medical-record-diagnosis-grid">
               <label htmlFor="medical-record-diagnosis">
-                <span>Chẩn đoán chính <i>*</i></span>
+                <span>Chẩn đoán chính</span>
                 <input
                   id="medical-record-diagnosis"
                   type="text"
@@ -279,9 +274,11 @@ export default function MedicalRecordForm({
                   value={formData.diagnosis}
                   placeholder="VD: Viêm họng cấp"
                   onChange={handleChange}
-                  required
                 />
               </label>
+              <p className="doctor-appointment-action-note">
+                Có thể bổ sung chẩn đoán cuối cùng sau khi có kết quả cận lâm sàng; bắt buộc trước khi hoàn tất lượt khám.
+              </p>
               <label htmlFor="medical-record-icd10">
                 <span>Mã ICD-10</span>
                 <input

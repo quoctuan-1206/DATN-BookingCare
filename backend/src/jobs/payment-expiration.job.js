@@ -18,6 +18,9 @@ export function startPaymentExpirationJob({
     isRunning = true;
     try {
       await repository.expireUnpaidClinicInvoices(new Date());
+      if (typeof repository.expireUnpaidClinicalOrders === "function") {
+        await repository.expireUnpaidClinicalOrders(new Date());
+      }
     } catch (error) {
       console.error("[PaymentExpirationJob] Lỗi khi quét hóa đơn hết hạn:", error);
     } finally {

@@ -48,7 +48,7 @@ export function buildPaymentUrl(config, payload) {
     vnp_Amount: String(Math.round(Number(payload.amount) * 100)),
     vnp_CurrCode: "VND",
     vnp_TxnRef: payload.txnRef,
-    vnp_OrderInfo: `Thanh toan phi kham ${payload.bookingCode}`,
+    vnp_OrderInfo: payload.orderInfo || `Thanh toan phi kham ${payload.bookingCode}`,
     vnp_OrderType: "other",
     vnp_Locale: "vn",
     vnp_ReturnUrl: config.returnUrl,

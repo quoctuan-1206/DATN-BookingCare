@@ -168,6 +168,230 @@
   vertical-align: middle;
 }
 
+/* Staff clinical schedule workspace, scoped to this page only. */
+.admin-main:has(.clinical-schedule-page),
+.admin-content:has(.clinical-schedule-page) {
+  min-width: 0;
+}
+
+.admin-content:has(.clinical-schedule-page) {
+  overflow: visible;
+}
+
+.clinical-schedule-page {
+  --schedule-green: #16834a;
+  --schedule-green-dark: #086b3a;
+  --schedule-border: #e2e8f0;
+  --schedule-muted: #64748b;
+  gap: 20px;
+  color: #111827;
+}
+
+.clinical-schedule-hero {
+  min-height: 132px;
+  border-color: #cce9d9;
+  border-radius: 16px;
+  background: linear-gradient(115deg, #e8f7ef 0%, #f7fbf8 70%, #dff2e7 100%);
+}
+
+.clinical-schedule-hero h1 { color: #123b2a; font-size: clamp(26px, 2.2vw, 32px); }
+.clinical-schedule-hero .clinical-eyebrow { color: var(--schedule-green); }
+
+.clinical-schedule-stats { gap: 14px; }
+.clinical-schedule-stats .clinical-summary-card {
+  min-width: 0;
+  min-height: 82px;
+  padding: 14px 16px;
+  border-color: var(--schedule-border);
+  border-radius: 14px;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, .035);
+}
+.clinical-schedule-stats .clinical-summary-card > svg { color: var(--schedule-green); background: #e8f5ed; }
+.clinical-schedule-stats .clinical-summary-card--warning > svg { color: #b7791f; background: #fff4dc; }
+.clinical-schedule-stats .clinical-summary-card--success > svg { color: #16834a; background: #e8f5ed; }
+.clinical-schedule-stats .clinical-summary-card--info > svg { color: #2563eb; background: #eaf1ff; }
+.clinical-schedule-stats .clinical-summary-card strong { color: #111827; font-size: 23px; }
+.clinical-schedule-stats .clinical-summary-card span { color: var(--schedule-muted); font-size: 13px; }
+.clinical-schedule-skeleton-number { display: inline-block; width: 42px; height: 23px; border-radius: 6px; background: linear-gradient(90deg, #edf2ef 25%, #f7f9f8 45%, #edf2ef 65%); background-size: 220% 100%; animation: clinical-schedule-shimmer 1.2s ease-in-out infinite; }
+
+.clinical-schedule-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(300px, 1fr);
+  align-items: start;
+  gap: 18px;
+  width: 100%;
+  min-width: 0;
+}
+.clinical-schedule-content { display: grid; gap: 18px; min-width: 0; }
+.clinical-schedule-workspace--preview-closed { grid-template-columns: minmax(0, 1fr); }
+.clinical-schedule-workspace .dashboard-card {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--schedule-border);
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, .045);
+}
+.clinical-schedule-workspace .dashboard-card:hover { box-shadow: 0 4px 16px rgba(15, 23, 42, .045); }
+.clinical-schedule-page .staff-lab-section-head { margin-bottom: 17px; }
+.clinical-schedule-page .staff-lab-section-head h3 { margin: 0 0 5px; color: #111827; font-size: 18px; }
+.clinical-schedule-page .staff-lab-section-head p { margin: 0; color: var(--schedule-muted); font-size: 13px; line-height: 1.5; }
+
+.clinical-schedule-form {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  max-width: none;
+}
+.clinical-schedule-form .admin-form-group { min-width: 0; gap: 6px; }
+.clinical-schedule-form .admin-form-group label { color: #334155; font-size: 12px; font-weight: 650; }
+.clinical-schedule-form .admin-select,
+.clinical-schedule-form .admin-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  padding: 0 11px;
+  border-color: #d7e1e8;
+  border-radius: 9px;
+  font-size: 14px;
+}
+.clinical-schedule-form .admin-form-actions {
+  grid-column: 1 / -1;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 0;
+}
+.clinical-schedule-form .admin-btn-primary { width: auto; min-height: 42px; padding: 0 16px; background: var(--schedule-green); }
+
+.clinical-schedule-list-card { overflow: hidden; }
+.clinical-schedule-list-head { align-items: flex-start; }
+.clinical-schedule-filters { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; min-width: 0; }
+.clinical-schedule-filters .admin-select { box-sizing: border-box; width: auto; min-width: 145px; height: 40px; padding: 0 10px; font-size: 13px; }
+.clinical-schedule-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(220px, 100%);
+  height: 40px;
+  box-sizing: border-box;
+  padding: 0 11px;
+  color: #64748b;
+  border: 1px solid #dbe4ee;
+  border-radius: 9px;
+  background: #fff;
+}
+.clinical-schedule-search input { width: 100%; min-width: 0; border: 0; outline: 0; color: #111827; background: transparent; font: inherit; font-size: 13px; }
+.clinical-schedule-list-card .table-wrapper { min-width: 0; border: 1px solid #edf1f5; border-radius: 10px; }
+.clinical-schedule-table { min-width: 950px; }
+.clinical-schedule-list-card .clinical-schedule-table { display: table; white-space: normal; }
+.clinical-schedule-table thead { background: #f8fafc; }
+.clinical-schedule-table th { padding: 12px 10px; color: #64748b; font-size: 12px; white-space: nowrap; }
+.clinical-schedule-table td { padding: 12px 10px; font-size: 13px; }
+.clinical-schedule-table tbody tr { cursor: pointer; }
+.clinical-schedule-table tbody tr.is-selected { background: #eff8f2; box-shadow: inset 3px 0 #16834a; }
+.clinical-schedule-table tbody tr.is-selected td { color: #173b29; }
+.clinical-schedule-table .clinical-catalog-type { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.clinical-schedule-table td:nth-child(3) { min-width: 155px; }
+.clinical-schedule-table td:nth-child(3) strong { display: block; max-width: 190px; overflow-wrap: anywhere; font-size: 13px; }
+.clinical-schedule-table .staff-lab-clinic-address { display: block; max-width: 195px; margin-top: 3px; color: #64748b; font-size: 11px; white-space: normal; }
+.clinical-schedule-table .staff-lab-row-actions { display: flex; flex-wrap: wrap; gap: 5px; min-width: 145px; }
+.clinical-schedule-table .staff-lab-row-actions .admin-btn { padding: 7px 9px; border-radius: 7px; font-size: 11px; white-space: nowrap; }
+.clinical-schedule-table .admin-btn-secondary { background: #f1f5f9; color: #334155; }
+.clinical-schedule-table .admin-btn-danger { padding: 7px 9px; font-size: 11px; }
+.clinical-schedule-status { display: inline-flex; align-items: center; width: fit-content; padding: 5px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; line-height: 1.2; white-space: nowrap; }
+.clinical-schedule-status--available { color: #167343; background: #e8f6ed; }
+.clinical-schedule-status--paused { color: #a15c00; background: #fff4db; }
+.clinical-schedule-status--full { color: #b42318; background: #fff0ef; }
+.clinical-schedule-table-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; color: #64748b; font-size: 12px; }
+.clinical-schedule-table-pagination > div { display: flex; align-items: center; gap: 10px; }
+.clinical-schedule-table-pagination button { min-height: 32px; padding: 0 10px; color: #334155; border: 1px solid #dbe4ee; border-radius: 8px; background: #fff; font: inherit; font-weight: 650; cursor: pointer; }
+.clinical-schedule-table-pagination button:disabled { cursor: not-allowed; opacity: .45; }
+.clinical-schedule-no-results { padding: 30px 15px; }
+.clinical-schedule-table-skeleton { display: grid; gap: 10px; padding: 12px; }
+.clinical-schedule-table-skeleton i { display: block; height: 44px; border-radius: 8px; background: linear-gradient(90deg, #f0f3f5 25%, #f8fafb 45%, #f0f3f5 65%); background-size: 220% 100%; animation: clinical-schedule-shimmer 1.2s ease-in-out infinite; }
+
+.clinical-schedule-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid var(--schedule-border);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, .045);
+}
+.clinical-schedule-preview-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding-bottom: 16px; border-bottom: 1px solid #eef2f6; }
+.clinical-schedule-preview-head > div > span { color: var(--schedule-green); font-size: 10px; font-weight: 800; letter-spacing: .1em; }
+.clinical-schedule-preview-head h2 { margin: 5px 0 0; color: #111827; font-size: 19px; line-height: 1.3; }
+.clinical-schedule-preview-head button { display: grid; flex: 0 0 34px; place-items: center; width: 34px; height: 34px; color: #475569; border: 1px solid #e2e8f0; border-radius: 9px; background: #fff; cursor: pointer; }
+.clinical-schedule-preview-service { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.clinical-schedule-preview-icon { display: grid; flex: 0 0 46px; place-items: center; width: 46px; height: 46px; border-radius: 12px; }
+.clinical-schedule-preview-service > div { display: grid; justify-items: start; gap: 7px; min-width: 0; }
+.clinical-schedule-preview-service strong { color: #111827; font-size: 16px; overflow-wrap: anywhere; }
+.clinical-schedule-preview-progress { display: grid; gap: 9px; padding: 14px; border: 1px solid #e6eee9; border-radius: 11px; background: #f8fbf9; }
+.clinical-schedule-preview-progress > div:first-child { display: flex; justify-content: space-between; gap: 8px; color: #475569; font-size: 13px; }
+.clinical-schedule-preview-progress strong { color: #172b20; }
+.clinical-schedule-progress-track { height: 8px; overflow: hidden; border-radius: 99px; background: #e3ebe6; }
+.clinical-schedule-progress-track span { display: block; height: 100%; border-radius: inherit; background: var(--schedule-green); }
+.clinical-schedule-preview-progress small { color: #64748b; font-size: 12px; }
+.clinical-schedule-preview-details { display: grid; gap: 17px; }
+.clinical-schedule-preview-details > div { display: flex; align-items: flex-start; gap: 10px; min-width: 0; color: var(--schedule-green); }
+.clinical-schedule-preview-details > div > svg { flex: 0 0 auto; margin-top: 1px; }
+.clinical-schedule-preview-details span { display: grid; gap: 4px; min-width: 0; color: #111827; }
+.clinical-schedule-preview-details small { color: #64748b; font-size: 12px; }
+.clinical-schedule-preview-details strong { font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
+.clinical-schedule-preview-details em { color: #64748b; font-size: 12px; font-style: normal; line-height: 1.5; overflow-wrap: anywhere; }
+.clinical-schedule-preview-state { padding: 13px; border-radius: 10px; background: #f8fafc; }
+.clinical-schedule-preview-state strong { color: #334155; font-size: 13px; }
+.clinical-schedule-preview-state p { margin: 5px 0 0; color: #64748b; font-size: 12px; line-height: 1.55; }
+.clinical-schedule-preview-times { display: grid; gap: 7px; padding-top: 12px; border-top: 1px solid #eef2f6; }
+.clinical-schedule-preview-times p { display: flex; justify-content: space-between; gap: 8px; margin: 0; color: #64748b; font-size: 11px; }
+.clinical-schedule-preview-times span { color: #334155; text-align: right; }
+.clinical-schedule-preview-actions { display: grid; gap: 8px; margin-top: auto; }
+.clinical-schedule-preview-actions .clinical-button { width: 100%; }
+.clinical-schedule-preview-actions .clinical-button--primary { background: var(--schedule-green); }
+.clinical-schedule-preview-empty { display: grid; justify-items: center; gap: 9px; padding: 38px 12px; color: #64748b; text-align: center; }
+.clinical-schedule-preview-empty svg { color: #16834a; }
+.clinical-schedule-preview-empty strong { color: #1f2937; font-size: 15px; }
+.clinical-schedule-preview-empty p { max-width: 230px; margin: 0; font-size: 13px; line-height: 1.5; }
+.clinical-schedule-preview-loading { display: grid; gap: 14px; padding-top: 5px; }
+.clinical-schedule-preview-loading i { display: block; height: 48px; border-radius: 9px; background: linear-gradient(90deg, #f0f3f5 25%, #f8fafb 45%, #f0f3f5 65%); background-size: 220% 100%; animation: clinical-schedule-shimmer 1.2s ease-in-out infinite; }
+@keyframes clinical-schedule-shimmer { to { background-position-x: -220%; } }
+
+@media (max-width: 1439px) {
+  .clinical-schedule-workspace { grid-template-columns: minmax(0, 1fr); }
+  .clinical-schedule-preview { display: grid; grid-template-columns: 1fr 1fr; align-items: start; }
+  .clinical-schedule-preview-head, .clinical-schedule-preview-service, .clinical-schedule-preview-actions { grid-column: 1 / -1; }
+  .clinical-schedule-preview-head { grid-column: 1 / -1; }
+  .clinical-schedule-preview-empty { grid-column: 1 / -1; }
+}
+
+@media (max-width: 760px) {
+  .clinical-schedule-page { gap: 15px; }
+  .clinical-schedule-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  .clinical-schedule-stats .clinical-summary-card { gap: 8px; min-height: 72px; padding: 11px; }
+  .clinical-schedule-stats .clinical-summary-card > svg { padding: 8px; }
+  .clinical-schedule-stats .clinical-summary-card strong { font-size: 20px; }
+  .clinical-schedule-workspace .dashboard-card { padding: 16px; }
+  .clinical-schedule-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .clinical-schedule-filters { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+  .clinical-schedule-search { grid-column: 1 / -1; width: 100%; }
+  .clinical-schedule-filters .admin-select { width: 100%; min-width: 0; }
+  .clinical-schedule-preview { grid-template-columns: 1fr; padding: 18px; }
+  .clinical-schedule-preview-head, .clinical-schedule-preview-service, .clinical-schedule-preview-actions, .clinical-schedule-preview-empty { grid-column: 1; }
+}
+
+@media (max-width: 420px) {
+  .clinical-schedule-form { grid-template-columns: minmax(0, 1fr); }
+  .clinical-schedule-form .admin-form-actions { align-items: stretch; flex-direction: column; }
+  .clinical-schedule-form .admin-form-actions .admin-btn { width: 100%; }
+  .clinical-schedule-workspace .dashboard-card { padding: 14px; }
+  .clinical-schedule-list-head { gap: 12px; }
+  .clinical-schedule-table { min-width: 940px; }
+  .clinical-schedule-table-pagination { align-items: flex-start; flex-direction: column; }
+  .clinical-schedule-table-pagination > div { align-self: flex-end; }
+}
+
 .clinical-summary-card {
   display: flex;
   align-items: center;

@@ -25,6 +25,7 @@ import paymentRoutes from "./routes/payment.routes.js";
 import auditLogRoutes from "./routes/audit-log.routes.js";
 import inventoryRoutes from "./routes/inventory.routes.js";
 import consultationRoutes from "./routes/consultation.routes.js";
+import aiRoutes from "./routes/ai.routes.js";
 import { requestContextMiddleware } from "./context/request-context.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -61,6 +62,7 @@ app.get("/", (req, res) => {
 
 // Auth
 app.use("/api/auth", authRoutes);
+app.use("/api/ai", aiRoutes);
 
 // Đăng ký router quản lý Bác sĩ
 app.use("/api/doctors", doctorRoutes);

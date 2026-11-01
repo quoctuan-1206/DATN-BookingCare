@@ -1,0 +1,4 @@
+export const KNOWLEDGE_SOURCE_TYPES = ["ARTICLE", "FAQ", "SYSTEM_GUIDE"];
+export const MAX_KNOWLEDGE_RESULTS = 10;
+export const MAX_KNOWLEDGE_CANDIDATES = 100;
+export const MIN_KNOWLEDGE_SCORE = 0.2;

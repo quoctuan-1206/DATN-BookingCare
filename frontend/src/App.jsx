@@ -1,5 +1,6 @@
 import { Navigate, Routes, Route } from "react-router-dom";
 import ScrollToTop from "./components/common/ScrollToTop";
+import AIChatWidget from "./components/ai-chat/AIChatWidget";
 
 import Home from "./pages/Home/Home";
 import Doctors from "./pages/Doctor/Doctors";
@@ -231,6 +232,7 @@ function App() {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
             </Routes>
+            <AIChatWidget />
         </>
     );
 }

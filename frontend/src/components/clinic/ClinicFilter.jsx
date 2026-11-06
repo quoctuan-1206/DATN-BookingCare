@@ -1,13 +1,13 @@
 import { Search, X } from "lucide-react";
 
-function ClinicFilter({ search = "", onSearchChange, onClear }) {
+function ClinicFilter({ search = "", onSearchChange, onClear, onSubmit }) {
   return (
-    <div className="clinic-search-box">
+    <form className="clinic-search-box" onSubmit={onSubmit} role="search">
       <Search size={18} className="clinic-search-icon" />
       <input
         type="search"
         className="clinic-search-input"
-        placeholder="Tìm theo tên, địa chỉ hoặc số điện thoại..."
+        placeholder="Tìm theo tên, địa chỉ, email hoặc số điện thoại..."
         aria-label="Tìm kiếm phòng khám"
         value={search}
         onChange={(event) => onSearchChange?.(event.target.value)}
@@ -22,7 +22,8 @@ function ClinicFilter({ search = "", onSearchChange, onClear }) {
           <X size={17} />
         </button>
       )}
-    </div>
+      <button className="clinic-search-submit" type="submit">Tìm kiếm</button>
+    </form>
   );
 }
 

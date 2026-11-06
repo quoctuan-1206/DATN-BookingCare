@@ -1,12 +1,13 @@
 import axiosClient from "../api/axios";
 import { resolveMediaUrl } from "../utils/media";
 
-const DEFAULT_IMAGE = "https://picsum.photos/600/400?clinic";
+const DEFAULT_IMAGE = "/clinic-placeholder.svg";
 
 export function mapClinicFromApi(clinic) {
   if (!clinic) return null;
 
-  const image = resolveMediaUrl(clinic.image) || DEFAULT_IMAGE;
+  const hasClinicImage = clinic.image && !clinic.image.includes("picsum.photos");
+  const image = hasClinicImage ? resolveMediaUrl(clinic.image) || DEFAULT_IMAGE : DEFAULT_IMAGE;
 
   return {
     ...clinic,

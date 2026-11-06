@@ -5,7 +5,7 @@ function ClinicCard({ clinic }) {
   return (
     <Link to={`/clinics/${clinic.id}`} className="clinic-card">
       <div className="clinic-card__image">
-        <img src={clinic.image} alt={clinic.name} />
+        <img src={clinic.image || "/clinic-placeholder.svg"} alt={clinic.name} onError={(event) => { event.currentTarget.src = "/clinic-placeholder.svg"; }} />
         <span className="clinic-card__badge">Phòng khám</span>
       </div>
 

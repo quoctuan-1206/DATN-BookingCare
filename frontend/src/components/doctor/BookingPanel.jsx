@@ -40,40 +40,48 @@ function BookingPanel({ doctor, selectedDate, selectedSchedule }) {
   };
 
   return (
-    <section className="booking-panel">
-      <h2>Đặt lịch khám</h2>
+    <section className="booking-panel" aria-labelledby="booking-panel-title">
+      <h2 id="booking-panel-title">Đặt lịch khám</h2>
 
       <ul className="booking-summary">
         <li>
-          <CalendarDays size={18} />
+          <CalendarDays size={18} aria-hidden="true" />
           <div>
             <span>Ngày khám</span>
             <strong>{formatFullDate(selectedDate)}</strong>
           </div>
         </li>
         <li>
-          <Clock3 size={18} />
+          <Clock3 size={18} aria-hidden="true" />
           <div>
             <span>Giờ khám</span>
-            <strong>{selectedSchedule?.start || "Chưa chọn"}</strong>
+            <strong>
+              {selectedSchedule?.start
+                ? `${selectedSchedule.start}${selectedSchedule.end ? ` - ${selectedSchedule.end}` : ""}`
+                : "Chưa chọn"}
+            </strong>
           </div>
         </li>
         <li>
-          <Clock3 size={18} />
+          <Clock3 size={18} aria-hidden="true" />
           <div>
             <span>Hình thức khám</span>
-            <strong>{selectedSchedule?.consultation_type === "ONLINE" ? "Tư vấn trực tuyến" : "Trực tiếp"}</strong>
+            <strong>
+              {selectedSchedule?.consultation_type === "ONLINE"
+                ? "Tư vấn trực tuyến"
+                : "Trực tiếp"}
+            </strong>
           </div>
         </li>
         <li>
-          <MapPin size={18} />
+          <MapPin size={18} aria-hidden="true" />
           <div>
             <span>Địa điểm</span>
-            <strong>{doctor.clinic || "—"}</strong>
+            <strong>{doctor.clinic || "Chưa cập nhật"}</strong>
           </div>
         </li>
         <li>
-          <Wallet size={18} />
+          <Wallet size={18} aria-hidden="true" />
           <div>
             <span>Giá khám</span>
             <strong className="booking-fee">{doctor.price}</strong>
@@ -89,13 +97,13 @@ function BookingPanel({ doctor, selectedDate, selectedSchedule }) {
         disabled={!hasSchedule}
         onClick={handleBook}
       >
-        <CalendarDays size={18} />
-        ĐẶT LỊCH
+        <CalendarDays size={18} aria-hidden="true" />
+        Đặt lịch khám
       </button>
 
       <p className="booking-secure">
-        <ShieldCheck size={16} />
-        Thông tin của bạn được bảo mật tuyệt đối
+        <ShieldCheck size={16} aria-hidden="true" />
+        Thông tin của bạn được bảo mật
       </p>
     </section>
   );

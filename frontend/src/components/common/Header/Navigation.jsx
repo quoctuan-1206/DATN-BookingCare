@@ -22,6 +22,9 @@ function Navigation() {
         <li>
           <Link to="/articles">Bài viết</Link>
         </li>
+        <li>
+          <Link to="/help">Hướng dẫn</Link>
+        </li>
       </ul>
     </nav>
   );

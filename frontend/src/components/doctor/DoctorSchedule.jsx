@@ -1,4 +1,4 @@
-const WEEKDAYS = ["CN", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
+const WEEKDAYS = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
 
 function weekdayOf(ymd) {
   const date = new Date(`${ymd}T00:00:00`);
@@ -28,14 +28,13 @@ function SlotGrid({ slots, selectedId, onSelectSlot }) {
         <button
           key={slot.id}
           type="button"
-          className={`schedule-item${
-            selectedId === slot.id ? " active" : ""
-          }${!slot.available ? " full" : ""}`}
+          className={`schedule-item${selectedId === slot.id ? " active" : ""}${!slot.available ? " full" : ""}`}
           disabled={!slot.available}
           onClick={() => onSelectSlot(slot)}
+          aria-pressed={selectedId === slot.id}
         >
           <span>{slot.start_time}</span>
-          <small style={{ display: "block", fontSize: 10, fontWeight: 600 }}>
+          <small>
             {slot.consultation_type === "ONLINE" ? "Trực tuyến" : "Trực tiếp"}
           </small>
         </button>
@@ -52,23 +51,22 @@ function DoctorSchedule({
   onDateChange,
   onSelectSlot,
 }) {
-  const morning = slots.filter((s) => minutesOf(s.start_time) < 12 * 60);
-  const afternoon = slots.filter((s) => minutesOf(s.start_time) >= 12 * 60);
+  const morning = slots.filter((slot) => minutesOf(slot.start_time) < 12 * 60);
+  const afternoon = slots.filter((slot) => minutesOf(slot.start_time) >= 12 * 60);
 
   return (
-    <section className="doctor-schedule">
+    <section className="doctor-schedule doctor-info-section" id="doctor-schedule">
       <h2>Lịch khám</h2>
 
-      {dateOptions.length > 0 ? (
-        <div className="schedule-days">
+      {dateOptions.length ? (
+        <div className="schedule-days" aria-label="Chọn ngày khám">
           {dateOptions.map((option) => (
             <button
               key={option.value}
               type="button"
-              className={`schedule-day${
-                selectedDate === option.value ? " active" : ""
-              }`}
+              className={`schedule-day${selectedDate === option.value ? " active" : ""}`}
               onClick={() => onDateChange(option.value)}
+              aria-pressed={selectedDate === option.value}
             >
               {weekdayOf(option.value)} {dayMonth(option.value)}
             </button>
@@ -76,7 +74,7 @@ function DoctorSchedule({
         </div>
       ) : (
         <p className="schedule-empty">
-          Chưa có lịch khám. Vui lòng chọn ngày khác hoặc quay lại sau.
+          Chưa có lịch khám. Vui lòng quay lại sau để xem lịch mới.
         </p>
       )}
 
@@ -99,16 +97,10 @@ function DoctorSchedule({
             />
           </div>
 
-          <div className="schedule-legend">
-            <span>
-              <i className="legend-available" /> Còn trống
-            </span>
-            <span>
-              <i className="legend-selected" /> Đang chọn
-            </span>
-            <span>
-              <i className="legend-full" /> Đã hết
-            </span>
+          <div className="schedule-legend" aria-label="Trạng thái khung giờ">
+            <span><i className="legend-available" /> Còn trống</span>
+            <span><i className="legend-selected" /> Đang chọn</span>
+            <span><i className="legend-full" /> Đã hết</span>
           </div>
         </>
       ) : null}

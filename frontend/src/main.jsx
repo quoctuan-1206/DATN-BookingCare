@@ -29,7 +29,6 @@ import "./styles/clinical.css";
 import "./styles/inventory.css";
 import "./styles/staff-dashboard.css";
 import "./styles/staff-appointments.css";
-import "./styles/mock-vnpay.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

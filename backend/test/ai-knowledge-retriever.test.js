@@ -65,6 +65,21 @@ test("knowledge retriever queries only published active NEWS with a bounded proj
   assert.ok(result.items[0].score > 0);
 });
 
+test("knowledge retriever indexes published patient guides through the existing RAG scorer", async () => {
+  let articleLookups = 0;
+  const result = await retrieveKnowledge({ query: "cách đặt lịch khám", sourceTypes: ["SYSTEM_GUIDE"] }, {
+    db: { articles: { findMany: async () => { articleLookups += 1; return []; } } },
+  });
+  assert.equal(articleLookups, 0);
+  assert.ok(result.returnedCount > 0);
+  assert.equal(result.items[0].sourceType, "SYSTEM_GUIDE");
+  assert.equal(result.items[0].documentId, "patient-booking-guide");
+  assert.equal(result.items[0].url, "/help/patient-booking-guide");
+  assert.equal(result.items[0].category, "Đặt lịch");
+  assert.equal(typeof result.items[0].section, "string");
+  assert.match(result.items[0].content, /Xác nhận đặt lịch/);
+});
+
 test("knowledge retriever rejects unpublished or non-NEWS mocked rows and skips unsupported source types", async () => {
   let calls = 0;
   const db = { articles: { findMany: async () => { calls += 1; return [
@@ -108,6 +123,33 @@ test("AI service routes RAG and HYBRID through knowledge while preserving the da
   assert.equal(knowledgeCalls.length, 2);
   assert.equal(databaseCalls.length, 2);
   assert.deepEqual(await service.searchKnowledge({ query: "tìm bài" }), { source: "RAG", returnedCount: 0, items: [] });
+});
+
+test("AI chat answers website how-to questions from patient guides without Gemini analysis or generation", async () => {
+  const knowledgeCalls = [];
+  let databaseCalls = 0;
+  const service = new AiService({
+    analyzeMessage: async () => { throw new Error("How-to questions should not need Gemini analysis"); },
+    databaseRetriever: async () => { databaseCalls += 1; return { source: "NONE", entityType: null, total: 0, items: [] }; },
+    knowledgeRetriever: async (input) => {
+      knowledgeCalls.push(input);
+      return { source: "RAG", returnedCount: 1, items: [{
+        documentId: "patient-booking-guide", chunkId: "guide-patient-booking-guide-steps",
+        sourceType: "SYSTEM_GUIDE", title: "Đặt lịch khám", content: "Chọn giờ khám rồi xác nhận.",
+        score: 0.9, url: "/help/patient-booking-guide",
+      }] };
+    },
+    answerGenerator: async () => { throw new Error("How-to answers should come from the guide source"); },
+  });
+
+  const response = await service.chat("Cách đặt lịch khám trên web?");
+  assert.deepEqual(knowledgeCalls, [{ query: "Cách đặt lịch khám trên web?", sourceTypes: ["SYSTEM_GUIDE"] }]);
+  assert.equal(databaseCalls, 0);
+  assert.equal(response.intent, "SYSTEM_GUIDE");
+  assert.equal(response.retrievalMode, "RAG");
+  assert.equal(response.answerOrigin, "DETERMINISTIC");
+  assert.match(response.answer, /Chọn giờ khám rồi xác nhận/);
+  assert.equal(response.sources[0].url, "/help/patient-booking-guide");
 });
 
 test("knowledge retriever removes duplicate chunks, applies the result cap, and returns no weak matches", async () => {

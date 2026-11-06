@@ -1,3 +1,5 @@
+import { findPatientGuide } from "../knowledge/patient-guides.js";
+
 const MAX_CONTEXT_CHARS = 12_000;
 const MAX_CONTEXT_RECORDS = 10;
 const MAX_TEXT_CHARS = 1_500;
@@ -101,6 +103,19 @@ function mapDatabaseItems(databaseResults) {
 function mapKnowledgeItems(knowledgeResults) {
   if (!knowledgeResults || knowledgeResults.source !== "RAG" || !Array.isArray(knowledgeResults.items)) return [];
   const records = knowledgeResults.items.slice(0, MAX_CONTEXT_RECORDS).flatMap((item) => {
+    if (item.sourceType === "SYSTEM_GUIDE") {
+      const guide = typeof item.documentId === "string" ? findPatientGuide(item.documentId) : null;
+      if (!guide || item.url !== guide.sourceUrl || typeof item.content !== "string" || !item.content.trim()) return [];
+      return [{
+        sourceId: guide.id,
+        chunkId: cleanText(item.chunkId, 100),
+        type: "SYSTEM_GUIDE",
+        title: cleanText(guide.title, 200),
+        content: cleanText(item.content, MAX_TEXT_CHARS),
+        score: finiteNumber(item.score),
+        url: guide.sourceUrl,
+      }];
+    }
     if (item.sourceType !== "ARTICLE" || typeof item.documentId !== "string" || !item.documentId.startsWith("article-")) return [];
     const articleId = item.documentId.slice("article-".length);
     if (!/^\d+$/.test(articleId) || typeof item.content !== "string" || !item.content.trim()) return [];
@@ -127,7 +142,7 @@ function mapKnowledgeItems(knowledgeResults) {
 }
 
 function sourceFromRecord(record) {
-  if (record.type === "ARTICLE") {
+  if (record.type === "ARTICLE" || record.type === "SYSTEM_GUIDE") {
     return { id: record.sourceId, type: record.type, title: record.title, url: record.url };
   }
   return { id: record.sourceId, type: record.type, title: record.title, url: null };

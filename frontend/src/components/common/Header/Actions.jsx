@@ -41,9 +41,9 @@ function Actions() {
 
   return (
     <div className="actions">
-      <button type="button" className="support-btn">
+      <Link to="/help" className="support-btn">
         Hỗ trợ
-      </button>
+      </Link>
 
       <Link to="/login" className="login-btn">
         Đăng nhập

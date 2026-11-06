@@ -73,6 +73,21 @@ test("context builder ignores unknown database types and invalid/fabricated arti
   assert.deepEqual(sources, [{ id: "article-1", type: "ARTICLE", title: "Fake URL", url: null }]);
 });
 
+test("context builder verifies patient guide citations against the published guide catalog", () => {
+  const { context, sources } = buildChatContext({
+    message: "Cách đặt lịch khám?",
+    analysis: makeAnalysis("SYSTEM_GUIDE", "RAG"),
+    databaseResults: { source: "NONE", entityType: null, items: [] },
+    knowledgeResults: { source: "RAG", items: [
+      { documentId: "patient-booking-guide", chunkId: "guide-patient-booking-guide-steps", sourceType: "SYSTEM_GUIDE", content: "Chọn giờ khám rồi xác nhận.", url: "/help/patient-booking-guide" },
+      { documentId: "patient-internal-guide", chunkId: "guide-internal", sourceType: "SYSTEM_GUIDE", content: "Nội bộ.", url: "/help/patient-internal-guide" },
+      { documentId: "patient-booking-guide", chunkId: "guide-fake-url", sourceType: "SYSTEM_GUIDE", content: "Sai liên kết.", url: "https://evil.test" },
+    ] },
+  });
+  assert.deepEqual(sources, [{ id: "patient-booking-guide", type: "SYSTEM_GUIDE", title: "Đặt lịch khám", url: "/help/patient-booking-guide" }]);
+  assert.equal(context.retrieval.knowledge.records.length, 1);
+});
+
 test("context builder drops tail records to enforce total context size", () => {
   const hugeKnowledge = {
     source: "RAG", returnedCount: 10,
@@ -136,7 +151,7 @@ test("chat routes DATABASE, RAG, HYBRID, and NONE without mixing their records",
   const service = new AiService({
     analyzeMessage: async (message) => message === "mixed"
       ? makeAnalysis("MEDICAL_QUESTION", "HYBRID", { ...emptyFilters, specialty: "Tim mạch" })
-      : message === "rag" ? makeAnalysis("SYSTEM_GUIDE", "RAG")
+      : message === "rag" ? makeAnalysis("MEDICAL_QUESTION", "RAG")
         : message === "none" ? makeAnalysis("GENERAL", "NONE")
           : makeAnalysis("SEARCH_DOCTOR", "DATABASE"),
     databaseRetriever: async (analysis) => { calls.push(["db", analysis.intent]); return doctorResult; },

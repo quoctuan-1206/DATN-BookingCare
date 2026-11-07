@@ -74,10 +74,11 @@ test("knowledge retriever indexes published patient guides through the existing 
   assert.ok(result.returnedCount > 0);
   assert.equal(result.items[0].sourceType, "SYSTEM_GUIDE");
   assert.equal(result.items[0].documentId, "patient-booking-guide");
+  assert.equal(result.items[0].title, "Đặt lịch khám");
   assert.equal(result.items[0].url, "/help/patient-booking-guide");
   assert.equal(result.items[0].category, "Đặt lịch");
   assert.equal(typeof result.items[0].section, "string");
-  assert.match(result.items[0].content, /Xác nhận đặt lịch/);
+  assert.match(result.items.find((item) => item.section === "Các bước đặt lịch")?.content || "", /Xác nhận đặt lịch/);
 });
 
 test("knowledge retriever rejects unpublished or non-NEWS mocked rows and skips unsupported source types", async () => {

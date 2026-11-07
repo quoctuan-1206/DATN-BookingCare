@@ -1,4 +1,4 @@
-import axiosClient from "../api/axios";
+import axiosClient from "../api/axios.js";
 
 const DEFAULT_PAGINATION = {
   total: 0,

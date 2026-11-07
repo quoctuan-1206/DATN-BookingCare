@@ -57,30 +57,33 @@ export async function retrieveKnowledge({ query, sourceTypes, limit = MAX_KNOWLE
     .filter((item) => item.score >= MIN_KNOWLEDGE_SCORE)
     .sort((a, b) => b.score - a.score || a.title.localeCompare(b.title) || a.chunkId.localeCompare(b.chunkId));
 
-  const guideChunks = isRequestedSource(requestedTypes, "SYSTEM_GUIDE")
+  const guideChunks = sourceTypes?.includes("SYSTEM_GUIDE")
     ? PATIENT_GUIDES.flatMap((guide) => [
       ...guide.sections.map((section) => ({
+        documentId: guide.id,
         chunkId: `guide-${guide.id}-${section.id}`,
+        sourceType: "SYSTEM_GUIDE",
+        title: guide.title,
+        category: guide.category,
         section: section.title,
         content: `${section.title}\n${section.content}`,
+        score: scoreKnowledgeChunk(query, guide.title, `${section.title}\n${section.content}`),
+        url: guide.sourceUrl,
+        updatedAt: guide.updatedAt,
       })),
       ...guide.faqs.map((faq, index) => ({
+        documentId: guide.id,
         chunkId: `guide-${guide.id}-faq-${index + 1}`,
+        sourceType: "SYSTEM_GUIDE",
+        title: guide.title,
+        category: guide.category,
         section: faq.question,
         content: `Câu hỏi: ${faq.question}\nTrả lời: ${faq.answer}`,
+        score: scoreKnowledgeChunk(query, guide.title, `Câu hỏi: ${faq.question}\nTrả lời: ${faq.answer}`),
+        url: guide.sourceUrl,
+        updatedAt: guide.updatedAt,
       })),
-    ]).map((chunk) => ({
-      documentId: guide.id,
-      chunkId: chunk.chunkId,
-      sourceType: "SYSTEM_GUIDE",
-      title: guide.title,
-      category: guide.category,
-      section: chunk.section,
-      content: chunk.content,
-      score: scoreKnowledgeChunk(query, guide.title, chunk.content),
-      url: guide.sourceUrl,
-      updatedAt: guide.updatedAt,
-    }))
+    ])
     : [];
 
   const seenChunks = new Set();

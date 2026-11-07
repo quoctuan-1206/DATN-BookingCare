@@ -1,6 +1,5 @@
 import {
   Building2,
-  Clock3,
   ExternalLink,
   Mail,
   MapPin,
@@ -17,7 +16,7 @@ function ClinicProfile({ clinic }) {
   return (
     <div className="clinic-profile">
       <div className="clinic-profile__image">
-        <img src={clinic.image} alt={clinic.name} />
+        <img src={clinic.image || "/clinic-placeholder.svg"} alt={clinic.name} onError={(event) => { event.currentTarget.src = "/clinic-placeholder.svg"; }} />
       </div>
 
       <div className="clinic-profile__content">
@@ -40,21 +39,22 @@ function ClinicProfile({ clinic }) {
             <li><Mail size={15} /><a href={`mailto:${clinic.email}`}>{clinic.email}</a></li>
           )}
           <li><Users size={15} /><span>{clinic.doctor_count || 0} bác sĩ</span></li>
-          <li><Clock3 size={15} /><span>Lịch khám theo từng bác sĩ</span></li>
         </ul>
+        <a className="clinic-profile__booking" href="#bac-si">
+          Đặt lịch khám
+        </a>
+        <a
+          className="clinic-profile__map-link"
+          href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`Xem ${clinic.name} trên Google Maps`}
+        >
+          <MapPinned size={18} />
+          <span>Xem trên Google Maps</span>
+          <ExternalLink size={14} />
+        </a>
       </div>
-
-      <a
-        className="clinic-profile__map-link"
-        href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label={`Xem ${clinic.name} trên Google Maps`}
-      >
-        <MapPinned size={18} />
-        <span>Xem trên Google Maps</span>
-        <ExternalLink size={14} />
-      </a>
     </div>
   );
 }

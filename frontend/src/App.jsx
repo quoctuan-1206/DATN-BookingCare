@@ -86,6 +86,7 @@ import ClinicalServiceDetail from "./pages/Clinical/ClinicalServiceDetail";
 import ClinicalBooking from "./pages/Clinical/ClinicalBooking";
 import ConsultationRoom from "./pages/Consultation/ConsultationRoom";
 import ConsultationEnded from "./pages/Consultation/ConsultationEnded";
+import PatientGuides from "./pages/Help/PatientGuides";
 
 function App() {
     return (
@@ -105,6 +106,8 @@ function App() {
 
             <Route path="/articles" element={<Articles />} />
             <Route path="/articles/:id" element={<ArticleDetail />} />
+            <Route path="/help" element={<PatientGuides />} />
+            <Route path="/help/:guideId" element={<PatientGuides />} />
 
             <Route path="/lab-tests" element={<LabTests />} />
             <Route path="/lab-tests/:id" element={<LabTestDetail />} />

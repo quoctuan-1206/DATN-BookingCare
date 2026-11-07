@@ -22,6 +22,9 @@ function getSourceLink(source) {
     const articleId = source.id.slice("article-".length);
     return source.url === `/articles/${articleId}` ? source.url : null;
   }
+  if (source.type === "SYSTEM_GUIDE" && /^patient-[a-z0-9-]+-guide$/.test(source.id) && source.url === `/help/${source.id}`) {
+    return source.url;
+  }
   const routes = { DOCTOR: "doctors", CLINIC: "clinics", SPECIALTY: "specialties" };
   const route = routes[source.type];
   const match = route ? new RegExp(`^${route}-(\\d+)$`).exec(source.id) : null;
@@ -70,7 +73,7 @@ function SafeMarkdown({ text }) {
 }
 
 function sourceTypeLabel(type) {
-  return { DOCTOR: "Bác sĩ", CLINIC: "Phòng khám", SPECIALTY: "Chuyên khoa", ARTICLE: "Bài viết MediUTE" }[type] || "Nguồn MediUTE";
+  return { DOCTOR: "Bác sĩ", CLINIC: "Phòng khám", SPECIALTY: "Chuyên khoa", ARTICLE: "Bài viết MediUTE", SYSTEM_GUIDE: "Hướng dẫn sử dụng" }[type] || "Nguồn MediUTE";
 }
 
 function SourceList({ sources }) {

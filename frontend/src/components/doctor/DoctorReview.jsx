@@ -91,7 +91,7 @@ function DoctorReview({ doctorId }) {
   );
 
   return (
-    <section className="doctor-review">
+    <section className="doctor-review" id="doctor-reviews">
       <h2>Đánh giá bệnh nhân</h2>
 
       <div className="doctor-review-body">

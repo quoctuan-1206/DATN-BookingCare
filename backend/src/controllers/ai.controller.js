@@ -1,6 +1,11 @@
 import aiService from "../services/ai.service.js";
+import { PATIENT_GUIDES } from "../modules/ai/knowledge/patient-guides.js";
 
 class AiController {
+  async listPatientGuides(_req, res) {
+    return res.json({ success: true, data: PATIENT_GUIDES });
+  }
+
   async analyze(req, res, next) {
     try {
       const analysis = await aiService.analyze(req.body.message);

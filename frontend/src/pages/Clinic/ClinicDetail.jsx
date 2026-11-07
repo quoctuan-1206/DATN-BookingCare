@@ -7,7 +7,6 @@ import {
   Home,
   Stethoscope,
   UserRoundCheck,
-  UsersRound,
 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -22,11 +21,22 @@ import doctorService from "../../services/doctor.service";
 import { getApiErrorMessage } from "../../api/axios";
 import { hasRichText, sanitizeRichText } from "../../utils/richText";
 
+const clinicSections = [
+  { id: "gioi-thieu", label: "Giới thiệu" },
+  { id: "chuyen-mon", label: "Thế mạnh chuyên môn" },
+  { id: "bac-si", label: "Bác sĩ" },
+  { id: "trang-thiet-bi", label: "Trang thiết bị" },
+  { id: "quy-trinh", label: "Quy trình khám" },
+];
+
 function ClinicDetail() {
   const { id } = useParams();
   const [clinic, setClinic] = useState(null);
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reload, setReload] = useState(0);
+  const [activeSection, setActiveSection] = useState(clinicSections[0].id);
 
   const specialties = [
     ...new Set(
@@ -37,11 +47,11 @@ function ClinicDetail() {
   ];
 
   const bookingSteps = [
-    { icon: Activity, label: "Chọn chuyên khoa" },
-    { icon: Stethoscope, label: "Chọn bác sĩ" },
-    { icon: CalendarCheck2, label: "Chọn lịch khám" },
-    { icon: ClipboardList, label: "Nhập thông tin bệnh nhân" },
-    { icon: UserRoundCheck, label: "Xác nhận đặt lịch" },
+    { icon: Activity, label: "Chọn chuyên khoa", description: "Chọn lĩnh vực phù hợp với nhu cầu khám." },
+    { icon: Stethoscope, label: "Chọn bác sĩ", description: "Xem thông tin và chọn bác sĩ tại cơ sở." },
+    { icon: CalendarCheck2, label: "Chọn lịch khám", description: "Chọn ngày và khung giờ còn lịch." },
+    { icon: ClipboardList, label: "Nhập thông tin", description: "Cung cấp hồ sơ bệnh nhân và lý do khám." },
+    { icon: UserRoundCheck, label: "Xác nhận đặt lịch", description: "Kiểm tra lại thông tin lịch hẹn." },
   ];
 
   useEffect(() => {
@@ -49,6 +59,7 @@ function ClinicDetail() {
 
     async function load() {
       setLoading(true);
+      setLoadError(false);
       try {
         const [clinicData, doctorsResult] = await Promise.all([
           clinicService.getClinicById(id),
@@ -63,6 +74,7 @@ function ClinicDetail() {
         if (!cancelled) {
           setClinic(null);
           setDoctors([]);
+          setLoadError(true);
           toast.error(
             getApiErrorMessage(error, "Không tải được thông tin cơ sở khám"),
           );
@@ -76,7 +88,28 @@ function ClinicDetail() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, reload]);
+
+  useEffect(() => {
+    if (typeof IntersectionObserver === "undefined") return undefined;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((left, right) => right.intersectionRatio - left.intersectionRatio)[0];
+        if (visible) setActiveSection(visible.target.id);
+      },
+      { rootMargin: "-18% 0px -65% 0px", threshold: [0, 0.2, 0.5, 0.8] },
+    );
+
+    clinicSections.forEach(({ id: sectionId }) => {
+      const section = document.getElementById(sectionId);
+      if (section) observer.observe(section);
+    });
+
+    return () => observer.disconnect();
+  }, [clinic, loading]);
 
   if (loading) {
     return (
@@ -99,10 +132,13 @@ function ClinicDetail() {
         <main className="clinic-detail-page">
           <div className="container clinic-detail">
             <div className="clinic-state clinic-state--empty">
-              <h1>Không tìm thấy cơ sở khám</h1>
-              <Link to="/clinics" className="btn btn-primary">
-                Quay lại danh sách
-              </Link>
+              <h1>{loadError ? "Chưa tải được thông tin cơ sở khám" : "Không tìm thấy cơ sở khám"}</h1>
+              <p>{loadError ? "Vui lòng kiểm tra kết nối rồi thử lại." : "Cơ sở khám này không tồn tại hoặc hiện không hoạt động."}</p>
+              {loadError ? (
+                <button className="clinic-retry-button" type="button" onClick={() => setReload((value) => value + 1)}>Thử lại</button>
+              ) : (
+                <Link to="/clinics" className="btn btn-primary">Quay lại danh sách</Link>
+              )}
             </div>
           </div>
         </main>
@@ -129,11 +165,21 @@ function ClinicDetail() {
           <ClinicProfile clinic={clinic} />
 
           <nav className="clinic-anchor-nav" aria-label="Nội dung trang">
-            <a href="#gioi-thieu">Giới thiệu</a>
-            <a href="#chuyen-mon">Thế mạnh chuyên môn</a>
-            <a href="#bac-si">Bác sĩ</a>
-            <a href="#trang-thiet-bi">Trang thiết bị</a>
-            <a href="#quy-trinh">Quy trình khám</a>
+            {clinicSections.map(({ id: sectionId, label }) => (
+              <a
+                key={sectionId}
+                href={`#${sectionId}`}
+                className={activeSection === sectionId ? "is-active" : ""}
+                aria-current={activeSection === sectionId ? "location" : undefined}
+                onClick={(event) => {
+                  event.preventDefault();
+                  setActiveSection(sectionId);
+                  document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+              >
+                {label}
+              </a>
+            ))}
           </nav>
 
           <section id="gioi-thieu" className="clinic-section clinic-overview">
@@ -148,15 +194,8 @@ function ClinicDetail() {
                     dangerouslySetInnerHTML={{ __html: sanitizeRichText(clinic.description) }}
                   />
                 ) : (
-                  <p>{`${clinic.name} là cơ sở khám chữa bệnh thuộc hệ thống MediUTE, kết nối người bệnh với đội ngũ bác sĩ phù hợp và quy trình đặt lịch thuận tiện.`}</p>
+                  <p>Thông tin giới thiệu của cơ sở khám đang được cập nhật.</p>
                 )}
-                <div className="clinic-overview__note">
-                  <UsersRound size={20} />
-                  <div>
-                    <strong>Đội ngũ chuyên môn</strong>
-                    <span>{doctors.length} bác sĩ đang công tác tại cơ sở</span>
-                  </div>
-                </div>
               </div>
             </div>
           </section>
@@ -198,11 +237,12 @@ function ClinicDetail() {
               <div><span>Đặt khám dễ dàng</span><h2>Quy trình khám</h2></div>
             </div>
             <ol className="clinic-process__list">
-              {bookingSteps.map(({ icon: Icon, label }, index) => (
+              {bookingSteps.map(({ icon: Icon, label, description }, index) => (
                 <li key={label}>
                   <span className="clinic-process__number">{String(index + 1).padStart(2, "0")}</span>
                   <span className="clinic-process__icon"><Icon size={22} /></span>
                   <strong>{label}</strong>
+                  <p>{description}</p>
                 </li>
               ))}
             </ol>
@@ -210,8 +250,7 @@ function ClinicDetail() {
 
           <section className="clinic-booking-cta">
             <div>
-              <span>Sẵn sàng chăm sóc sức khỏe của bạn?</span>
-              <h2>Chọn bác sĩ và lịch khám phù hợp ngay hôm nay</h2>
+              <h2>Chọn bác sĩ và đặt lịch khám phù hợp ngay hôm nay</h2>
             </div>
             <a href="#bac-si" className="btn btn-primary">
               Đặt lịch khám <ChevronRight size={18} />

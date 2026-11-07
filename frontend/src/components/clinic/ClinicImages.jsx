@@ -1,4 +1,3 @@
-import { Settings } from "lucide-react";
 import { hasRichText, sanitizeRichText } from "../../utils/richText";
 
 function ClinicImages({ content = "" }) {
@@ -7,7 +6,7 @@ function ClinicImages({ content = "" }) {
       <div className="clinic-section__heading clinic-section__heading--compact">
         <div>
           <span>Cơ sở vật chất</span>
-          <h2><Settings size={20} /> Trang thiết bị</h2>
+          <h2>Trang thiết bị</h2>
         </div>
       </div>
 

@@ -8,6 +8,7 @@ import { knowledgeSearchSchema } from "../validators/knowledge.validator.js";
 
 const router = Router();
 
+router.get("/knowledge/guides", optionalAuth, aiController.listPatientGuides);
 router.post("/analyze", optionalAuth, aiRateLimit, validateBody(analyzeMessageSchema), aiController.analyze);
 router.post("/retrieve", optionalAuth, aiRateLimit, validateBody(analyzeMessageSchema), aiController.retrieve);
 router.post("/knowledge/search", optionalAuth, aiRateLimit, validateBody(knowledgeSearchSchema), aiController.searchKnowledge);

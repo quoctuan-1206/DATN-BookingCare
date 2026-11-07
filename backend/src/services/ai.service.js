@@ -5,6 +5,7 @@ import { retrieveKnowledge } from "../modules/ai/knowledge/knowledge.retriever.j
 import { buildChatContext } from "../modules/ai/context/context.builder.js";
 import { generateChatAnswer } from "../modules/ai/generation/answer.generator.js";
 import { noRetrievalResult } from "../modules/ai/retrieval/retrieval.mapper.js";
+import { normalizeKnowledgeText } from "../modules/ai/knowledge/knowledge.normalizer.js";
 
 const noKnowledgeResult = () => ({ source: "RAG", query: "", returnedCount: 0, items: [] });
 
@@ -27,6 +28,41 @@ function hybridDirectoryAnalysis(analysis) {
   if (doctorName || specialty || maxPrice !== null) intent = "SEARCH_DOCTOR";
   else if (clinicName || district) intent = "SEARCH_CLINIC";
   return intent ? { ...analysis, intent } : null;
+}
+
+const PATIENT_WORKFLOW_TERMS = /\b(dang ky|dang nhap|tai khoan|mat khau|tim bac si|chuyen khoa|dat lich|hen lich|lich hen|huy lich|doi lich|phong tu van|tu van truc tuyen|kham online|kham truc tuyen|ho so|don thuoc|thanh toan|tra cuu|danh gia|chatbot|mediute ai|mediute|booking care|bookingcare|website|trang web|web|camera|micro|xet nghiem|can lam sang)\b/;
+const PATIENT_WORKFLOW_QUESTION = /\b(cach|lam sao|huong dan|dung|su dung|o dau|bam nut nao|nhu the nao|tai sao|khong thay|khong dat duoc|chua dat duoc|khong the|khong vao duoc|khong mo duoc|gap loi|loi ket noi)\b/;
+const PATIENT_WORKFLOW_ACTION = /\b(huy lich|doi lich|vao phong tu van|tham gia tu van|cap quyen camera|cap quyen micro)\b/;
+
+function isPatientWorkflowQuestion(message) {
+  const normalizedMessage = normalizeKnowledgeText(message);
+  return PATIENT_WORKFLOW_TERMS.test(normalizedMessage)
+    && (PATIENT_WORKFLOW_QUESTION.test(normalizedMessage) || PATIENT_WORKFLOW_ACTION.test(normalizedMessage));
+}
+
+const PATIENT_GUIDE_ANALYSIS = Object.freeze({
+  intent: "SYSTEM_GUIDE",
+  retrievalMode: "RAG",
+  filters: { specialty: null, doctorName: null, clinicName: null, district: null, maxPrice: null },
+});
+
+function resolvePatientWorkflowIntent(message, analysis) {
+  if (!isPatientWorkflowQuestion(message) && analysis.intent !== "SYSTEM_GUIDE") return analysis;
+  return { ...analysis, intent: "SYSTEM_GUIDE", retrievalMode: "RAG" };
+}
+
+function formatPatientGuideAnswer(records) {
+  const uniqueRecords = [];
+  const seen = new Set();
+  for (const record of records) {
+    const key = `${record.sourceId}:${record.chunkId}`;
+    if (record.type !== "SYSTEM_GUIDE" || seen.has(key)) continue;
+    seen.add(key);
+    uniqueRecords.push(record);
+    if (uniqueRecords.length === 3) break;
+  }
+  if (!uniqueRecords.length) return null;
+  return `Theo hướng dẫn sử dụng MediUTE:\n\n${uniqueRecords.map((record) => record.content).join("\n\n")}`;
 }
 
 function noDataAnswer(retrievalMode) {
@@ -68,11 +104,16 @@ export class AiService {
   }
 
   async retrieve(message) {
-    const analysis = filterAnalysisSchema.parse(await this.analyzeMessage(message));
+    const analysis = isPatientWorkflowQuestion(message)
+      ? PATIENT_GUIDE_ANALYSIS
+      : resolvePatientWorkflowIntent(message, filterAnalysisSchema.parse(await this.analyzeMessage(message)));
     const retrieval = await this.databaseRetriever(analysis);
     const result = { message, ...analysis, retrieval };
     if (analysis.retrievalMode === "RAG" || (analysis.retrievalMode === "HYBRID" && analysis.intent === "MEDICAL_QUESTION")) {
-      result.knowledge = await this.knowledgeRetriever({ query: message });
+      result.knowledge = await this.knowledgeRetriever({
+        query: message,
+        ...(analysis.intent === "SYSTEM_GUIDE" ? { sourceTypes: ["SYSTEM_GUIDE"] } : {}),
+      });
     }
     return result;
   }
@@ -89,24 +130,44 @@ export class AiService {
     const emergency = emergencyResponse(message);
     if (emergency) return emergency;
 
-    const analysis = filterAnalysisSchema.parse(await this.analyzeMessage(message));
+    const analysis = isPatientWorkflowQuestion(message)
+      ? PATIENT_GUIDE_ANALYSIS
+      : resolvePatientWorkflowIntent(message, filterAnalysisSchema.parse(await this.analyzeMessage(message)));
     let databaseResults = noRetrievalResult();
     let knowledgeResults = noKnowledgeResult();
 
     if (analysis.retrievalMode === "DATABASE") {
       databaseResults = await this.databaseRetriever(analysis);
     } else if (analysis.retrievalMode === "RAG") {
-      knowledgeResults = await this.knowledgeRetriever({ query: message });
+      knowledgeResults = await this.knowledgeRetriever({
+        query: message,
+        ...(analysis.intent === "SYSTEM_GUIDE" ? { sourceTypes: ["SYSTEM_GUIDE"] } : {}),
+      });
     } else if (analysis.retrievalMode === "HYBRID") {
       const directoryAnalysis = hybridDirectoryAnalysis(analysis);
       if (directoryAnalysis) databaseResults = await this.databaseRetriever(directoryAnalysis);
-      knowledgeResults = await this.knowledgeRetriever({ query: message });
+      knowledgeResults = await this.knowledgeRetriever({
+        query: message,
+        ...(analysis.intent === "SYSTEM_GUIDE" ? { sourceTypes: ["SYSTEM_GUIDE"] } : {}),
+      });
     }
 
     const { context, sources } = buildChatContext({ message, analysis, databaseResults, knowledgeResults });
     const hasDatabaseResults = context.retrieval.database.returnedCount > 0;
     const hasKnowledgeResults = context.retrieval.knowledge.returnedCount > 0;
     const hasRetrievedData = hasDatabaseResults || hasKnowledgeResults;
+
+    if (analysis.intent === "SYSTEM_GUIDE") {
+      const answer = formatPatientGuideAnswer(context.retrieval.knowledge.records);
+      if (!answer) {
+        return chatResponse(noDataAnswer("RAG"), analysis, [], [], "DETERMINISTIC");
+      }
+      const guideIds = new Set(context.retrieval.knowledge.records
+        .filter((record) => record.type === "SYSTEM_GUIDE")
+        .map((record) => record.sourceId));
+      const guideSources = sources.filter((source) => guideIds.has(source.id) && source.type === "SYSTEM_GUIDE");
+      return chatResponse(answer, analysis, guideSources, [], "DETERMINISTIC");
+    }
 
     if (["DATABASE", "RAG", "HYBRID"].includes(analysis.retrievalMode) && !hasRetrievedData) {
       return chatResponse(noDataAnswer(analysis.retrievalMode), analysis, [], [], "DETERMINISTIC");

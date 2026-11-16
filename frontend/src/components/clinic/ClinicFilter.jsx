@@ -1,14 +1,15 @@
 import { Search, X } from "lucide-react";
 
-function ClinicFilter({ search = "", onSearchChange, onClear, onSubmit }) {
+function ClinicFilter({ search = "", onSearchChange, onClear, onSubmit, inputRef }) {
   return (
     <form className="clinic-search-box" onSubmit={onSubmit} role="search">
       <Search size={18} className="clinic-search-icon" />
       <input
+        ref={inputRef}
         type="search"
         className="clinic-search-input"
         placeholder="Tìm theo tên, địa chỉ, email hoặc số điện thoại..."
-        aria-label="Tìm kiếm phòng khám"
+        aria-label="Tìm kiếm cơ sở y tế"
         value={search}
         onChange={(event) => onSearchChange?.(event.target.value)}
       />

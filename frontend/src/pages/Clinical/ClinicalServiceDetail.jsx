@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import {
   Activity,
-  ArrowLeft,
   CalendarCheck2,
+  ChevronRight,
   Clock3,
   ImageOff,
   Info,
@@ -26,6 +26,7 @@ function ClinicalServiceDetail() {
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [imageUnavailable, setImageUnavailable] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -35,7 +36,10 @@ function ClinicalServiceDetail() {
       setError("");
       try {
         const data = await clinicalService.getPublicService(id);
-        if (!cancelled) setService(data);
+        if (!cancelled) {
+          setService(data);
+          setImageUnavailable(false);
+        }
       } catch (loadError) {
         if (!cancelled) {
           const message = getApiErrorMessage(
@@ -63,17 +67,21 @@ function ClinicalServiceDetail() {
       <Header />
       <main className="clinical-detail-page">
         <div className="clinical-detail-container">
-          <Link className="clinical-detail-back" to="/clinical-services">
-            <ArrowLeft size={18} /> Dịch vụ cận lâm sàng
-          </Link>
+          <nav className="clinical-detail-breadcrumb" aria-label="Điều hướng">
+            <Link to="/">Trang chủ</Link>
+            <ChevronRight size={14} aria-hidden="true" />
+            <Link to="/clinical-services">Cận lâm sàng</Link>
+            <ChevronRight size={14} aria-hidden="true" />
+            <span aria-current="page">{service?.name || "Chi tiết dịch vụ"}</span>
+          </nav>
 
           {loading ? (
-            <div className="clinical-public-state">
+            <div className="clinical-catalog-state">
               <span className="clinical-loading-spinner" />
               <p>Đang tải thông tin dịch vụ...</p>
             </div>
           ) : error || !service ? (
-            <div className="clinical-public-state clinical-public-state--error">
+            <div className="clinical-catalog-state clinical-catalog-state--error">
               <Activity size={34} />
               <h1>Không tìm thấy dịch vụ</h1>
               <p>{error || "Dịch vụ không còn được cung cấp."}</p>
@@ -82,8 +90,12 @@ function ClinicalServiceDetail() {
             <div className="clinical-detail-layout">
               <article className="clinical-detail-card">
                 <div className="clinical-detail-image">
-                  {service.image ? (
-                    <img src={resolveMediaUrl(service.image)} alt={service.name} />
+                  {service.image && !imageUnavailable ? (
+                    <img
+                      src={resolveMediaUrl(service.image)}
+                      alt={service.name}
+                      onError={() => setImageUnavailable(true)}
+                    />
                   ) : (
                     <span><ImageOff size={48} /></span>
                   )}

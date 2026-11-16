@@ -451,6 +451,32 @@ class AppointmentService {
     return response;
   }
 
+  async deleteAppointment(user, id) {
+    const appointmentId = this.parseId(id);
+    const existing = await appointmentRepository.findById(appointmentId);
+    if (!existing) {
+      const error = new Error("Không tìm thấy lịch hẹn");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const deleted = await appointmentRepository.deleteById(appointmentId);
+    await auditLogService.record({
+      userId: user.id,
+      action: "DELETE",
+      resource: "APPOINTMENT",
+      resourceId: appointmentId,
+      oldValue: appointmentAuditSnapshot(existing),
+      metadata: { bookingCode: deleted.booking_code || null },
+    });
+
+    return {
+      id: deleted.id,
+      booking_code: deleted.booking_code,
+      deleted: true,
+    };
+  }
+
   // Kiểm tra quyền xem lịch hẹn
   assertCanView(user, appointment) {
     const role = user.role?.name;

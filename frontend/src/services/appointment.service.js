@@ -68,6 +68,8 @@ export const appointmentService = {
   updateStatus: (id, status) =>
     axiosClient.patch(`/appointments/${id}/status`, { status }),
 
+  deleteAppointment: (id) => axiosClient.delete(`/appointments/${id}`),
+
   reschedule: async (id, scheduleId) => {
     const res = await axiosClient.patch(`/appointments/${id}/reschedule`, {
       schedule_id: scheduleId,

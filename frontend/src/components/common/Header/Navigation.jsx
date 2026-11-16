@@ -1,30 +1,31 @@
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 
-function Navigation() {
+const items = [
+  { to: "/", label: "Trang chủ", end: true },
+  { to: "/specialties", label: "Chuyên khoa" },
+  { to: "/doctors", label: "Bác sĩ" },
+  { to: "/clinics", label: "Cơ sở y tế" },
+  { to: "/clinical-services", label: "Cận lâm sàng" },
+  { to: "/articles", label: "Bài viết" },
+  { to: "/help", label: "Hướng dẫn" },
+];
+
+function Navigation({ onNavigate }) {
   return (
-    <nav className="navigation">
+    <nav className="navigation" aria-label="Điều hướng chính">
       <ul>
-        <li>
-          <Link to="/">Trang chủ</Link>
-        </li>
-        <li>
-          <Link to="/specialties">Chuyên khoa</Link>
-        </li>
-        <li>
-          <Link to="/clinics">Cơ sở y tế</Link>
-        </li>
-        <li>
-          <Link to="/doctors">Bác sĩ</Link>
-        </li>
-        <li>
-          <Link to="/clinical-services">Cận lâm sàng</Link>
-        </li>
-        <li>
-          <Link to="/articles">Bài viết</Link>
-        </li>
-        <li>
-          <Link to="/help">Hướng dẫn</Link>
-        </li>
+        {items.map(({ to, label, end }) => (
+          <li key={to}>
+            <NavLink
+              to={to}
+              end={end}
+              onClick={onNavigate}
+              className={({ isActive }) => isActive ? "is-active" : undefined}
+            >
+              {label}
+            </NavLink>
+          </li>
+        ))}
       </ul>
     </nav>
   );

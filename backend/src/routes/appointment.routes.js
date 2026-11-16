@@ -26,6 +26,7 @@ router.post("/", appointmentController.createAppointment);
 // PATCH /api/appointments/:id/status - Cập nhật trạng thái
 router.patch("/:id/status", appointmentController.updateStatus);
 router.patch("/:id/reschedule", appointmentController.reschedule);
+router.delete("/:id", authorize("Admin"), appointmentController.deleteAppointment);
 // PATCH /api/appointments/:id/start-exam - Bác sĩ bắt đầu khám
 router.patch("/:id/start-exam", appointmentController.startExam);
 // Các action workflow bắt buộc đi đúng state transition và quyền backend.

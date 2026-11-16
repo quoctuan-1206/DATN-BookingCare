@@ -3,11 +3,12 @@ import toast from "react-hot-toast";
 import { useAuth } from "../../../context/AuthContext";
 import NotificationBell from "../NotificationBell/NotificationBell";
 
-function Actions() {
+function Actions({ onNavigate }) {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout, getRedirectPathByRole } = useAuth();
 
   const handleLogout = async () => {
+    onNavigate?.();
     await logout();
     toast.success("Đã đăng xuất");
     navigate("/login");
@@ -28,7 +29,7 @@ function Actions() {
           viewAllTo={notificationPath}
           buttonClassName="header-notification-btn"
         />
-        <Link to={dashboardPath} className="support-btn">
+        <Link to={dashboardPath} className="support-btn" onClick={onNavigate}>
           {user.first_name || "Tài khoản"}
         </Link>
 
@@ -41,12 +42,11 @@ function Actions() {
 
   return (
     <div className="actions">
-      <Link to="/help" className="support-btn">
-        Hỗ trợ
-      </Link>
-
-      <Link to="/login" className="login-btn">
+      <Link to="/login" className="header-login-btn" onClick={onNavigate}>
         Đăng nhập
+      </Link>
+      <Link to="/register" className="header-register-btn" onClick={onNavigate}>
+        Đăng ký
       </Link>
     </div>
   );

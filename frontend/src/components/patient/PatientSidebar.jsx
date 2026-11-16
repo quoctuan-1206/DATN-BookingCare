@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
     Bell,
@@ -9,6 +9,7 @@ import {
     User,
     Users,
     FlaskConical,
+    HeartPulse,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { resolveMediaUrl } from "../../utils/media";
@@ -23,6 +24,7 @@ const accountSubmenus = [
 
 const menus = [
     { title: "Hồ sơ bệnh nhân", icon: Users, path: "/patient/profiles" },
+    { title: "Hồ sơ sức khỏe", icon: HeartPulse, path: "/patient/health-record" },
     { title: "Cận lâm sàng", icon: FlaskConical, path: "/patient/clinical" },
     { title: "Lịch hẹn", icon: CalendarDays, path: "/patient/appointments" },
     {
@@ -37,13 +39,8 @@ function PatientSidebar() {
     const location = useLocation();
     const { user } = useAuth();
     const isAccountSection = location.pathname.startsWith("/patient/profile");
-    const [accountOpen, setAccountOpen] = useState(isAccountSection);
-
-    useEffect(() => {
-        if (isAccountSection) {
-            setAccountOpen(true);
-        }
-    }, [isAccountSection]);
+    const [accountOpen, setAccountOpen] = useState(null);
+    const showAccountSubmenu = accountOpen ?? isAccountSection;
 
     const fullName = user
         ? [user.last_name, user.first_name].filter(Boolean).join(" ").trim()
@@ -66,9 +63,9 @@ function PatientSidebar() {
                         type="button"
                         className={`patient-menu patient-menu-toggle${
                             isAccountSection ? " active" : ""
-                        }${accountOpen ? " open" : ""}`}
-                        onClick={() => setAccountOpen((open) => !open)}
-                        aria-expanded={accountOpen}
+                        }${showAccountSubmenu ? " open" : ""}`}
+                        onClick={() => setAccountOpen(!showAccountSubmenu)}
+                        aria-expanded={showAccountSubmenu}
                     >
                         <User size={20} />
                         <span>Tài khoản</span>
@@ -78,7 +75,7 @@ function PatientSidebar() {
                         />
                     </button>
 
-                    {accountOpen && (
+                    {showAccountSubmenu && (
                         <div className="patient-submenu">
                             {accountSubmenus.map((item) => (
                                 <NavLink

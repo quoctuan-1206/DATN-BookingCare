@@ -133,6 +133,22 @@ class AppointmentController {
     }
   }
 
+  async deleteAppointment(req, res, next) {
+    try {
+      const data = await appointmentService.deleteAppointment(
+        req.user,
+        req.params.id,
+      );
+      return res.status(200).json({
+        success: true,
+        message: "Đã xóa lịch hẹn và dữ liệu liên quan",
+        data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Đổi khung giờ cho lịch hẹn đã đặt (PATCH /api/appointments/:id/reschedule)
   async reschedule(req, res, next) {
     try {

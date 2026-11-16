@@ -256,6 +256,55 @@ class AppointmentRepository {
     });
   }
 
+  async deleteById(id) {
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.appointments.findUnique({
+        where: { id: Number(id) },
+        select: {
+          id: true,
+          schedule_id: true,
+          status: true,
+          booking_code: true,
+          patient_profile_id: true,
+        },
+      });
+
+      if (!existing) {
+        const error = new Error("Không tìm thấy lịch hẹn");
+        error.statusCode = 404;
+        throw error;
+      }
+
+      // Reviews restrict appointment deletion, so remove the linked review first.
+      await tx.reviews.deleteMany({ where: { appointment_id: existing.id } });
+      const deleted = await tx.appointments.deleteMany({
+        where: { id: existing.id },
+      });
+      if (deleted.count !== 1) {
+        const error = new Error("Lịch hẹn đã được thay đổi bởi thao tác khác");
+        error.statusCode = 409;
+        throw error;
+      }
+
+      // The slot counter is released when a booking is cancelled. Preserve that
+      // behavior and release the slot here for any appointment not yet cancelled.
+      if (existing.status !== "CANCELLED") {
+        await tx.schedules.updateMany({
+          where: {
+            id: existing.schedule_id,
+            booked_patients: { gt: 0 },
+          },
+          data: {
+            booked_patients: { decrement: 1 },
+            updated_at: new Date(),
+          },
+        });
+      }
+
+      return existing;
+    });
+  }
+
   // Chuyển lịch hẹn sang khung giờ khác và cập nhật sức chứa trong một transaction.
   async reschedule(id, scheduleId, expectedStatus, nextStatus) {
     return this.prisma.$transaction(async (tx) => {

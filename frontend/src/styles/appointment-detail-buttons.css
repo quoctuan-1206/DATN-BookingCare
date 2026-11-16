@@ -87,3 +87,105 @@
   outline: 3px solid rgba(0, 105, 92, 0.22);
   outline-offset: 2px;
 }
+
+.doctor-health-record-card {
+  margin-top: 14px;
+}
+
+.doctor-health-record-heading h4 {
+  margin: 0;
+  color: #134e4a;
+  font-size: 16px;
+}
+
+.doctor-health-record-heading p,
+.doctor-health-record-notice,
+.doctor-health-record-state {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.doctor-health-record-notice {
+  margin: 6px 0 14px;
+  padding: 10px 12px;
+  color: #805b12;
+  background: #fff9e8;
+  border: 1px solid #f2e2b9;
+  border-radius: 9px;
+}
+
+.doctor-health-record-state--error {
+  color: #b42318;
+}
+
+.doctor-health-record-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.doctor-health-record-section {
+  min-width: 0;
+  padding: 13px 14px;
+  background: #fbfefd;
+  border: 1px solid #e2eeeb;
+  border-radius: 10px;
+}
+
+.doctor-health-record-section h5 {
+  margin: 0 0 9px;
+  color: #134e4a;
+  font-size: 14px;
+}
+
+.doctor-health-record-section ul {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.doctor-health-record-section li + li {
+  padding-top: 9px;
+  border-top: 1px solid #e7efed;
+}
+
+.doctor-health-record-section li strong {
+  display: block;
+  color: #1f3b37;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.doctor-health-record-section li p {
+  margin: 3px 0 0;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.doctor-health-record-meta {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.doctor-health-record-empty {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .doctor-health-record-grid {
+    grid-template-columns: 1fr;
+  }
+}

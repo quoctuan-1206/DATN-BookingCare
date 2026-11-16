@@ -1,78 +1,58 @@
 import "./Footer.css";
 
 import { Link } from "react-router-dom";
-import { Globe, PlayCircle, Mail, Phone, MapPin } from "lucide-react";
+import { ArrowUpRight, HelpCircle } from "lucide-react";
 
 function Footer() {
   return (
     <footer className="footer">
-      <div className="container footer-container">
+      <div className="footer-container">
         <div className="footer-column">
-          <h2>MediUTE</h2>
-
-          <p>
-            Nền tảng đặt lịch khám bệnh trực tuyến, giúp người bệnh dễ dàng kết
-            nối với bác sĩ và cơ sở y tế uy tín trên toàn quốc.
+          <Link to="/" className="footer-brand" aria-label="MediUTE - Trang chủ">
+            <img src="/favicon.svg" alt="" aria-hidden="true" />
+            <span>MediUTE</span>
+          </Link>
+          <p className="footer-description">
+            Nền tảng đặt lịch khám bệnh trực tuyến, giúp kết nối người bệnh với
+            bác sĩ và cơ sở y tế uy tín.
           </p>
         </div>
 
         <div className="footer-column">
-          <h3>Liên kết</h3>
-
+          <h3>Khám và điều trị</h3>
           <ul>
+            <li><Link to="/doctors">Bác sĩ</Link></li>
             <li>
               <Link to="/specialties">Chuyên khoa</Link>
             </li>
             <li>
-              <Link to="/doctors">Bác sĩ</Link>
+              <Link to="/clinics">Cơ sở y tế</Link>
             </li>
-            <li>
-              <Link to="/clinics">Phòng khám</Link>
-            </li>
-            <li>
-              <Link to="/articles">Bài viết</Link>
-            </li>
+            <li><Link to="/clinical-services">Cận lâm sàng</Link></li>
           </ul>
         </div>
 
         <div className="footer-column">
           <h3>Hỗ trợ</h3>
-
           <ul>
-            <li>Điều khoản sử dụng</li>
-            <li>Chính sách bảo mật</li>
-            <li>Hướng dẫn đặt lịch</li>
-            <li>Liên hệ</li>
+            <li><Link to="/help">Hướng dẫn đặt lịch</Link></li>
           </ul>
         </div>
 
         <div className="footer-column">
-          <h3>Thông tin</h3>
-
-          <p>
-            <MapPin size={18} />
-            TP. Hồ Chí Minh
+          <h3>Thông tin liên hệ</h3>
+          <p className="footer-contact-note">
+            <HelpCircle size={18} aria-hidden="true" />
+            Xem hướng dẫn và thông tin hỗ trợ tại MediUTE.
           </p>
-
-          <p>
-            <Phone size={18} />
-            0123 456 789
-          </p>
-
-          <p>
-            <Mail size={18} />
-            mediute@gmail.com
-          </p>
-
-          <div className="footer-social">
-            <Globe />
-            <PlayCircle />
-          </div>
+          <Link to="/help" className="footer-contact-link">
+            Trung tâm hỗ trợ <ArrowUpRight size={15} aria-hidden="true" />
+          </Link>
         </div>
       </div>
 
       <div className="footer-bottom">
-        © 2026 MediUTE. All Rights Reserved.
+        © {new Date().getFullYear()} MediUTE. All rights reserved.
       </div>
     </footer>
   );

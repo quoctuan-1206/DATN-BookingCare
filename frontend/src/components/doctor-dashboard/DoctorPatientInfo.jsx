@@ -17,38 +17,16 @@ function DoctorPatientInfo({ data, title = "Thông tin bệnh nhân" }) {
 
   const rows = [
     { label: "Họ tên", value: name },
+    { label: "Mã hồ sơ", value: data.patient_profile_id ?? data.patient_id ?? data.id },
     {
       label: "Giới tính",
       value: data.patient_gender_label || data.gender_label || data.patient_gender,
     },
-    { label: "Số điện thoại", value: data.patient_phone || data.phone },
     {
       label: "Ngày sinh",
       value: data.patient_date_of_birth || data.date_of_birth || data.dateOfBirth,
     },
-    { label: "Nhóm máu", value: data.patient_blood_type || data.blood_type },
-    {
-      label: "Cân nặng",
-      value:
-        data.patient_weight != null
-          ? `${data.patient_weight} kg`
-          : data.weight != null
-            ? `${data.weight} kg`
-            : null,
-    },
-    {
-      label: "Chiều cao",
-      value:
-        data.patient_height != null
-          ? `${data.patient_height} cm`
-          : data.height != null
-            ? `${data.height} cm`
-            : null,
-    },
-    {
-      label: "BHYT",
-      value: data.patient_insurance_number || data.insurance_number,
-    },
+    { label: "Số điện thoại", value: data.patient_phone || data.phone },
   ];
 
   return (

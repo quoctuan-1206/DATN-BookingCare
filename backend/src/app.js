@@ -21,6 +21,7 @@ import medicineRoutes from "./routes/medicine.routes.js";
 import prescriptionRoutes from "./routes/prescription.routes.js";
 import labRoutes from "./routes/lab.routes.js";
 import clinicalRoutes from "./routes/clinical.routes.js";
+import healthRecordRoutes from "./routes/health-record.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
 import auditLogRoutes from "./routes/audit-log.routes.js";
 import inventoryRoutes from "./routes/inventory.routes.js";
@@ -111,6 +112,7 @@ app.use("/api/labs", labRoutes);
 
 // Cận lâm sàng dùng chung lõi dữ liệu với Xét nghiệm.
 app.use("/api/clinical", clinicalRoutes);
+app.use("/api/health-records", healthRecordRoutes);
 
 // Thanh toán VNPAY (Khám bệnh)
 app.use("/api/payments", paymentRoutes);

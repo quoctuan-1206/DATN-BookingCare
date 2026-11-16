@@ -13,6 +13,7 @@ function Appointments() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [filters, setFilters] = useState({ search: "", status: "" });
+  const [deletingId, setDeletingId] = useState(null);
 
   const fetchAppointments = useCallback(async () => {
     setLoading(true);
@@ -57,6 +58,24 @@ function Appointments() {
       fetchAppointments();
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Không cập nhật được"));
+    }
+  };
+
+  const handleDelete = async (item) => {
+    const ok = window.confirm(
+      `Xóa vĩnh viễn lịch ${item.booking_code || `#${item.id}`}? Hóa đơn, bệnh án, phiên tư vấn và đánh giá liên kết sẽ bị xóa. Đơn xét nghiệm/cận lâm sàng vẫn được giữ lại.`,
+    );
+    if (!ok) return;
+
+    setDeletingId(item.id);
+    try {
+      await appointmentService.deleteAppointment(item.id);
+      setAppointments((current) => current.filter((appointment) => appointment.id !== item.id));
+      toast.success("Đã xóa lịch hẹn");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Không xóa được lịch hẹn"));
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -183,6 +202,15 @@ function Appointments() {
                         {item.status === "IN_PROGRESS" && item.can_complete_exam && (
                           <button type="button" className="admin-btn admin-btn-primary" onClick={() => handleWorkflow(item, "complete")}>Hoàn thành</button>
                         )}
+                        <button
+                          type="button"
+                          className="admin-btn admin-btn-danger"
+                          onClick={() => handleDelete(item)}
+                          disabled={deletingId === item.id}
+                          aria-label={`Xóa lịch ${item.booking_code || item.id}`}
+                        >
+                          {deletingId === item.id ? "Đang xóa..." : "Xóa"}
+                        </button>
                       </td>
                     </tr>
                   ))}

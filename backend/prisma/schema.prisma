@@ -164,6 +164,7 @@ model medical_records {
   created_at           DateTime?      @default(now()) @db.Timestamp(0)
   appointments         appointments   @relation(fields: [appointment_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "medical_records_ibfk_1")
   prescriptions        prescriptions?
+  patient_conditions   patient_conditions[]
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -266,8 +267,99 @@ model patient_profiles {
   users             users                   @relation(fields: [account_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "patient_profiles_ibfk_1")
   reviews           reviews[]
   lab_orders        lab_orders[]
+  medical_history   patient_medical_history[]
+  allergies         patient_allergies[]
+  conditions        patient_conditions[]
+  vitals            patient_vitals[]
 
   @@index([account_id], map: "account_id")
+}
+
+model patient_medical_history {
+  id                 Int              @id @default(autoincrement())
+  patient_profile_id Int
+  title              String           @db.VarChar(255)
+  discovered_at      DateTime?        @db.Date
+  description        String?          @db.Text
+  surgery_history    String?          @db.Text
+  family_history     String?          @db.Text
+  source             String           @default("PATIENT") @db.VarChar(30)
+  reported_by        Int?
+  confirmation_status String          @default("PENDING") @db.VarChar(20)
+  confirmed_by       Int?
+  confirmed_at       DateTime?        @db.DateTime(0)
+  deleted_at         DateTime?        @db.DateTime(0)
+  created_at         DateTime         @default(now()) @db.DateTime(0)
+  updated_at         DateTime         @updatedAt @db.DateTime(0)
+  patient_profiles   patient_profiles @relation(fields: [patient_profile_id], references: [id], onDelete: Cascade)
+  confirmer          users?           @relation("HistoryConfirmer", fields: [confirmed_by], references: [id], onDelete: SetNull)
+  reporter           users?           @relation("HistoryReporter", fields: [reported_by], references: [id], onDelete: SetNull)
+
+  @@index([patient_profile_id, deleted_at, created_at], map: "idx_patient_history_profile")
+}
+
+model patient_allergies {
+  id                 Int              @id @default(autoincrement())
+  patient_profile_id Int
+  allergen           String           @db.VarChar(255)
+  allergy_type       String           @default("OTHER") @db.VarChar(30)
+  source             String           @default("PATIENT") @db.VarChar(30)
+  reported_by        Int?
+  reaction           String?          @db.Text
+  severity           String?          @db.VarChar(20)
+  reported_at        DateTime         @default(now()) @db.DateTime(0)
+  confirmation_status String         @default("PENDING") @db.VarChar(30)
+  confirmed_by       Int?
+  confirmed_at       DateTime?        @db.DateTime(0)
+  deleted_at         DateTime?        @db.DateTime(0)
+  created_at         DateTime         @default(now()) @db.DateTime(0)
+  updated_at         DateTime         @updatedAt @db.DateTime(0)
+  patient_profiles   patient_profiles @relation(fields: [patient_profile_id], references: [id], onDelete: Cascade)
+  confirmer          users?           @relation("AllergyConfirmer", fields: [confirmed_by], references: [id], onDelete: SetNull)
+  reporter           users?           @relation("AllergyReporter", fields: [reported_by], references: [id], onDelete: SetNull)
+
+  @@index([patient_profile_id, deleted_at, created_at], map: "idx_patient_allergies_profile")
+}
+
+model patient_conditions {
+  id                 Int              @id @default(autoincrement())
+  patient_profile_id Int
+  name               String           @db.VarChar(255)
+  recorded_at        DateTime         @default(now()) @db.DateTime(0)
+  status             String           @default("MONITORING") @db.VarChar(20)
+  note               String?          @db.Text
+  medical_record_id  Int?
+  recorded_by        Int?
+  confirmed_by       Int?
+  confirmed_at       DateTime?        @db.DateTime(0)
+  confirmation_status String          @default("PENDING") @db.VarChar(20)
+  deleted_at         DateTime?        @db.DateTime(0)
+  created_at         DateTime         @default(now()) @db.DateTime(0)
+  updated_at         DateTime         @updatedAt @db.DateTime(0)
+  patient_profiles   patient_profiles @relation(fields: [patient_profile_id], references: [id], onDelete: Cascade)
+  recorder           users?           @relation("ConditionRecorder", fields: [recorded_by], references: [id], onDelete: SetNull)
+  confirmer          users?           @relation("ConditionConfirmer", fields: [confirmed_by], references: [id], onDelete: SetNull)
+  medical_records    medical_records? @relation(fields: [medical_record_id], references: [id], onDelete: SetNull)
+
+  @@index([patient_profile_id, deleted_at, status], map: "idx_patient_conditions_profile")
+}
+
+model patient_vitals {
+  id                 Int              @id @default(autoincrement())
+  patient_profile_id Int
+  type               String           @db.VarChar(30)
+  value              Decimal          @db.Decimal(10, 2)
+  secondary_value    Decimal?         @db.Decimal(10, 2)
+  unit               String           @db.VarChar(20)
+  measured_at        DateTime         @db.DateTime(0)
+  source             String           @default("PATIENT") @db.VarChar(30)
+  recorded_by        Int?
+  deleted_at         DateTime?        @db.DateTime(0)
+  created_at         DateTime         @default(now()) @db.DateTime(0)
+  patient_profiles   patient_profiles @relation(fields: [patient_profile_id], references: [id], onDelete: Cascade)
+  recorder           users?           @relation("VitalRecorder", fields: [recorded_by], references: [id], onDelete: SetNull)
+
+  @@index([patient_profile_id, deleted_at, measured_at], map: "idx_patient_vitals_profile")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -410,6 +502,13 @@ model users {
   clinical_attachments       clinical_attachments[]
   clinical_order_events      clinical_order_events[]
   audit_logs                 audit_logs[]
+  confirmed_histories        patient_medical_history[] @relation("HistoryConfirmer")
+  reported_histories         patient_medical_history[] @relation("HistoryReporter")
+  confirmed_allergies        patient_allergies[]       @relation("AllergyConfirmer")
+  reported_allergies         patient_allergies[]       @relation("AllergyReporter")
+  recorded_conditions        patient_conditions[]      @relation("ConditionRecorder")
+  confirmed_conditions       patient_conditions[]      @relation("ConditionConfirmer")
+  recorded_vitals            patient_vitals[]          @relation("VitalRecorder")
   role             roles              @relation(fields: [role_id], references: [id], onUpdate: NoAction, map: "users_ibfk_1")
   clinics          clinics?           @relation("StaffClinic", fields: [clinic_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_users_clinic")
 

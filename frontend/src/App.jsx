@@ -26,6 +26,7 @@ import Notifications from "./pages/Patient/Notifications";
 import Profile from "./pages/Patient/Profile";
 import PatientLabOrders from "./pages/Patient/LabOrders";
 import PatientClinicalOrders from "./pages/Patient/ClinicalOrders";
+import HealthRecord from "./pages/Patient/HealthRecord";
 
 import Login from "./pages/Auth/Login";
 import Register from "./pages/Auth/Register";
@@ -128,6 +129,7 @@ function App() {
 
             <Route path="/patient" element={<Dashboard />} />
             <Route path="/patient/profiles" element={<PatientProfiles />} />
+            <Route path="/patient/health-record" element={<HealthRecord />} />
             <Route path="/patient/appointments" element={<Appointments />} />
             <Route
                 path="/patient/appointments/:id"

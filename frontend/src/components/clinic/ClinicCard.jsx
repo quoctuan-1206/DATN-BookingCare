@@ -2,11 +2,29 @@ import { Link } from "react-router-dom";
 import { ChevronRight, MapPin, Phone, Users } from "lucide-react";
 
 function ClinicCard({ clinic }) {
+  function handleImageLoad(event) {
+    const image = event.currentTarget;
+    const ratio = image.naturalWidth / image.naturalHeight;
+    const name = String(clinic.image || "").split("?")[0].split("/").pop();
+    const filenameSuggestsLogo = /(?:^|[-_.])(logo|brand|emblem)(?:[-_.]|$)/i.test(name || "");
+
+    image.dataset.fit = filenameSuggestsLogo || ratio <= 1.2 ? "contain" : "cover";
+  }
+
+  function handleImageError(event) {
+    event.currentTarget.dataset.fit = "cover";
+    event.currentTarget.src = "/clinic-placeholder.svg";
+  }
+
   return (
     <Link to={`/clinics/${clinic.id}`} className="clinic-card">
       <div className="clinic-card__image">
-        <img src={clinic.image || "/clinic-placeholder.svg"} alt={clinic.name} onError={(event) => { event.currentTarget.src = "/clinic-placeholder.svg"; }} />
-        <span className="clinic-card__badge">Phòng khám</span>
+        <img
+          src={clinic.image || "/clinic-placeholder.svg"}
+          alt={clinic.name}
+          onLoad={handleImageLoad}
+          onError={handleImageError}
+        />
       </div>
 
       <div className="clinic-card__body">

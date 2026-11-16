@@ -15,6 +15,7 @@ import MedicalRecordForm from "../../components/doctor-dashboard/MedicalRecordFo
 import FollowUpCard from "../../components/doctor-dashboard/FollowUpCard";
 import PrescriptionForm from "../../components/doctor-dashboard/PrescriptionForm";
 import AppointmentClinicalOrders from "../../components/doctor-dashboard/AppointmentClinicalOrders";
+import DoctorHealthRecordSummary from "../../components/doctor-dashboard/DoctorHealthRecordSummary";
 import CollapseToggle from "../../components/doctor-dashboard/CollapseToggle";
 import appointmentService, {
   STATUS_CLASS,
@@ -22,6 +23,7 @@ import appointmentService, {
 } from "../../services/appointment.service";
 import medicalRecordService from "../../services/medical-record.service";
 import prescriptionService from "../../services/prescription.service";
+import healthRecordService from "../../services/health-record.service";
 import { getApiErrorMessage } from "../../api/axios";
 import { isExamDay } from "../../utils/booking";
 import { mapMedicalRecord } from "../../services/medical-record.service";
@@ -59,6 +61,9 @@ function AppointmentDetail() {
   const [prescriptionStep, setPrescriptionStep] = useState(false);
   const [prescriptionSkipped, setPrescriptionSkipped] = useState(false);
   const [clinicalOrderSummary, setClinicalOrderSummary] = useState(null);
+  const [healthRecord, setHealthRecord] = useState({ allergies: [], history: [], conditions: [], vitals: [] });
+  const [healthRecordLoading, setHealthRecordLoading] = useState(true);
+  const [healthRecordError, setHealthRecordError] = useState("");
   const [examInfoExpanded, setExamInfoExpanded] = useState(true);
 
   const canStartExam = useMemo(() => {
@@ -89,6 +94,23 @@ function AppointmentDetail() {
     try {
       const data = await appointmentService.getAppointmentById(id);
       setAppointment(data);
+
+      setHealthRecordLoading(true);
+      setHealthRecordError("");
+      setHealthRecord({ allergies: [], history: [], conditions: [], vitals: [] });
+      try {
+        const [allergies, history, conditions, vitals] = await Promise.all([
+          healthRecordService.list(data.patient_profile_id, "allergies"),
+          healthRecordService.list(data.patient_profile_id, "history"),
+          healthRecordService.list(data.patient_profile_id, "conditions"),
+          healthRecordService.list(data.patient_profile_id, "vitals"),
+        ]);
+        setHealthRecord({ allergies, history, conditions, vitals });
+      } catch (error) {
+        setHealthRecordError(getApiErrorMessage(error, "Không tải được hồ sơ sức khỏe"));
+      } finally {
+        setHealthRecordLoading(false);
+      }
 
       try {
         const record = await medicalRecordService.getByAppointmentId(id);
@@ -512,6 +534,12 @@ function AppointmentDetail() {
             </div>
           </section>
         </div>
+
+        <DoctorHealthRecordSummary
+          data={healthRecord}
+          loading={healthRecordLoading}
+          error={healthRecordError}
+        />
 
         {showMedicalForm && (
           <>

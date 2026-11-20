@@ -1,5 +1,6 @@
 import defaultAppointmentRepository from "../repositories/appointment.repository.js";
 import defaultNotificationService from "../services/notification.service.js";
+import defaultEmailService from "../services/email.service.js";
 import {
   formatDateDisplay,
   formatDateOnly,
@@ -19,6 +20,7 @@ export async function sendAppointmentReminders({
   now = new Date(),
   repository = defaultAppointmentRepository,
   notifications = defaultNotificationService,
+  emails = defaultEmailService,
 } = {}) {
   const fromDate = new Date(now);
   fromDate.setUTCHours(0, 0, 0, 0);
@@ -54,6 +56,14 @@ export async function sendAppointmentReminders({
       type,
     });
     if (before) sent += 1;
+
+    if (!isOneHour && appointment.status === "CONFIRMED") {
+      try {
+        await emails.sendAppointmentReminder(appointment, { reminderKey: type });
+      } catch (error) {
+        console.error(`[AppointmentReminderJob] Email nhắc lịch ${type} lỗi:`, error.message);
+      }
+    }
   }
 
   return sent;
@@ -63,13 +73,14 @@ export function startAppointmentReminderJob({
   intervalMs = 60_000,
   repository = defaultAppointmentRepository,
   notifications = defaultNotificationService,
+  emails = defaultEmailService,
 } = {}) {
   let running = false;
   const run = async () => {
     if (running) return;
     running = true;
     try {
-      await sendAppointmentReminders({ repository, notifications });
+      await sendAppointmentReminders({ repository, notifications, emails });
     } catch (error) {
       console.error("[AppointmentReminderJob] Không thể gửi nhắc lịch:", error);
     } finally {

@@ -236,6 +236,7 @@ test("AI routes expose separate POST endpoints for analyze and retrieve", () => 
     .filter((layer) => layer.route)
     .map((layer) => ({ path: layer.route.path, methods: JSON.parse(JSON.stringify(layer.route.methods)) }));
   assert.deepEqual(paths, [
+    { path: "/knowledge/guides", methods: { get: true } },
     { path: "/analyze", methods: { post: true } },
     { path: "/retrieve", methods: { post: true } },
     { path: "/knowledge/search", methods: { post: true } },

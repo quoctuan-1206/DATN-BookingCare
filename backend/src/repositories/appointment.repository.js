@@ -35,6 +35,7 @@ const appointmentInclude = {
     select: {
       id: true,
       account_id: true,
+      users: { select: { id: true, email: true, first_name: true, last_name: true } },
       full_name: true,
       phone: true,
       gender: true,
